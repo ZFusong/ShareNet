@@ -52,7 +52,17 @@
       "Bash(npm init:*)",
       "Bash(rm -rf node_modules package-lock.json)",
       "Bash(npm config:*)",
-      "Bash(set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/)"
+      "Bash(set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/)",
+      "Bash(npm --version)",
+      "Bash(npm create:*)",
+      "Bash(npm search:*)",
+      "Bash(npm view:*)",
+      "Bash(tasklist)",
+      "Bash(npm ls:*)",
+      "Bash(timeout 20 npx electron .)",
+      "Bash(timeout 10 npx electron .)",
+      "Bash(node -e \"console.log\\(''node works''\\)\")",
+      "Bash(npx electron:*)"
     ]
   }
 }
