@@ -1,0 +1,20 @@
+{
+  "name": "sharenet",
+  "version": "1.0.0",
+  "description": "局域网通讯与控制工具",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "keywords": ["electron", "lan", "p2p", "network"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "electron-log": "^5.4.3",
+    "electron-store": "^11.0.2"
+  },
+  "devDependencies": {
+    "electron": "^41.0.0"
+  }
+}

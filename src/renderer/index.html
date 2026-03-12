@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+  <title>ShareNet - 局域网通讯工具</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 顶部导航栏 -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">🔗</span>
+        <span class="logo-text">ShareNet</span>
+      </div>
+      <nav class="tabs">
+        <button class="tab-btn active" data-tab="console">操作台</button>
+        <button class="tab-btn" data-tab="resource">资源站</button>
+        <button class="tab-btn" data-tab="config">配置中心</button>
+        <button class="tab-btn" data-tab="settings">系统设置</button>
+      </nav>
+      <div class="header-right">
+        <div class="device-info">
+          <span id="local-device-name">本机</span>
+          <span class="status-dot online"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 操作台 -->
+      <section id="console-panel" class="panel active">
+        <div class="panel-left">
+          <div class="panel-header">
+            <h3>设备列表</h3>
+            <button id="refresh-devices" class="btn-icon" title="刷新设备">🔄</button>
+          </div>
+          <div class="filter-bar">
+            <select id="device-filter">
+              <option value="all">全部设备</option>
+              <option value="master">主控</option>
+              <option value="slave">被控</option>
+              <option value="both">双向</option>
+            </select>
+          </div>
+          <div id="device-list" class="device-list">
+            <!-- 设备列表将通过JS动态生成 -->
+            <div class="empty-state">正在搜索设备...</div>
+          </div>
+          <div class="selection-info">
+            <span id="selected-count">已选: 0 台设备</span>
+            <button id="select-all" class="btn-small">全选</button>
+          </div>
+        </div>
+        <div class="panel-right">
+          <div class="panel-header">
+            <h3>指令编排</h3>
+          </div>
+          <div class="command-panel">
+            <div class="command-type">
+              <label><input type="radio" name="command-type" value="scene" checked> 场景</label>
+              <label><input type="radio" name="command-type" value="software"> 软件</label>
+              <label><input type="radio" name="command-type" value="input"> 键鼠</label>
+            </div>
+            <div id="command-selector" class="command-selector">
+              <select id="scene-select">
+                <option value="">选择场景...</option>
+              </select>
+            </div>
+            <div id="steps-preview" class="steps-preview">
+              <!-- 步骤预览 -->
+            </div>
+            <div class="execution-options">
+              <label>
+                <input type="checkbox" id="execute-now"> 立即执行
+              </label>
+              <button id="send-command" class="btn-primary">发送指令</button>
+            </div>
+          </div>
+          <div class="execution-log">
+            <h4>执行日志</h4>
+            <div id="log-list" class="log-list">
+              <!-- 日志列表 -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 资源站 -->
+      <section id="resource-panel" class="panel">
+        <div class="panel-left">
+          <div class="panel-header">
+            <h3>发送内容</h3>
+          </div>
+          <div class="send-panel">
+            <div class="content-type">
+              <button class="type-btn active" data-type="text">文字</button>
+              <button class="type-btn" data-type="image">图片</button>
+              <button class="type-btn" data-type="file">文件</button>
+            </div>
+            <div id="text-content" class="content-editor active">
+              <textarea id="text-input" placeholder="输入文字内容..."></textarea>
+            </div>
+            <div id="image-content" class="content-editor">
+              <div id="image-dropzone" class="dropzone">
+                <p>拖拽图片到这里，或点击选择</p>
+                <input type="file" id="image-input" accept="image/*" hidden>
+              </div>
+              <div id="image-preview" class="preview hidden">
+                <img id="preview-img" src="" alt="Preview">
+                <button id="remove-image" class="btn-icon">✕</button>
+              </div>
+              <div class="compression-options">
+                <label>压缩: </label>
+                <select id="image-quality">
+                  <option value="original">原图</option>
+                  <option value="high" selected>高质量</option>
+                  <option value="preview">预览</option>
+                </select>
+              </div>
+            </div>
+            <div id="file-content" class="content-editor">
+              <div id="file-dropzone" class="dropzone">
+                <p>拖拽文件到这里，或点击选择</p>
+                <input type="file" id="file-input" hidden>
+              </div>
+              <div id="file-list" class="file-list">
+                <!-- 已选文件列表 -->
+              </div>
+            </div>
+            <div class="send-target">
+              <label>
+                <input type="radio" name="send-target" value="broadcast" checked> 广播
+              </label>
+              <label>
+                <input type="radio" name="send-target" value="selected"> 已选设备
+              </label>
+            </div>
+            <button id="send-content" class="btn-primary">发送</button>
+          </div>
+        </div>
+        <div class="panel-right">
+          <div class="panel-header">
+            <h3>接收历史</h3>
+            <button id="clear-received" class="btn-icon" title="清理">🗑️</button>
+          </div>
+          <div id="received-list" class="received-list">
+            <div class="empty-state">暂无接收记录</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 配置中心 -->
+      <section id="config-panel" class="panel">
+        <div class="config-tabs">
+          <button class="config-tab active" data-config="software">软件预设</button>
+          <button class="config-tab" data-config="input">键鼠预设</button>
+          <button class="config-tab" data-config="scene">场景编排</button>
+        </div>
+        <div class="config-content">
+          <div class="config-list">
+            <div class="config-header">
+              <h3 id="config-title">软件预设</h3>
+              <button id="add-preset" class="btn-primary">+ 新增</button>
+            </div>
+            <div id="preset-list" class="preset-list">
+              <!-- 预设列表 -->
+            </div>
+          </div>
+          <div class="config-editor">
+            <h3 id="editor-title">编辑预设</h3>
+            <div id="preset-form" class="preset-form">
+              <!-- 预设编辑表单 -->
+              <div class="form-group">
+                <label>名称</label>
+                <input type="text" id="preset-name" placeholder="预设名称">
+              </div>
+              <div class="form-group">
+                <label>路径</label>
+                <input type="text" id="preset-path" placeholder="程序路径">
+                <button id="browse-path" class="btn-small">浏览</button>
+              </div>
+              <div class="form-group">
+                <label>参数</label>
+                <input type="text" id="preset-args" placeholder="启动参数">
+              </div>
+              <div class="form-actions">
+                <button id="save-preset" class="btn-primary">保存</button>
+                <button id="delete-preset" class="btn-danger">删除</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="config-actions">
+          <button id="export-config" class="btn-secondary">导出配置</button>
+          <button id="import-config" class="btn-secondary">导入配置</button>
+        </div>
+      </section>
+
+      <!-- 系统设置 -->
+      <section id="settings-panel" class="panel">
+        <div class="settings-content">
+          <div class="settings-group">
+            <h3>本机信息</h3>
+            <div class="form-group">
+              <label>设备名称</label>
+              <input type="text" id="device-name" placeholder="设备名称">
+            </div>
+            <div class="form-group">
+              <label>角色</label>
+              <select id="device-role">
+                <option value="master">主控</option>
+                <option value="slave">被控</option>
+                <option value="both">双向</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>标签</label>
+              <input type="text" id="device-tags" placeholder="标签，用逗号分隔">
+            </div>
+          </div>
+          <div class="settings-group">
+            <h3>网络设置</h3>
+            <div class="form-group">
+              <label>UDP 端口</label>
+              <input type="number" id="udp-port" value="8888">
+            </div>
+            <div class="form-group">
+              <label>TCP 端口</label>
+              <input type="number" id="tcp-port" value="8889">
+            </div>
+            <div class="form-group">
+              <label>广播间隔(毫秒)</label>
+              <input type="number" id="broadcast-interval" value="5000">
+            </div>
+          </div>
+          <div class="settings-group">
+            <h3>安全设置</h3>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="allow-control" checked> 允许被控制
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="require-confirm"> 操作确认
+              </label>
+            </div>
+            <div class="form-group">
+              <label>IP 白名单</label>
+              <textarea id="ip-whitelist" placeholder="每行一个IP地址，留空表示允许所有"></textarea>
+            </div>
+          </div>
+          <div class="settings-group">
+            <h3>日志</h3>
+            <button id="view-logs" class="btn-secondary">查看日志</button>
+            <button id="open-config-dir" class="btn-secondary">打开配置目录</button>
+          </div>
+          <div class="settings-actions">
+            <button id="save-settings" class="btn-primary">保存设置</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 底部状态栏 -->
+    <footer class="footer">
+      <div class="status-info">
+        <span id="network-status">网络: 就绪</span>
+        <span id="device-count">在线设备: 0</span>
+      </div>
+      <div class="footer-info">
+        <span id="app-version">v1.0.0</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 模态框 -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div id="modal-content" class="modal-content">
+      <!-- 模态框内容动态生成 -->
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

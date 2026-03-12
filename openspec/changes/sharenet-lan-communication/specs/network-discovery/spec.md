@@ -2,53 +2,57 @@
 
 ## ADDED Requirements
 
-### Requirement: UDP广播服务可用
-系统 SHALL 提供 UDP 广播服务，用于在局域网内发现其他设备。
+### Requirement: UDP Broadcast Service
+The system SHALL provide a UDP broadcast service for device discovery on the local network.
 
-#### Scenario: 启动UDP服务
-- **WHEN** 应用启动时
-- **THEN** 系统在配置端口（默认8888）启动 UDP 监听
+#### Scenario: Start UDP Service
+- **WHEN** the application starts with default configuration
+- **THEN** the system SHALL bind to UDP port 8888 and begin broadcasting
 
-#### Scenario: 发送广播消息
-- **WHEN** 应用运行期间
-- **THEN** 系统每隔配置间隔（默认5秒）广播本机信息
+#### Scenario: Custom UDP Port
+- **WHEN** user configures a custom UDP port in settings
+- **THEN** the system SHALL bind to the specified port and use it for discovery
 
-#### Scenario: 接收广播消息
-- **WHEN** 接收到其他设备的广播
-- **THEN** 系统解析消息并更新设备列表
+### Requirement: Device Information Broadcasting
+The system SHALL periodically broadcast device information to all peers on the network.
 
-### Requirement: 设备信息广播
-系统 SHALL 定时广播本机信息，包含设备名、IP、TCP端口、角色。
+#### Scenario: Broadcast Contains Required Fields
+- **WHEN** a broadcast message is sent
+- **THEN** it SHALL include: deviceName, ip, tcpPort, role (master/slave/both), tags
 
-#### Scenario: 广播内容完整
-- **WHEN** 发送广播时
-- **THEN** 消息包含 deviceId, deviceName, ip, tcpPort, role, timestamp
+#### Scenario: Broadcast Interval
+- **WHEN** the system is running
+- **THEN** it SHALL broadcast device info every 5 seconds (configurable)
 
-### Requirement: 在线设备列表维护
-系统 SHALL 维护在线设备列表，记录设备状态。
+### Requirement: Device List Maintenance
+The system SHALL maintain a list of discovered devices with real-time status updates.
 
-#### Scenario: 新设备发现
-- **WHEN** 收到新设备广播
-- **THEN** 设备添加到列表，状态为"在线"
+#### Scenario: New Device Discovery
+- **WHEN** a new device broadcasts its information
+- **THEN** the device SHALL be added to the device list within 5 seconds
 
-#### Scenario: 设备离线判定
-- **WHEN** 超过15秒未收到某设备广播
-- **THEN** 设备状态标记为"离线"
+#### Scenario: Device Update
+- **WHEN** an existing device broadcasts again
+- **THEN** the device info SHALL be updated and lastSeen timestamp refreshed
 
-### Requirement: 心跳机制
-系统 SHALL 实现心跳检测机制，确保设备状态实时准确。
+#### Scenario: Device Offline Detection
+- **WHEN** no broadcast received from a device for 15 seconds
+- **THEN** the device SHALL be marked as offline
 
-#### Scenario: 正常心跳
-- **WHEN** 设备在线时
-- **THEN** 每5秒收到一次心跳广播
+### Requirement: Manual Device Addition
+The system SHALL allow manual addition of devices by IP address as a fallback.
 
-#### Scenario: 设备离线
-- **WHEN** 设备离线超过15秒
-- **THEN** 设备从在线列表移除，显示最后在线时间
+#### Scenario: Add Device by IP
+- **WHEN** user enters a valid IP address and clicks "Add"
+- **THEN** the system SHALL attempt to connect and add the device to the list
 
-### Requirement: 端口可配置
-系统 SHALL 支持自定义 UDP 端口。
+### Requirement: Heartbeat Mechanism
+The system SHALL implement a heartbeat mechanism to maintain device online status.
 
-#### Scenario: 修改UDP端口
-- **WHEN** 用户在设置中修改UDP端口并重启
-- **THEN** 系统使用新端口进行广播和监听
+#### Scenario: Send Heartbeat
+- **WHEN** device is connected
+- **THEN** it SHALL send heartbeat messages every 5 seconds
+
+#### Scenario: Receive Heartbeat
+- **WHEN** heartbeat is received from a known device
+- **THEN** the device's lastSeen time SHALL be updated and status set to online

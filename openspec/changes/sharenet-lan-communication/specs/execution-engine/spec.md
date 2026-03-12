@@ -2,85 +2,108 @@
 
 ## ADDED Requirements
 
-### Requirement: 指令接收与解析
-系统 SHALL 监听 TCP 指令消息并解析执行。
+### Requirement: Command Reception
+The system SHALL receive and parse commands from remote devices.
 
-#### Scenario: 监听指令消息
-- **WHEN** TCP 服务收到 COMMAND 消息
-- **THEN** 系统解析消息内容
+#### Scenario: Listen for Commands
+- **WHEN** TCP server is running
+- **THEN** it SHALL listen for COMMAND type messages
 
-#### Scenario: 验证发送方权限
-- **WHEN** 收到指令
-- **THEN** 验证发送方在白名单或允许控制开关开启
+#### Scenario: Parse Command Type
+- **WHEN** command is received
+- **THEN** it SHALL be parsed as EXECUTE_SOFTWARE, EXECUTE_INPUT, or EXECUTE_SCENE
 
-#### Scenario: 解析指令类型
-- **WHEN** 解析指令
-- **THEN** 识别 EXECUTE_SOFTWARE / EXECUTE_INPUT / EXECUTE_SCENE 类型
+### Requirement: Permission Verification
+The system SHALL verify sender permissions before execution.
 
-### Requirement: 软件启动执行
-系统 SHALL 根据指令启动本地软件。
+#### Scenario: Control Allowed
+- **WHEN** control is allowed and sender is whitelisted
+- **THEN** the command SHALL be executed
 
-#### Scenario: 根据名称匹配预设
-- **WHEN** 收到 EXECUTE_SOFTWARE 指令
-- **THEN** 根据 name 匹配本地 software-presets
+#### Scenario: Control Disabled
+- **WHEN** "allow control" is disabled
+- **THEN** the command SHALL be rejected with error message
 
-#### Scenario: 支持启动参数
-- **WHEN** 执行软件时
-- **THEN** 支持 args 参数和工作目录
+#### Scenario: Whitelist Check
+- **WHEN** whitelist is configured and sender is not in whitelist
+- **THEN** the command SHALL be rejected
 
-#### Scenario: 检测重复启动
-- **WHEN** 执行软件前
-- **THEN** 检测是否已运行，避免重复启动
+### Requirement: Software Execution
+The system SHALL execute software based on preset configuration.
 
-#### Scenario: 延迟执行
-- **WHEN** 指令指定延迟时间
-- **THEN** 支持毫秒级延迟执行
+#### Scenario: Execute by Name Match
+- **WHEN** command contains software name
+- **THEN** it SHALL match against local software-presets and launch
 
-### Requirement: 键鼠模拟执行
-系统 SHALL 执行键鼠模拟操作。
+#### Scenario: Execute with Parameters
+- **WHEN** preset contains arguments
+- **THEN** the software SHALL be launched with specified arguments
 
-#### Scenario: 键盘模拟
-- **WHEN** 执行键鼠动作
-- **THEN** 使用 Windows API (SendInput) 模拟键盘
+#### Scenario: Execute with Working Directory
+- **WHEN** preset contains workingDir
+- **THEN** the software SHALL be launched from that directory
 
-#### Scenario: 鼠标模拟
-- **WHEN** 执行鼠标动作
-- **THEN** 模拟鼠标点击、移动
+#### Scenario: Duplicate Launch Prevention
+- **WHEN** software is already running
+- **THEN** it SHALL not launch again and notify the sender
 
-#### Scenario: 支持的动作类型
-- **WHEN** 定义键鼠动作
-- **THEN** 支持 keyCombo, keyPress, mouseClick, mouseMove, textInput, delay
+#### Scenario: Delayed Execution
+- **WHEN** command specifies delay
+- **THEN** execution SHALL be delayed by specified milliseconds
 
-#### Scenario: 坐标模式
-- **WHEN** 执行鼠标动作
-- **THEN** 支持绝对坐标（屏幕）和相对坐标（窗口）
+### Requirement: Input Simulation
+The system SHALL simulate keyboard and mouse actions.
 
-### Requirement: 场景编排执行
-系统 SHALL 执行场景编排中的步骤队列。
+#### Scenario: Key Combo
+- **WHEN** action type is keyCombo
+- **THEN** multiple keys SHALL be pressed simultaneously
 
-#### Scenario: 串行队列执行
-- **WHEN** 执行场景
-- **THEN** 按步骤顺序依次执行
+#### Scenario: Key Press
+- **WHEN** action type is keyPress
+- **THEN** a single key SHALL be pressed and released
 
-#### Scenario: 步骤间延迟
-- **WHEN** 步骤配置延迟
-- **THEN** 按延迟时间等待后执行下一步
+#### Scenario: Mouse Click
+- **WHEN** action type is mouseClick
+- **THEN** mouse button SHALL be clicked at specified coordinates
 
-#### Scenario: 执行状态反馈
-- **WHEN** 执行过程中
-- **THEN** 实时返回开始/进度/完成/错误状态
+#### Scenario: Mouse Move
+- **WHEN** action type is mouseMove
+- **THEN** mouse SHALL move to specified coordinates
 
-#### Scenario: 单步失败处理
-- **WHEN** 单步执行失败
-- **THEN** 根据配置继续或中止
+#### Scenario: Text Input
+- **WHEN** action type is textInput
+- **THEN** text SHALL be typed at current cursor position
 
-### Requirement: 执行反馈
-系统 SHALL 向指令发送方反馈执行结果。
+#### Scenario: Delay
+- **WHEN** action type is delay
+- **THEN** execution SHALL pause for specified milliseconds
 
-#### Scenario: 实时状态返回
-- **WHEN** 执行状态变化
-- **THEN** 实时返回状态到发送方
+### Requirement: Scene Execution
+The system SHALL execute scene steps in sequence.
 
-#### Scenario: 本地操作日志
-- **WHEN** 执行操作时
-- **THEN** 记录时间、来源、指令、结果到本地日志
+#### Scenario: Sequential Execution
+- **WHEN** scene is executed
+- **THEN** steps SHALL be executed one by one
+
+#### Scenario: Step Delay
+- **WHEN** step contains delay
+- **THEN** execution SHALL pause between steps
+
+#### Scenario: Continue on Error
+- **WHEN** error occurs and continueOnError is true
+- **THEN** execution SHALL proceed to next step
+
+#### Scenario: Stop on Error
+- **WHEN** error occurs and continueOnError is false
+- **THEN** execution SHALL stop and report error
+
+### Requirement: Execution Feedback
+The system SHALL provide execution status feedback.
+
+#### Scenario: Send Status
+- **WHEN** execution status changes
+- **THEN** status SHALL be sent back to the command sender
+
+#### Scenario: Log Execution
+- **WHEN** command is executed
+- **THEN** it SHALL be logged with timestamp, source, command, and result

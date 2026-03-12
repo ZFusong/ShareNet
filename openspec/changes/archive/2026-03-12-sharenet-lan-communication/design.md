@@ -44,8 +44,8 @@
 
 **理由**：
 - Vite 提供极快的开发启动和热更新
-- React 18 生态丰富，组件复用方便
-- 与 Electron 集成成熟（通过 @electron-toolkit/utils）
+- React 生态丰富，组件复用方便
+- 与 Electron 集成成熟
 
 ### D3: UI 组件库 - Radix UI + Tailwind CSS
 
@@ -58,30 +58,18 @@
 - 避免样式冲突，组件库升级不影响样式
 
 **Radix UI 组件使用规划：**
-| 场景 | Radix 组件 |
-|------|------------|
-| 主界面标签切换 | Tabs |
-| 弹窗、录制器 | Dialog |
-| 下拉选择 | Select |
-| 设备多选 | Checkbox |
-| 通知提示 | Toast |
-| 滚动区域 | ScrollArea |
-| 右键菜单 | ContextMenu |
-| 临时调整面板 | Popover |
-| 确认对话框 | AlertDialog |
-| 状态标签 | Badge |
-| 录制控制 | ToggleGroup |
+- Tabs: 主界面标签切换
+- Dialog: 弹窗、录制器
+- Select: 下拉选择
+- Checkbox: 设备多选
+- Toast: 通知提示
+- ScrollArea: 滚动区域
+- ContextMenu: 右键菜单
+- Popover: 临时调整面板
+- AlertDialog: 确认对话框
+- Badge: 状态标签
 
-### D4: 状态管理 - Zustand
-
-**决定：Zustand**
-
-**理由**：
-- 轻量级，无需太多模板代码
-- 与 React Hooks 完美集成
-- 支持中间件（持久化、日志）
-
-### D5: 键鼠模拟方案 - @nut-tree/nut.js
+### D4: 键鼠模拟方案 - @nut-tree/nut.js
 
 **决定：@nut-tree/nut.js**
 
@@ -90,7 +78,7 @@
 - 跨平台支持（未来可能）
 - 活跃维护
 
-### D6: 配置存储 - electron-store
+### D5: 配置存储 - electron-store
 
 **决定：electron-store**
 
@@ -99,7 +87,7 @@
 - 支持默认值、验证
 - 社区成熟
 
-### D7: 进程架构 - 主进程 + 渲染进程
+### D6: 进程架构 - 主进程 + 渲染进程（标准 Electron + React）
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -123,7 +111,7 @@
 └─────────────────────────────────────────────────┘
 ```
 
-### D8: 消息协议设计
+### D7: 消息协议设计
 
 **决定：统一 JSON 协议格式**
 
@@ -146,7 +134,7 @@ interface BaseMessage {
 5. 接收方: 校验MD5，返回 ACK
 ```
 
-### D9: ID 生成规范
+### D8: ID 生成规范
 
 **决定：时间戳+随机数**
 
@@ -157,7 +145,7 @@ interface BaseMessage {
 | 场景 | sc-{timestamp}-{random} | sc-1709548800000-e5f6 |
 | 设备 | {deviceName}-{random} | DESKTOP-A1B2 |
 
-### D10: 导入导出 .lccfg 格式
+### D9: 导入导出 .lccfg 格式
 
 **决定：JSON 封装格式**
 
@@ -188,60 +176,32 @@ interface BaseMessage {
 ```
 sharenet/
 ├── electron/
-│   ├── main.ts              # Electron 主进程入口
-│   ├── preload.ts           # Preload 脚本
-│   ├── ipc/                 # IPC 处理器
-│   │   ├── devices.ts
-│   │   ├── config.ts
-│   │   ├── executor.ts
-│   │   └── transfer.ts
-│   └── services/            # 主进程服务
+│   ├── main.ts           # Electron 主进程入口
+│   ├── preload.ts        # Preload 脚本
+│   ├── ipc/              # IPC 处理器
+│   └── services/         # 主进程服务
 │       ├── udpService.ts
 │       ├── tcpServer.ts
 │       ├── configStore.ts
 │       └── executor.ts
 ├── src/
-│   ├── main.tsx             # React 入口
-│   ├── App.tsx              # 根组件
-│   ├── components/
-│   │   ├── ui/              # Radix UI 包装组件
-│   │   │   ├── Button.tsx
-│   │   │   ├── Dialog.tsx
-│   │   │   ├── Tabs.tsx
-│   │   │   ├── Select.tsx
-│   │   │   ├── Toast.tsx
-│   │   │   └── ...
-│   │   ├── console/         # 操作台模块
-│   │   │   ├── DeviceList.tsx
-│   │   │   ├── CommandPanel.tsx
-│   │   │   └── ExecutionLog.tsx
-│   │   ├── resource/        # 资源站模块
-│   │   │   ├── SendPanel.tsx
-│   │   │   └── ReceivedList.tsx
-│   │   ├── config/          # 配置中心模块
-│   │   │   ├── PresetList.tsx
-│   │   │   └── PresetEditor.tsx
-│   │   └── settings/        # 系统设置模块
-│   │       └── SettingsForm.tsx
-│   ├── hooks/               # React Hooks
-│   │   ├── useDevices.ts
-│   │   ├── useConfig.ts
-│   │   └── useNetwork.ts
-│   ├── stores/              # 状态管理 (Zustand)
-│   │   ├── deviceStore.ts
-│   │   ├── configStore.ts
-│   │   └── uiStore.ts
-│   ├── lib/                 # 工具函数
-│   │   ├── ipc.ts
-│   │   └── utils.ts
-│   └── types/               # TypeScript 类型
-│       └── index.ts
+│   ├── main.tsx          # React 入口
+│   ├── App.tsx           # 根组件
+│   ├── components/       # React 组件
+│   │   ├── ui/           # Radix UI 包装组件
+│   │   ├── console/      # 操作台模块
+│   │   ├── resource/     # 资源站模块
+│   │   ├── config/       # 配置中心模块
+│   │   └── settings/     # 系统设置模块
+│   ├── hooks/            # React Hooks
+│   ├── stores/           # 状态管理 (Zustand)
+│   ├── lib/              # 工具函数
+│   └── types/            # TypeScript 类型
 ├── index.html
 ├── package.json
 ├── vite.config.ts
 ├── tailwind.config.js
 ├── tsconfig.json
-├── postcss.config.js
 └── electron-builder.json
 ```
 

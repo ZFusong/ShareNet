@@ -2,70 +2,81 @@
 
 ## ADDED Requirements
 
-### Requirement: 本机信息设置
-系统 SHALL 提供本机信息配置功能。
+### Requirement: Local Device Information
+The system SHALL provide settings for local device identity.
 
-#### Scenario: 设置设备名称
-- **WHEN** 用户修改设备名称
-- **THEN** 设备名称更新，广播信息同步
+#### Scenario: Set Device Name
+- **WHEN** user enters device name and saves
+- **THEN** the name SHALL be used in broadcasts
 
-#### Scenario: 设置设备头像
-- **WHEN** 用户选择头像
-- **THEN** 头像更新
+#### Scenario: Set Device Role
+- **WHEN** user selects role (master/slave/both)
+- **THEN** the role SHALL be used in broadcasts
 
-#### Scenario: 设置角色
-- **WHEN** 用户选择角色
-- **THEN** 设置为主控/被控/双向
+#### Scenario: Set Device Tags
+- **WHEN** user enters tags (comma-separated)
+- **THEN** tags SHALL be used in broadcasts and filtering
 
-#### Scenario: 设置标签
-- **WHEN** 用户添加/删除标签
-- **THEN** 标签更新
+### Requirement: Network Settings
+The system SHALL provide network configuration options.
 
-### Requirement: 网络设置
-系统 SHALL 提供网络配置功能。
+#### Scenario: Set UDP Port
+- **WHEN** user enters UDP port and saves
+- **THEN** the service SHALL restart with new port
 
-#### Scenario: 设置UDP端口
-- **WHEN** 用户修改UDP端口
-- **THEN** 端口配置更新
+#### Scenario: Set TCP Port
+- **WHEN** user enters TCP port and saves
+- **THEN** the service SHALL restart with new port
 
-#### Scenario: 设置TCP端口
-- **WHEN** 用户修改TCP端口
-- **THEN** 端口配置更新
+#### Scenario: Set Broadcast Interval
+- **WHEN** user enters broadcast interval (ms) and saves
+- **THEN** broadcasts SHALL use the new interval
 
-#### Scenario: 设置广播间隔
-- **WHEN** 用户修改广播间隔
-- **THEN** 广播频率更新
+### Requirement: Security Settings
+The system SHALL provide security configuration.
 
-### Requirement: 安全设置
-系统 SHALL 提供安全策略配置。
+#### Scenario: Toggle Allow Control
+- **WHEN** user enables "allow control"
+- **THEN** remote commands SHALL be accepted
 
-#### Scenario: 允许被控制开关
-- **WHEN** 用户开启/关闭允许被控制
-- **THEN** 控制本机的权限状态改变
+#### Scenario: Toggle Allow Control
+- **WHEN** user disables "allow control"
+- **THEN** remote commands SHALL be rejected
 
-#### Scenario: IP白名单管理
-- **WHEN** 用户管理白名单
-- **THEN** 只允许白名单内的IP控制本机
+#### Scenario: Set IP Whitelist
+- **WHEN** user configures IP whitelist
+- **THEN** only listed IPs SHALL be allowed to control
 
-#### Scenario: 操作确认模式
-- **WHEN** 用户设置确认模式
-- **THEN** 敏感操作时弹窗确认或静默执行
+#### Scenario: Toggle Confirm Mode
+- **WHEN** confirm mode is enabled
+- **THEN** sensitive operations SHALL require user confirmation
 
-### Requirement: 日志与调试
-系统 SHALL 提供日志查看功能。
+### Requirement: Log Management
+The system SHALL provide log viewing and management.
 
-#### Scenario: 运行日志查看
-- **WHEN** 用户打开日志查看
-- **THEN** 显示按日期筛选的运行日志
+#### Scenario: View Runtime Logs
+- **WHEN** user clicks "View Logs"
+- **THEN** recent log entries SHALL be displayed
 
-#### Scenario: 操作审计日志
-- **WHEN** 用户查看审计日志
-- **THEN** 显示操作记录（时间、来源、操作、结果）
+#### Scenario: Filter by Level
+- **WHEN** user selects log level filter
+- **THEN** only logs of that level SHALL be shown
 
-#### Scenario: 日志级别设置
-- **WHEN** 用户设置日志级别
-- **THEN** 按级别过滤日志显示
+#### Scenario: Open Config Directory
+- **WHEN** user clicks "Open Config Directory"
+- **THEN** the config folder SHALL be opened in file explorer
 
-#### Scenario: 打开配置目录
-- **WHEN** 用户点击打开配置目录
-- **THEN** 打开 userData 目录
+#### Scenario: Set Log Level
+- **WHEN** user selects log level
+- **THEN** new log entries SHALL use the selected level
+
+### Requirement: Settings Persistence
+The system SHALL save and load settings correctly.
+
+#### Scenario: Save Settings
+- **WHEN** user clicks Save
+- **THEN** all settings SHALL be persisted to electron-store
+
+#### Scenario: Load Settings
+- **WHEN** application starts
+- **THEN** saved settings SHALL be loaded and applied

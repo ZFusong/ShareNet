@@ -2,94 +2,110 @@
 
 ## ADDED Requirements
 
-### Requirement: 发送端功能
-系统 SHALL 提供资源发送功能。
+### Requirement: Send Panel
+The system SHALL provide an interface for sending content to other devices.
 
-#### Scenario: 文字发送
-- **WHEN** 用户选择文字类型
-- **THEN** 显示输入框，支持多行文字
+#### Scenario: Text Sending
+- **WHEN** user enters text and clicks Send
+- **THEN** text SHALL be sent to selected devices
 
-#### Scenario: 图片发送
-- **WHEN** 用户选择图片类型
-- **THEN** 支持拖拽/粘贴/截图导入
+#### Scenario: Image Sending - Drag Drop
+- **WHEN** user drags an image to the dropzone
+- **THEN** the image SHALL be loaded for sending
 
-#### Scenario: 图片压缩选项
-- **WHEN** 发送图片
-- **THEN** 提供压缩选项（原图/高质量/预览）
+#### Scenario: Image Sending - Paste
+- **WHEN** user pastes an image (Ctrl+V)
+- **THEN** the image SHALL be loaded for sending
 
-#### Scenario: 文件发送
-- **WHEN** 用户选择文件类型
-- **THEN** 支持拖拽选择，显示文件大小
+#### Scenario: Image Sending - File Select
+- **WHEN** user clicks to select an image file
+- **THEN** the file browser SHALL open
 
-#### Scenario: 目标选择
-- **WHEN** 选择发送目标
-- **THEN** 支持广播到所有设备或选择特定设备
+#### Scenario: Image Compression Options
+- **WHEN** user selects compression level
+- **THEN** the image SHALL be compressed accordingly before sending
 
-### Requirement: 接收端功能
-系统 SHALL 提供资源接收和查看功能。
+#### Scenario: File Sending
+- **WHEN** user selects files and clicks Send
+- **THEN** files SHALL be sent to selected devices
 
-#### Scenario: 消息列表显示
-- **WHEN** 收到消息
-- **THEN** 显示消息列表，时间倒序排列
+#### Scenario: Show File Size
+- **WHEN** file is selected
+- **THEN** the file size SHALL be displayed
 
-#### Scenario: 列表信息显示
-- **WHEN** 显示消息
-- **THEN** 显示发送者、类型、时间、大小
+#### Scenario: Broadcast Mode
+- **WHEN** user selects broadcast
+- **THEN** content SHALL be sent to all online devices
 
-#### Scenario: 文字预览
-- **WHEN** 收到文字消息
-- **THEN** 支持展开显示，一键复制
+#### Scenario: Multi-Device Send
+- **WHEN** user selects specific devices
+- **THEN** content SHALL be sent only to selected devices
 
-#### Scenario: 图片预览
-- **WHEN** 收到图片消息
-- **THEN** 显示缩略图，点击可查看原图
+### Requirement: Receive Panel
+The system SHALL display received content in a list.
 
-#### Scenario: 图片保存复制
-- **WHEN** 查看图片
-- **THEN** 支持保存到本地和复制
+#### Scenario: Receive Message
+- **WHEN** content is received
+- **THEN** it SHALL appear at the top of the receive list
 
-#### Scenario: 文件信息显示
-- **WHEN** 收到文件消息
-- **THEN** 显示文件信息，提供下载按钮
+#### Scenario: Show Message Metadata
+- **WHEN** message is displayed
+- **THEN** sender, type, time, and size SHALL be shown
 
-#### Scenario: 文件下载进度
-- **WHEN** 下载文件
-- **THEN** 显示下载进度
+#### Scenario: Text Preview
+- **WHEN** text message is received
+- **THEN** it SHALL be expandable for full view
 
-### Requirement: 存储管理
-系统 SHALL 管理接收到的资源。
+#### Scenario: Copy Text
+- **WHEN** user clicks copy on text
+- **THEN** content SHALL be copied to clipboard
 
-#### Scenario: 默认存储路径
-- **WHEN** 收到资源
-- **THEN** 默认保存到 userData/received/
+#### Scenario: Image Thumbnail
+- **WHEN** image is received
+- **THEN** a thumbnail SHALL be displayed in the list
 
-#### Scenario: 存储目录结构
-- **WHEN** 保存资源
-- **THEN** 图片保存到 received/images/，文件保存到 received/files/
+#### Scenario: View Full Image
+- **WHEN** user clicks on image thumbnail
+- **THEN** the full-size image SHALL be displayed
 
-#### Scenario: 清理接收历史
-- **WHEN** 用户点击清理
-- **THEN** 清理接收目录中的文件
+#### Scenario: Save Image
+- **WHEN** user clicks save on image
+- **THEN** image SHALL be saved to user-selected location
 
-### Requirement: 传输机制
-系统 SHALL 实现可靠的传输机制。
+#### Scenario: Copy Image
+- **WHEN** user clicks copy on image
+- **THEN** image SHALL be copied to clipboard
 
-#### Scenario: 小文件传输
-- **WHEN** 传输小于10MB的文件
-- **THEN** 直接内存传输
+#### Scenario: File Download
+- **WHEN** user clicks download on file
+- **THEN** file SHALL be saved to user-selected location
 
-#### Scenario: 大文件分片传输
-- **WHEN** 传输大于等于10MB的文件
-- **THEN** 分片为1MB/片进行传输
+#### Scenario: Show Download Progress
+- **WHEN** file is downloading
+- **THEN** progress SHALL be displayed
 
-#### Scenario: 断点续传
-- **WHEN** 传输中断
-- **THEN** 支持断点续传
+### Requirement: Storage Management
+The system SHALL manage received files.
 
-#### Scenario: MD5校验
-- **WHEN** 文件传输完成
-- **THEN** 进行MD5校验确保完整性
+#### Scenario: Default Storage Path
+- **WHEN** file is received
+- **THEN** it SHALL be saved to userData/received/
 
-#### Scenario: 传输队列限制
-- **WHEN** 多文件同时传输
-- **THEN** 并发数不超过3个
+#### Scenario: Clean History
+- **WHEN** user clicks clean
+- **THEN** received history SHALL be cleared
+
+### Requirement: Transfer Mechanism
+The system SHALL handle file transfer reliably.
+
+#### Scenario: Small File Transfer
+- **WHEN** file is under 10MB
+- **THEN** it SHALL be transferred in memory
+
+#### Scenario: Large File Transfer
+- **WHEN** file is 10MB or larger
+- **THEN** it SHALL be transferred in 1MB chunks
+
+#### Scenario: Transfer Queue
+- **WHEN** multiple files are transferring
+- **THEN** maximum 3 files SHALL transfer concurrently

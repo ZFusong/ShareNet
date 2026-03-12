@@ -48,7 +48,11 @@
       "Bash(powershell:*)",
       "Bash(del install-plugin.bat set-env-and-run.bat install-plugin.ps1)",
       "Read(//c/Users/Administrator/.claude/plugins/cache/planning-with-files/planning-with-files/2.11.0/templates/**)",
-      "Bash(npm run typecheck)"
+      "Bash(npm run typecheck)",
+      "Bash(npm init:*)",
+      "Bash(rm -rf node_modules package-lock.json)",
+      "Bash(npm config:*)",
+      "Bash(set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/)"
     ]
   }
 }

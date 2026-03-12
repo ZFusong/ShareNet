@@ -2,90 +2,88 @@
 
 ## ADDED Requirements
 
-### Requirement: 设备对象模型
-系统 SHALL 定义设备对象模型，包含设备标识信息。
+### Requirement: Device Object Model
+The system SHALL define a device object with all required properties.
 
-#### Scenario: 设备对象字段完整
-- **WHEN** 创建设备对象时
-- **THEN** 包含 deviceId, deviceName, ip, tcpPort, role, tags, status, lastSeen, capabilities
+#### Scenario: Device Properties
+- **WHEN** a device is discovered
+- **THEN** it SHALL have: deviceId, deviceName, ip, tcpPort, role, tags, status, lastSeen
 
-### Requirement: 设备发现面板UI
-系统 SHALL 提供设备发现面板，显示在线设备列表。
+#### Scenario: Device Status Values
+- **WHEN** device status changes
+- **THEN** status SHALL be one of: online, offline, busy
 
-#### Scenario: 显示设备列表
-- **WHEN** 设备发现面板打开时
-- **THEN** 显示所有已发现设备的名称、IP、状态、角色
+### Requirement: Device List Display
+The system SHALL display discovered devices in a list format.
 
-#### Scenario: 设备状态标签
-- **WHEN** 设备状态变化时
-- **THEN** 显示对应的状态标签（在线/离线/忙碌）
+#### Scenario: Show Device Name
+- **WHEN** device is displayed
+- **THEN** the device name SHALL be prominently shown
 
-### Requirement: 分组筛选功能
-系统 SHALL 提供分组筛选功能。
+#### Scenario: Show Device IP
+- **WHEN** device is displayed
+- **THEN** the IP address SHALL be shown below the name
 
-#### Scenario: 按角色筛选
-- **WHEN** 用户选择"主控/被控/双向"筛选
-- **THEN** 列表显示对应角色的设备
+#### Scenario: Show Device Role
+- **WHEN** device is displayed
+- **THEN** the role (master/slave/both) SHALL be displayed as a badge
 
-#### Scenario: 按标签筛选
-- **WHEN** 用户选择标签筛选
-- **THEN** 列表显示包含该标签的设备
+#### Scenario: Show Device Status
+- **WHEN** device is displayed
+- **THEN** the online/offline status SHALL be indicated with a colored dot
 
-#### Scenario: 显示全部设备
-- **WHEN** 用户选择"全部"
-- **THEN** 显示所有设备（包括离线）
+### Requirement: Device Filtering
+The system SHALL provide filtering options for the device list.
 
-### Requirement: 批量选择功能
-系统 SHALL 支持批量选择设备。
+#### Scenario: Filter by Role
+- **WHEN** user selects "master" filter
+- **THEN** only devices with role "master" SHALL be shown
 
-#### Scenario: 全选设备
-- **WHEN** 用户点击"全选"
-- **THEN** 所有在线设备被选中
+#### Scenario: Filter by Role
+- **WHEN** user selects "slave" filter
+- **THEN** only devices with role "slave" SHALL be shown
 
-#### Scenario: 反选设备
-- **WHEN** 用户点击"反选"
-- **THEN** 已选中的取消选中，未选中的选中
+#### Scenario: Filter by Role
+- **WHEN** user selects "both" filter
+- **THEN** only devices with role "both" SHALL be shown
 
-#### Scenario: 多选设备
-- **WHEN** 用户按住Ctrl点击设备
-- **THEN** 设备被添加到选中列表
+#### Scenario: Show All Devices
+- **WHEN** user selects "all" filter
+- **THEN** all devices SHALL be shown regardless of role
 
-### Requirement: 刷新功能
-系统 SHALL 提供手动刷新设备列表功能。
+### Requirement: Device Selection
+The system SHALL allow multi-select of devices for batch operations.
 
-#### Scenario: 手动刷新
-- **WHEN** 用户点击刷新按钮
-- **THEN** 立即发送广播请求，获取最新设备列表
+#### Scenario: Select Single Device
+- **WHEN** user clicks on a device row
+- **THEN** the device SHALL be selected/deselected
 
-### Requirement: 手动添加设备
-系统 SHALL 支持手动添加IP地址作为备用发现方式。
+#### Scenario: Select All Devices
+- **WHEN** user clicks "Select All" button
+- **THEN** all visible devices SHALL be selected
 
-#### Scenario: 手动添加设备
-- **WHEN** 用户输入IP地址并点击添加
-- **THEN** 设备添加到列表，状态显示为手动添加
+#### Scenario: Deselect All
+- **WHEN** user clicks "Deselect All" button
+- **THEN** all devices SHALL be deselected
 
-### Requirement: 状态同步
-系统 SHALL 实时同步设备状态。
+#### Scenario: Selected Count Display
+- **WHEN** devices are selected
+- **THEN** the count of selected devices SHALL be displayed
 
-#### Scenario: 心跳更新状态
-- **WHEN** 收到设备心跳
-- **THEN** 更新设备最后在线时间，状态为在线
+### Requirement: Device Refresh
+The system SHALL provide a manual refresh option.
 
-#### Scenario: 执行时标记忙碌
-- **WHEN** 设备正在执行指令
-- **THEN** 设备状态标记为"忙碌"
+#### Scenario: Manual Refresh
+- **WHEN** user clicks refresh button
+- **THEN** the device list SHALL be immediately updated
 
-#### Scenario: 执行完成恢复
-- **WHEN** 设备指令执行完成
-- **THEN** 设备状态恢复为"在线"
+### Requirement: Offline Device Caching
+The system SHALL cache offline devices and display their last seen time.
 
-### Requirement: 离线设备保留
-系统 SHALL 在设备离线后保留缓存信息。
+#### Scenario: Show Last Seen
+- **WHEN** a device goes offline
+- **THEN** it SHALL remain in the list with "offline" status and lastSeen time
 
-#### Scenario: 离线设备显示
-- **WHEN** 设备离线
-- **THEN** 设备保留在列表，显示最后在线时间
-
-#### Scenario: 清除离线设备
-- **WHEN** 用户点击清除离线设备
-- **THEN** 离线设备从列表移除
+#### Scenario: Remove Offline After Extended Time
+- **WHEN** device has been offline for more than 24 hours
+- **THEN** it MAY be automatically removed from the list

@@ -2,63 +2,74 @@
 
 ## ADDED Requirements
 
-### Requirement: 设备选择区
-系统 SHALL 提供设备选择界面。
+### Requirement: Device Selection Area
+The system SHALL provide a device selection interface.
 
-#### Scenario: 显示设备列表
-- **WHEN** 打开操作台
-- **THEN** 显示来自设备管理模块的设备列表
+#### Scenario: Display Device List
+- **WHEN** console panel is shown
+- **THEN** discovered devices SHALL be displayed in a list
 
-#### Scenario: 批量选择状态显示
-- **WHEN** 用户选择多个设备
-- **THEN** 显示已选设备数量
+#### Scenario: Batch Selection
+- **WHEN** user selects multiple devices
+- **THEN** all selected devices SHALL be highlighted
 
-#### Scenario: 已选设备统计
-- **WHEN** 选择设备
-- **THEN** 统计区域显示已选设备数和设备名
+#### Scenario: Show Selection Count
+- **WHEN** devices are selected
+- **THEN** the count SHALL be displayed (e.g., "3 devices selected")
 
-### Requirement: 指令编排区
-系统 SHALL 提供指令编排功能。
+### Requirement: Command Composition Area
+The system SHALL provide an interface for composing commands.
 
-#### Scenario: 场景选择下拉框
-- **WHEN** 打开场景选择
-- **THEN** 下拉框读取本地 scenes.json
+#### Scenario: Scene Selection
+- **WHEN** user opens scene dropdown
+- **THEN** available scenes from local config SHALL be listed
 
-#### Scenario: 场景步骤预览
-- **WHEN** 选择场景
-- **THEN** 显示场景步骤预览（只读）
+#### Scenario: Show Scene Steps
+- **WHEN** a scene is selected
+- **THEN** the steps SHALL be displayed in a preview panel
 
-#### Scenario: 查看步骤详情
-- **WHEN** 点击步骤
-- **THEN** 显示步骤详情
+#### Scenario: Quick Software Action
+- **WHEN** user selects a software preset
+- **THEN** it SHALL be available for immediate sending
 
-#### Scenario: 临时调整延迟
-- **WHEN** 单次执行需要调整
-- **THEN** 可以修改延迟或跳过某步
+#### Scenario: Quick Input Action
+- **WHEN** user selects an input preset
+- **THEN** it SHALL be available for immediate sending
 
-#### Scenario: 快捷操作
-- **WHEN** 用户快速选择
-- **THEN** 可以直接选择软件预设/键鼠预设单发
+#### Scenario: Temporary Adjustment
+- **WHEN** user adjusts a step for one-time execution
+- **THEN** the changes SHALL apply only to current execution
 
-### Requirement: 执行控制
-系统 SHALL 提供执行控制功能。
+### Requirement: Execution Control
+The system SHALL provide execution timing options.
 
-#### Scenario: 立即执行模式
-- **WHEN** 用户选择立即执行
-- **THEN** 发送后立即在目标设备执行
+#### Scenario: Immediate Execution
+- **WHEN** user clicks "Execute Now"
+- **THEN** command SHALL be sent and executed immediately
 
-#### Scenario: 定时执行模式
-- **WHEN** 用户选择定时执行
-- **THEN** 指定时间到达后执行
+#### Scenario: Scheduled Execution
+- **WHEN** user sets a future time
+- **THEN** command SHALL be sent at the specified time
 
-#### Scenario: 发送并执行
-- **WHEN** 用户点击发送并执行
-- **THEN** 发送指令到目标设备并立即执行
+#### Scenario: Send Only
+- **WHEN** user selects "Send Only" mode
+- **THEN** command SHALL be sent but not executed until recipient confirms
 
-#### Scenario: 仅发送
-- **WHEN** 用户点击仅发送
-- **THEN** 发送指令到目标设备，对方手动触发执行
+### Requirement: Execution Log
+The system SHALL display real-time execution status.
 
-#### Scenario: 执行日志显示
-- **WHEN** 执行过程中
-- **THEN** 实时显示发送状态、对方确认、执行进度
+#### Scenario: Show Send Status
+- **WHEN** command is sent
+- **THEN** it SHALL appear in the log with "sent" status
+
+#### Scenario: Show Acknowledgment
+- **WHEN** recipient acknowledges
+- **THEN** log SHALL show "acknowledged" status
+
+#### Scenario: Show Progress
+- **WHEN** execution is in progress
+- **THEN** log SHALL show current step and progress
+
+#### Scenario: Show Completion
+- **WHEN** execution completes
+- **THEN** log SHALL show "completed" or "failed" with details
