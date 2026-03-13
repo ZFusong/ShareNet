@@ -580,6 +580,172 @@ ipcMain.handle('set-allow-control', (_event, allow: boolean) => {
   return { success: true }
 })
 
+// ========== File Storage IPC Handlers ==========
+
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync, statSync, copyFileSync } from 'fs'
+import { join, basename } from 'path'
+
+// Get received files directory path
+const getReceivedDir = (): string => {
+  const userDataPath = app.getPath('userData')
+  const receivedDir = join(userDataPath, 'received')
+  if (!existsSync(receivedDir)) {
+    mkdirSync(receivedDir, { recursive: true })
+  }
+  return receivedDir
+}
+
+// Ensure subdirectory structure
+const ensureReceivedSubdir = (type: 'text' | 'image' | 'file'): string => {
+  const receivedDir = getReceivedDir()
+  const subDir = join(receivedDir, type)
+  if (!existsSync(subDir)) {
+    mkdirSync(subDir, { recursive: true })
+  }
+  return subDir
+}
+
+// Get received files list
+ipcMain.handle('get-received-files', (_event, type?: 'text' | 'image' | 'file') => {
+  try {
+    const baseDir = type ? ensureReceivedSubdir(type) : getReceivedDir()
+    const files: Array<{ name: string; path: string; size: number; createdAt: number; type: string }> = []
+
+    const readDir = (dir: string) => {
+      const items = readdirSync(dir)
+      for (const item of items) {
+        const fullPath = join(dir, item)
+        const stat = statSync(fullPath)
+        if (stat.isFile()) {
+          files.push({
+            name: item,
+            path: fullPath,
+            size: stat.size,
+            createdAt: stat.birthtimeMs,
+            type: basename(dir)
+          })
+        }
+      }
+    }
+
+    if (type) {
+      readDir(baseDir)
+    } else {
+      // Read all subdirectories
+      const textDir = ensureReceivedSubdir('text')
+      const imageDir = ensureReceivedSubdir('image')
+      const fileDir = ensureReceivedSubdir('file')
+      readDir(textDir)
+      readDir(imageDir)
+      readDir(fileDir)
+    }
+
+    return { success: true, files }
+  } catch (error) {
+    return { success: false, error: String(error), files: [] }
+  }
+})
+
+// Save received content
+ipcMain.handle('save-received', (_event, data: { type: 'text' | 'image' | 'file'; content: string; fileName?: string }) => {
+  try {
+    const subDir = ensureReceivedSubdir(data.type)
+    const timestamp = Date.now()
+    let fileName = data.fileName || `${timestamp}`
+
+    if (data.type === 'text') {
+      fileName += '.txt'
+      const filePath = join(subDir, fileName)
+      writeFileSync(filePath, data.content, 'utf-8')
+      return { success: true, path: filePath }
+    } else if (data.type === 'image') {
+      // Handle base64 image data
+      const base64Data = data.content.replace(/^data:image\/\w+;base64,/, '')
+      const ext = data.fileName?.split('.').pop() || 'png'
+      fileName = `${timestamp}.${ext}`
+      const filePath = join(subDir, fileName)
+      writeFileSync(filePath, Buffer.from(base64Data, 'base64'))
+      return { success: true, path: filePath }
+    } else {
+      // File type - content should be a file path or buffer
+      fileName = data.fileName || `file-${timestamp}`
+      const filePath = join(subDir, fileName)
+      if (typeof data.content === 'string' && existsSync(data.content)) {
+        copyFileSync(data.content, filePath)
+      } else if (typeof data.content === 'string' && data.content.startsWith('data:')) {
+        const base64Data = data.content.replace(/^data:.*?;base64,/, '')
+        writeFileSync(filePath, Buffer.from(base64Data, 'base64'))
+      }
+      return { success: true, path: filePath }
+    }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
+// Delete received file
+ipcMain.handle('delete-received', (_event, filePath: string) => {
+  try {
+    if (existsSync(filePath)) {
+      unlinkSync(filePath)
+      return { success: true }
+    }
+    return { success: false, error: 'File not found' }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
+// Open received file location
+ipcMain.handle('open-received-location', () => {
+  const receivedDir = getReceivedDir()
+  shell.openPath(receivedDir)
+  return { success: true }
+})
+
+// Get storage usage
+ipcMain.handle('get-storage-usage', () => {
+  try {
+    const receivedDir = getReceivedDir()
+    let totalSize = 0
+    let fileCount = 0
+
+    const calculateSize = (dir: string) => {
+      const items = readdirSync(dir)
+      for (const item of items) {
+        const fullPath = join(dir, item)
+        const stat = statSync(fullPath)
+        if (stat.isFile()) {
+          totalSize += stat.size
+          fileCount++
+        }
+      }
+    }
+
+    calculateSize(join(receivedDir, 'text'))
+    calculateSize(join(receivedDir, 'image'))
+    calculateSize(join(receivedDir, 'file'))
+
+    return {
+      success: true,
+      usage: {
+        totalSize,
+        fileCount,
+        formatted: formatBytes(totalSize)
+      }
+    }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
+// Helper function
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 // Handle incoming TCP command messages
 ipcMain.on('subscribe-execution-events', (event) => {
   const executor = getExecutor()

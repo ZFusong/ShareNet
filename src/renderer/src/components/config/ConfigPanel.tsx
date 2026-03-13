@@ -259,7 +259,7 @@ export function ConfigPanel() {
           <Toast.Title>{toastMessage}</Toast.Title>
         </Toast.Root>
         <Toast.Viewport className="fixed bottom-4 right-4" />
-      </Toast.Provider>
-    </section>
+      </section>
+    </Toast.Provider>
   )
 }

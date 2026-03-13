@@ -1,6 +1,7 @@
 {
   "appId": "com.sharenet.app",
   "productName": "ShareNet",
+  "copyright": "Copyright © 2024 ShareNet",
   "directories": {
     "buildResources": "build",
     "output": "dist"
@@ -9,27 +10,35 @@
     "out/**/*",
     "!node_modules/**/*"
   ],
+  "extraMetadata": {
+    "main": "./out/main/index.js"
+  },
   "win": {
     "target": [
       {
-        "target": "nsis",
+        "target": "dir",
         "arch": ["x64"]
       }
     ],
-    "artifactName": "${productName}-${version}-setup.${ext}"
+    "artifactName": "${productName}-${version}-setup.${ext}",
+    "icon": "build/icon.ico"
   },
   "nsis": {
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,
-    "deleteAppDataOnUninstall": false
+    "deleteAppDataOnUninstall": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
   },
   "mac": {
     "target": ["dmg"],
-    "artifactName": "${productName}-${version}.${ext}"
+    "artifactName": "${productName}-${version}.${ext}",
+    "icon": "build/icon.icns"
   },
   "linux": {
     "target": ["AppImage"],
-    "artifactName": "${productName}-${version}.${ext}"
+    "artifactName": "${productName}-${version}.${ext}",
+    "icon": "build/icon.png"
   }
 }

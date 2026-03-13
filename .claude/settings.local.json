@@ -63,7 +63,10 @@
       "Bash(timeout 10 npx electron .)",
       "Bash(node -e \"console.log\\(''node works''\\)\")",
       "Bash(npx electron:*)",
-      "Bash(npm list:*)"
+      "Bash(npm list:*)",
+      "Bash(npm run:*)",
+      "Read(//d/Projects/testProject/ShareNet/$LOCALAPPDATA/electron/**)",
+      "Bash(ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ npm run build:win)"
     ]
   }
 }
