@@ -22,6 +22,45 @@ contextBridge.exposeInMainWorld('electronAPI', {
   stopNetworkServices: () => ipcRenderer.invoke('stop-network-services'),
   sendMessage: (targetId: string, message: unknown) => ipcRenderer.invoke('send-message', targetId, message),
 
+  // UDP Service
+  udpStart: (config?: { port?: number }) => ipcRenderer.invoke('udp-start', config),
+  udpStop: () => ipcRenderer.invoke('udp-stop'),
+  udpGetDevices: () => ipcRenderer.invoke('udp-get-devices'),
+  udpGetLocalDevice: () => ipcRenderer.invoke('udp-get-local-device'),
+  udpInitLocalDevice: (deviceInfo: unknown) => ipcRenderer.invoke('udp-init-local-device', deviceInfo),
+  udpUpdateLocalDevice: (info: unknown) => ipcRenderer.invoke('udp-update-local-device', info),
+  udpAddDevice: (device: unknown) => ipcRenderer.invoke('udp-add-device', device),
+  udpRemoveDevice: (id: string) => ipcRenderer.invoke('udp-remove-device', id),
+  udpGetConfig: () => ipcRenderer.invoke('udp-get-config'),
+  udpUpdateConfig: (config: { port?: number }) => ipcRenderer.invoke('udp-update-config', config),
+
+  // TCP Service
+  tcpStart: (config?: { port?: number }) => ipcRenderer.invoke('tcp-start', config),
+  tcpStop: () => ipcRenderer.invoke('tcp-stop'),
+  tcpSend: (targetIP: string, message: unknown) => ipcRenderer.invoke('tcp-send', targetIP, message),
+  tcpBroadcast: (message: unknown) => ipcRenderer.invoke('tcp-broadcast', message),
+  tcpConnect: (host: string, port: number, deviceInfo: unknown) => ipcRenderer.invoke('tcp-connect', host, port, deviceInfo),
+  tcpGetConnections: () => ipcRenderer.invoke('tcp-get-connections'),
+  tcpGetConfig: () => ipcRenderer.invoke('tcp-get-config'),
+  tcpUpdateConfig: (config: { port?: number }) => ipcRenderer.invoke('tcp-update-config', config),
+
+  // Network events
+  onUdpDevicesUpdated: (callback: (devices: unknown[]) => void) => {
+    ipcRenderer.on('udp-devices-updated', (_event, devices) => callback(devices))
+  },
+  onUdpDeviceAdded: (callback: (device: unknown) => void) => {
+    ipcRenderer.on('udp-device-added', (_event, device) => callback(device))
+  },
+  onUdpDeviceUpdated: (callback: (device: unknown) => void) => {
+    ipcRenderer.on('udp-device-updated', (_event, device) => callback(device))
+  },
+  onUdpDevicesRemoved: (callback: (devices: unknown[]) => void) => {
+    ipcRenderer.on('udp-devices-removed', (_event, devices) => callback(devices))
+  },
+  onTcpMessage: (callback: (message: unknown, from: unknown) => void) => {
+    ipcRenderer.on('tcp-message', (_event, message, from) => callback(message, from))
+  },
+
   // Device management
   getDevices: () => ipcRenderer.invoke('get-devices'),
   refreshDevices: () => ipcRenderer.invoke('refresh-devices'),
@@ -29,9 +68,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Config center
   getPresets: (type: string) => ipcRenderer.invoke('get-presets', type),
   savePreset: (type: string, preset: unknown) => ipcRenderer.invoke('save-preset', type, preset),
+  updatePreset: (type: string, id: string, updates: unknown) => ipcRenderer.invoke('update-preset', type, id, updates),
   deletePreset: (type: string, id: string) => ipcRenderer.invoke('delete-preset', type, id),
-  exportConfig: (modules: string[], filePath: string) => ipcRenderer.invoke('export-config', modules, filePath),
-  importConfig: (filePath: string, mode: string) => ipcRenderer.invoke('import-config', filePath, mode),
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  setSettings: (settings: unknown) => ipcRenderer.invoke('set-settings', settings),
+  getSetting: (key: string) => ipcRenderer.invoke('get-setting', key),
+  setSetting: (key: string, value: unknown) => ipcRenderer.invoke('set-setting', key, value),
+  exportConfig: (modules: string[]) => ipcRenderer.invoke('export-config', modules),
+  importConfig: (data: unknown, mode: string) => ipcRenderer.invoke('import-config', data, mode),
+  checkSceneDependencies: (scene: unknown) => ipcRenderer.invoke('check-scene-dependencies', scene),
 
   // Execution engine
   executeCommand: (targetId: string, command: unknown) => ipcRenderer.invoke('execute-command', targetId, command),
@@ -86,23 +131,63 @@ export interface ElectronAPI {
   startNetworkServices: () => Promise<void>
   stopNetworkServices: () => Promise<void>
   sendMessage: (targetId: string, message: unknown) => Promise<void>
+
+  // UDP Service
+  udpStart: (config?: { port?: number }) => Promise<{ success: boolean; error?: string }>
+  udpStop: () => Promise<{ success: boolean; error?: string }>
+  udpGetDevices: () => Promise<unknown[]>
+  udpGetLocalDevice: () => Promise<unknown | null>
+  udpInitLocalDevice: (deviceInfo: unknown) => Promise<{ success: boolean; device?: unknown; error?: string }>
+  udpUpdateLocalDevice: (info: unknown) => Promise<{ success: boolean; error?: string }>
+  udpAddDevice: (device: unknown) => Promise<{ success: boolean; error?: string }>
+  udpRemoveDevice: (id: string) => Promise<{ success: boolean; error?: string }>
+  udpGetConfig: () => Promise<unknown>
+  udpUpdateConfig: (config: { port?: number }) => Promise<{ success: boolean; error?: string }>
+
+  // TCP Service
+  tcpStart: (config?: { port?: number }) => Promise<{ success: boolean; error?: string }>
+  tcpStop: () => Promise<{ success: boolean; error?: string }>
+  tcpSend: (targetIP: string, message: unknown) => Promise<{ success: boolean; error?: string }>
+  tcpBroadcast: (message: unknown) => Promise<{ success: boolean; count?: number; error?: string }>
+  tcpConnect: (host: string, port: number, deviceInfo: unknown) => Promise<{ success: boolean; clientId?: string | null; error?: string }>
+  tcpGetConnections: () => Promise<number>
+  tcpGetConfig: () => Promise<unknown>
+  tcpUpdateConfig: (config: { port?: number }) => Promise<{ success: boolean; error?: string }>
+
+  // Network events
+  onUdpDevicesUpdated: (callback: (devices: unknown[]) => void) => void
+  onUdpDeviceAdded: (callback: (device: unknown) => void) => void
+  onUdpDeviceUpdated: (callback: (device: unknown) => void) => void
+  onUdpDevicesRemoved: (callback: (devices: unknown[]) => void) => void
+  onTcpMessage: (callback: (message: unknown, from: unknown) => void) => void
+
+  // Device management
   getDevices: () => Promise<unknown[]>
   refreshDevices: () => Promise<void>
+
+  // Config center
   getPresets: (type: string) => Promise<unknown[]>
   savePreset: (type: string, preset: unknown) => Promise<void>
   deletePreset: (type: string, id: string) => Promise<void>
   exportConfig: (modules: string[], filePath: string) => Promise<void>
   importConfig: (filePath: string, mode: string) => Promise<unknown>
+
+  // Execution engine
   executeCommand: (targetId: string, command: unknown) => Promise<unknown>
   executeLocal: (command: unknown) => Promise<unknown>
+
+  // File transfer
   sendFile: (targetId: string, filePath: string) => Promise<void>
   saveReceivedFile: (messageId: string, savePath: string) => Promise<void>
+
+  // Receive events
   onDeviceUpdate: (callback: (data: unknown) => void) => void
   onMessageReceived: (callback: (data: unknown) => void) => void
   onTransferProgress: (callback: (data: unknown) => void) => void
   onCommandResult: (callback: (data: unknown) => void) => void
   onOpenSettings: (callback: () => void) => void
   onShowAbout: (callback: () => void) => void
+
   removeAllListeners: (channel: string) => void
 }
 

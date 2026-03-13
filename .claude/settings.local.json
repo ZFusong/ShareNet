@@ -62,7 +62,8 @@
       "Bash(timeout 20 npx electron .)",
       "Bash(timeout 10 npx electron .)",
       "Bash(node -e \"console.log\\(''node works''\\)\")",
-      "Bash(npx electron:*)"
+      "Bash(npx electron:*)",
+      "Bash(npm list:*)"
     ]
   }
 }

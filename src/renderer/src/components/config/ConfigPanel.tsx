@@ -1,180 +1,265 @@
+/**
+ * ShareNet - Config Panel
+ * 配置中心面板
+ */
+
 import { useState } from 'react'
-
-type ConfigTab = 'software' | 'input' | 'scene'
-
-interface Preset {
-  id: string
-  name: string
-  path?: string
-  args?: string
-}
+import * as Tabs from '@radix-ui/react-tabs'
+import * as Dialog from '@radix-ui/react-dialog'
+import * as Toast from '@radix-ui/react-toast'
+import { SoftwarePresetList } from './SoftwarePresetList'
+import { InputPresetList } from './InputPresetList'
+import { SceneList } from './SceneList'
+import { useConfigStore } from '../../stores/configStore'
 
 export function ConfigPanel() {
-  const [activeTab, setActiveTab] = useState<ConfigTab>('software')
-  const [presets, setPresets] = useState<Preset[]>([])
-  const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null)
-  const [formData, setFormData] = useState({ name: '', path: '', args: '' })
+  const { exportConfig, importConfig } = useConfigStore()
+  const [activeTab, setActiveTab] = useState<'software' | 'input' | 'scene'>('software')
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
+  const [exportModules, setExportModules] = useState({
+    'software-presets': true,
+    'input-presets': true,
+    scenes: true
+  })
+  const [importMode, setImportMode] = useState<'append' | 'overwrite' | 'merge'>('append')
+  const [importData, setImportData] = useState('')
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
 
-  const handleTabChange = (tab: ConfigTab) => {
-    setActiveTab(tab)
-    setSelectedPreset(null)
-    setFormData({ name: '', path: '', args: '' })
-    // TODO: Load presets from store
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
   }
 
-  const handleSelectPreset = (preset: Preset) => {
-    setSelectedPreset(preset)
-    setFormData({ name: preset.name, path: preset.path || '', args: preset.args || '' })
-  }
+  const handleExport = async () => {
+    const modules = Object.entries(exportModules)
+      .filter(([_, selected]) => selected)
+      .map(([key]) => key)
 
-  const handleSave = () => {
-    if (!formData.name.trim()) {
-      alert('请输入名称')
+    if (modules.length === 0) {
+      showToast('请至少选择一个导出项', 'error')
       return
     }
-    // TODO: Save preset to store
-    console.log('Saving preset:', { type: activeTab, ...formData })
+
+    const result = await exportConfig(modules)
+    if (result.success && result.data) {
+      // Create download
+      const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `sharenet-config-${Date.now()}.lccfg`
+      a.click()
+      URL.revokeObjectURL(url)
+      showToast('配置导出成功')
+      setIsExportDialogOpen(false)
+    } else {
+      showToast(result.error || '导出失败', 'error')
+    }
   }
 
-  const handleDelete = () => {
-    if (!selectedPreset) return
-    if (!confirm('确定要删除这个预设吗？')) return
-    // TODO: Delete preset from store
-    console.log('Deleting preset:', selectedPreset.id)
-    setSelectedPreset(null)
-    setFormData({ name: '', path: '', args: '' })
-  }
+  const handleImport = async () => {
+    if (!importData.trim()) {
+      showToast('请输入配置数据', 'error')
+      return
+    }
 
-  const handleExport = () => {
-    // TODO: Implement export
-    console.log('Exporting config...')
+    try {
+      const data = JSON.parse(importData)
+      const result = await importConfig(data, importMode)
+      if (result.success && result.result) {
+        const r = result.result as any
+        const imported = Object.entries(r.imported || {})
+          .map(([key, count]) => `${key}: ${count}`)
+          .join(', ')
+        showToast(`导入成功: ${imported}`)
+        if (r.conflicts?.length > 0) {
+          showToast(`有 ${r.conflicts.length} 个冲突项已处理`, 'error')
+        }
+        setIsImportDialogOpen(false)
+        setImportData('')
+      } else {
+        showToast(result.error || '导入失败', 'error')
+      }
+    } catch (error) {
+      showToast('配置数据格式无效', 'error')
+    }
   }
-
-  const handleImport = () => {
-    // TODO: Implement import
-    console.log('Importing config...')
-  }
-
-  const configTabs: { id: ConfigTab; label: string }[] = [
-    { id: 'software', label: '软件预设' },
-    { id: 'input', label: '键鼠预设' },
-    { id: 'scene', label: '场景编排' }
-  ]
 
   return (
-    <section id="config-panel" className="panel">
-      <div className="config-tabs flex gap-2 p-4 border-b">
-        {configTabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`config-tab px-4 py-2 rounded ${
-              activeTab === tab.id ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-            }`}
-            data-config={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+    <Toast.Provider>
+      <section id="config-panel" className="panel h-full">
+        <Tabs.Root value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
+          <Tabs.List className="flex border-b px-4">
+            <Tabs.Trigger
+              value="software"
+              className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
+            >
+              软件预设
+            </Tabs.Trigger>
+            <Tabs.Trigger
+              value="input"
+              className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
+            >
+              键鼠预设
+            </Tabs.Trigger>
+            <Tabs.Trigger
+              value="scene"
+              className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
+            >
+              场景编排
+            </Tabs.Trigger>
+          </Tabs.List>
 
-      <div className="config-content flex flex-1 overflow-hidden">
-        <div className="config-list w-1/2 p-4 border-r overflow-y-auto">
-          <div className="config-header flex items-center justify-between mb-4">
-            <h3 id="config-title">{configTabs.find((t) => t.id === activeTab)?.label}</h3>
-            <button id="add-preset" className="btn-primary" onClick={() => setSelectedPreset(null)}>
-              + 新增
-            </button>
-          </div>
-          <div id="preset-list" className="preset-list">
-            {presets.length === 0 ? (
-              <div className="empty-state">暂无预设</div>
-            ) : (
-              presets.map((preset) => (
-                <div
-                  key={preset.id}
-                  className={`p-3 border-b cursor-pointer hover:bg-accent ${
-                    selectedPreset?.id === preset.id ? 'bg-primary/10' : ''
-                  }`}
-                  onClick={() => handleSelectPreset(preset)}
-                >
-                  <div className="font-medium">{preset.name}</div>
-                  {preset.path && (
-                    <div className="text-xs text-muted-foreground truncate">{preset.path}</div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+          <Tabs.Content value="software" className="flex-1 overflow-auto p-4">
+            <SoftwarePresetList />
+          </Tabs.Content>
+
+          <Tabs.Content value="input" className="flex-1 overflow-auto p-4">
+            <InputPresetList />
+          </Tabs.Content>
+
+          <Tabs.Content value="scene" className="flex-1 overflow-auto p-4">
+            <SceneList />
+          </Tabs.Content>
+        </Tabs.Root>
+
+        {/* Export/Import buttons */}
+        <div className="flex gap-2 p-4 border-t">
+          <button
+            className="btn-secondary"
+            onClick={() => setIsExportDialogOpen(true)}
+          >
+            导出配置
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={() => setIsImportDialogOpen(true)}
+          >
+            导入配置
+          </button>
         </div>
 
-        <div className="config-editor w-1/2 p-4 overflow-y-auto">
-          <h3 id="editor-title" className="mb-4">
-            {selectedPreset ? '编辑预设' : '新增预设'}
-          </h3>
-          <div id="preset-form" className="preset-form">
-            <div className="form-group">
-              <label>名称</label>
-              <input
-                type="text"
-                id="preset-name"
-                placeholder="预设名称"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            {activeTab === 'software' && (
-              <>
-                <div className="form-group">
-                  <label>路径</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      id="preset-path"
-                      placeholder="程序路径"
-                      value={formData.path}
-                      onChange={(e) => setFormData({ ...formData, path: e.target.value })}
-                      className="flex-1"
-                    />
-                    <button id="browse-path" className="btn-secondary">
-                      浏览
-                    </button>
+        {/* Export Dialog */}
+        <Dialog.Root open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96">
+              <Dialog.Title className="text-lg font-semibold mb-4">导出配置</Dialog.Title>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={exportModules['software-presets']}
+                    onChange={(e) => setExportModules({ ...exportModules, 'software-presets': e.target.checked })}
+                  />
+                  <span>软件预设</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={exportModules['input-presets']}
+                    onChange={(e) => setExportModules({ ...exportModules, 'input-presets': e.target.checked })}
+                  />
+                  <span>键鼠预设</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={exportModules.scenes}
+                    onChange={(e) => setExportModules({ ...exportModules, scenes: e.target.checked })}
+                  />
+                  <span>场景编排</span>
+                </label>
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <Dialog.Close asChild>
+                  <button className="btn-secondary">取消</button>
+                </Dialog.Close>
+                <button onClick={handleExport} className="btn-primary">
+                  导出
+                </button>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+
+        {/* Import Dialog */}
+        <Dialog.Root open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[480px]">
+              <Dialog.Title className="text-lg font-semibold mb-4">导入配置</Dialog.Title>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">导入模式</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="import-mode"
+                        checked={importMode === 'append'}
+                        onChange={() => setImportMode('append')}
+                      />
+                      <span>追加</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="import-mode"
+                        checked={importMode === 'overwrite'}
+                        onChange={() => setImportMode('overwrite')}
+                      />
+                      <span>覆盖</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="import-mode"
+                        checked={importMode === 'merge'}
+                        onChange={() => setImportMode('merge')}
+                      />
+                      <span>智能合并</span>
+                    </label>
                   </div>
                 </div>
-                <div className="form-group">
-                  <label>参数</label>
-                  <input
-                    type="text"
-                    id="preset-args"
-                    placeholder="启动参数"
-                    value={formData.args}
-                    onChange={(e) => setFormData({ ...formData, args: e.target.value })}
+                <div>
+                  <label className="block text-sm font-medium mb-2">配置数据 (.lccfg JSON)</label>
+                  <textarea
+                    value={importData}
+                    onChange={(e) => setImportData(e.target.value)}
+                    placeholder="粘贴导出的配置 JSON 数据..."
+                    className="w-full h-40 px-3 py-2 border rounded-md font-mono text-sm"
                   />
                 </div>
-              </>
-            )}
-            <div className="form-actions flex gap-2 mt-4">
-              <button id="save-preset" className="btn-primary" onClick={handleSave}>
-                保存
-              </button>
-              {selectedPreset && (
-                <button id="delete-preset" className="btn-danger" onClick={handleDelete}>
-                  删除
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <Dialog.Close asChild>
+                  <button className="btn-secondary">取消</button>
+                </Dialog.Close>
+                <button onClick={handleImport} className="btn-primary">
+                  导入
                 </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
 
-      <div className="config-actions flex gap-2 p-4 border-t">
-        <button id="export-config" className="btn-secondary" onClick={handleExport}>
-          导出配置
-        </button>
-        <button id="import-config" className="btn-secondary" onClick={handleImport}>
-          导入配置
-        </button>
-      </div>
+        {/* Toast */}
+        <Toast.Root
+          open={toastOpen}
+          onOpenChange={setToastOpen}
+          className={`p-4 rounded-lg shadow-lg ${
+            toastType === 'success' ? 'bg-green-600' : 'bg-red-600'
+          } text-white`}
+        >
+          <Toast.Title>{toastMessage}</Toast.Title>
+        </Toast.Root>
+        <Toast.Viewport className="fixed bottom-4 right-4" />
+      </Toast.Provider>
     </section>
   )
 }

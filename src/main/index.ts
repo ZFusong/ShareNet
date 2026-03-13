@@ -6,6 +6,10 @@
 import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron'
 import { join } from 'path'
 import os from 'os'
+import { getUDPService } from './services/udpService'
+import { getTCPServer } from './services/tcpServer'
+import type { DeviceInfo, NetworkMessage } from './services/types'
+import { v4 as uuidv4 } from 'uuid'
 
 // Simple console logging
 const log = {
@@ -191,6 +195,406 @@ ipcMain.handle('get-local-ip', () => {
 // Get hostname
 ipcMain.handle('get-hostname', () => {
   return os.hostname()
+})
+
+// ========== UDP Service IPC Handlers ==========
+
+let udpService: ReturnType<typeof getUDPService> | null = null
+
+// Start UDP service
+ipcMain.handle('udp-start', async (_event, config?: { port?: number }) => {
+  try {
+    udpService = getUDPService(config)
+    await udpService.start()
+    log.info('UDP service started')
+    return { success: true }
+  } catch (error) {
+    log.error('Failed to start UDP service:', error)
+    return { success: false, error: String(error) }
+  }
+})
+
+// Stop UDP service
+ipcMain.handle('udp-stop', async () => {
+  try {
+    if (udpService) {
+      await udpService.stop()
+      udpService = null
+    }
+    return { success: true }
+  } catch (error) {
+    log.error('Failed to stop UDP service:', error)
+    return { success: false, error: String(error) }
+  }
+})
+
+// Get device list
+ipcMain.handle('udp-get-devices', () => {
+  if (!udpService) return []
+  return udpService.getDeviceList()
+})
+
+// Get local device info
+ipcMain.handle('udp-get-local-device', () => {
+  if (!udpService) return null
+  return udpService.getLocalDevice()
+})
+
+// Initialize local device
+ipcMain.handle('udp-init-local-device', async (_event, deviceInfo: Partial<DeviceInfo>) => {
+  if (!udpService) {
+    udpService = getUDPService()
+  }
+  try {
+    const device = await udpService.initialize(deviceInfo)
+    return { success: true, device }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
+// Update local device
+ipcMain.handle('udp-update-local-device', (_event, info: Partial<DeviceInfo>) => {
+  if (!udpService) return { success: false, error: 'UDP service not running' }
+  udpService.updateLocalDevice(info)
+  return { success: true }
+})
+
+// Manually add device
+ipcMain.handle('udp-add-device', (_event, device: DeviceInfo) => {
+  if (!udpService) return { success: false, error: 'UDP service not running' }
+  udpService.addDevice(device)
+  return { success: true }
+})
+
+// Remove device
+ipcMain.handle('udp-remove-device', (_event, id: string) => {
+  if (!udpService) return { success: false, error: 'UDP service not running' }
+  return { success: udpService.removeDevice(id) }
+})
+
+// Get UDP config
+ipcMain.handle('udp-get-config', () => {
+  if (!udpService) return null
+  return udpService.getConfig()
+})
+
+// Update UDP config
+ipcMain.handle('udp-update-config', (_event, config: { port?: number }) => {
+  if (!udpService) return { success: false, error: 'UDP service not running' }
+  udpService.updateConfig(config)
+  return { success: true }
+})
+
+// Forward UDP events to renderer
+ipcMain.on('udp-subscribe', (event) => {
+  if (!udpService) return
+
+  const sendDevicesUpdate = () => {
+    event.sender.send('udp-devices-updated', udpService?.getDeviceList() || [])
+  }
+
+  udpService.on('devicesUpdated', sendDevicesUpdate)
+  udpService.on('deviceAdded', (device: DeviceInfo) => {
+    event.sender.send('udp-device-added', device)
+  })
+  udpService.on('deviceUpdated', (device: DeviceInfo) => {
+    event.sender.send('udp-device-updated', device)
+  })
+  udpService.on('devicesRemoved', (devices: DeviceInfo[]) => {
+    event.sender.send('udp-devices-removed', devices)
+  })
+})
+
+// ========== TCP Server IPC Handlers ==========
+
+let tcpServer: ReturnType<typeof getTCPServer> | null = null
+let messageHandler: any = null
+
+// Start TCP server
+ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
+  try {
+    tcpServer = getTCPServer(config)
+
+    // Register message handler to forward to renderer
+    tcpServer.on('message', (message: NetworkMessage, from: DeviceInfo) => {
+      mainWindow?.webContents.send('tcp-message', message, from)
+    })
+
+    await tcpServer.start()
+    log.info('TCP server started')
+    return { success: true }
+  } catch (error) {
+    log.error('Failed to start TCP server:', error)
+    return { success: false, error: String(error) }
+  }
+})
+
+// Stop TCP server
+ipcMain.handle('tcp-stop', async () => {
+  try {
+    if (tcpServer) {
+      await tcpServer.stop()
+      tcpServer = null
+    }
+    return { success: true }
+  } catch (error) {
+    log.error('Failed to stop TCP server:', error)
+    return { success: false, error: String(error) }
+  }
+})
+
+// Send message to device
+ipcMain.handle('tcp-send', async (_event, targetIP: string, message: Omit<NetworkMessage, 'timestamp' | 'request_id'>) => {
+  if (!tcpServer) return { success: false, error: 'TCP server not running' }
+
+  const fullMessage: NetworkMessage = {
+    ...message,
+    timestamp: Date.now(),
+    request_id: uuidv4()
+  } as NetworkMessage
+
+  const success = await tcpServer.sendMessage(targetIP, fullMessage)
+  return { success }
+})
+
+// Broadcast message
+ipcMain.handle('tcp-broadcast', async (_event, message: Omit<NetworkMessage, 'timestamp' | 'request_id'>) => {
+  if (!tcpServer) return { success: false, error: 'TCP server not running' }
+
+  const fullMessage: NetworkMessage = {
+    ...message,
+    timestamp: Date.now(),
+    request_id: uuidv4()
+  } as NetworkMessage
+
+  const count = await tcpServer.broadcastMessage(fullMessage)
+  return { success: true, count }
+})
+
+// Connect to remote device
+ipcMain.handle('tcp-connect', async (_event, host: string, port: number, deviceInfo: DeviceInfo) => {
+  if (!tcpServer) {
+    tcpServer = getTCPServer()
+    await tcpServer.start()
+  }
+
+  const clientId = await tcpServer.connectTo(host, port, deviceInfo)
+  return { success: !!clientId, clientId }
+})
+
+// Get TCP connection count
+ipcMain.handle('tcp-get-connections', () => {
+  if (!tcpServer) return 0
+  return tcpServer.getConnectionCount()
+})
+
+// Get TCP config
+ipcMain.handle('tcp-get-config', () => {
+  if (!tcpServer) return null
+  return tcpServer.getConfig()
+})
+
+// Update TCP config
+ipcMain.handle('tcp-update-config', (_event, config: { port?: number }) => {
+  if (!tcpServer) return { success: false, error: 'TCP server not running' }
+  tcpServer.updateConfig(config)
+  return { success: true }
+})
+
+// ========== Config Store IPC Handlers ==========
+
+import {
+  getSettings,
+  setSettings,
+  getSetting,
+  setSetting,
+  getSoftwarePresets,
+  saveSoftwarePreset,
+  updateSoftwarePreset,
+  deleteSoftwarePreset,
+  getInputPresets,
+  saveInputPreset,
+  updateInputPreset,
+  deleteInputPreset,
+  getScenes,
+  saveScene,
+  updateScene,
+  deleteScene,
+  exportConfig,
+  importConfig,
+  checkDependencies
+} from './services/configStore'
+
+// Settings
+ipcMain.handle('get-settings', () => getSettings())
+
+ipcMain.handle('set-settings', (_event, settings) => {
+  setSettings(settings)
+  return { success: true }
+})
+
+ipcMain.handle('get-setting', (_event, key: string) => {
+  return getSetting(key as any)
+})
+
+ipcMain.handle('set-setting', (_event, key: string, value: unknown) => {
+  setSetting(key as any, value as any)
+  return { success: true }
+})
+
+// Software Presets
+ipcMain.handle('get-presets', (_event, type: string) => {
+  switch (type) {
+    case 'software':
+      return getSoftwarePresets()
+    case 'input':
+      return getInputPresets()
+    case 'scene':
+      return getScenes()
+    default:
+      return []
+  }
+})
+
+ipcMain.handle('save-preset', (_event, type: string, preset: unknown) => {
+  try {
+    switch (type) {
+      case 'software':
+        return { success: true, preset: saveSoftwarePreset(preset as any) }
+      case 'input':
+        return { success: true, preset: saveInputPreset(preset as any) }
+      case 'scene':
+        return { success: true, preset: saveScene(preset as any) }
+      default:
+        return { success: false, error: 'Invalid preset type' }
+    }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
+ipcMain.handle('update-preset', (_event, type: string, id: string, updates: unknown) => {
+  try {
+    switch (type) {
+      case 'software':
+        return { success: true, preset: updateSoftwarePreset(id, updates as any) }
+      case 'input':
+        return { success: true, preset: updateInputPreset(id, updates as any) }
+      case 'scene':
+        return { success: true, preset: updateScene(id, updates as any) }
+      default:
+        return { success: false, error: 'Invalid preset type' }
+    }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
+ipcMain.handle('delete-preset', (_event, type: string, id: string) => {
+  try {
+    let success = false
+    switch (type) {
+      case 'software':
+        success = deleteSoftwarePreset(id)
+        break
+      case 'input':
+        success = deleteInputPreset(id)
+        break
+      case 'scene':
+        success = deleteScene(id)
+        break
+    }
+    return { success }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
+// Export/Import
+ipcMain.handle('export-config', (_event, modules: string[]) => {
+  try {
+    return { success: true, data: exportConfig(modules) }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
+ipcMain.handle('import-config', (_event, data: unknown, mode: string) => {
+  try {
+    const result = importConfig(data as any, mode as any)
+    return { success: true, result }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
+// Dependency Check
+ipcMain.handle('check-scene-dependencies', (_event, scene: unknown) => {
+  return checkDependencies(scene as any)
+})
+
+// ========== Execution Engine IPC Handlers ==========
+
+import { getExecutor } from './services/executor'
+
+// Execute command on local machine
+ipcMain.handle('execute-local', async (_event, command: { type: string; presetId: string; config?: unknown }) => {
+  try {
+    const executor = getExecutor()
+    const result = await executor.executeCommand({
+      msg_type: 'COMMAND',
+      sender: { id: 'local', name: 'Local', ip: '127.0.0.1' },
+      payload: command as any,
+      timestamp: Date.now(),
+      request_id: uuidv4()
+    })
+    return { success: result.success, output: result.output, error: result.error, duration: result.duration }
+  } catch (error) {
+    return { success: false, error: String(error), duration: 0 }
+  }
+})
+
+// Check if preset is running
+ipcMain.handle('is-running', (_event, presetId: string) => {
+  const executor = getExecutor()
+  return executor.isRunning(presetId)
+})
+
+// Kill running process
+ipcMain.handle('kill-process', (_event, presetId: string) => {
+  const executor = getExecutor()
+  return { success: executor.killProcess(presetId) }
+})
+
+// Set execution permissions
+ipcMain.handle('set-whitelist', (_event, ips: string[]) => {
+  const executor = getExecutor()
+  executor.setWhitelist(ips)
+  return { success: true }
+})
+
+ipcMain.handle('set-allow-control', (_event, allow: boolean) => {
+  const executor = getExecutor()
+  executor.setAllowControl(allow)
+  return { success: true }
+})
+
+// Handle incoming TCP command messages
+ipcMain.on('subscribe-execution-events', (event) => {
+  const executor = getExecutor()
+
+  executor.on('execution-started', (data) => {
+    event.sender.send('execution-started', data)
+  })
+
+  executor.on('execution-complete', (data) => {
+    event.sender.send('execution-complete', data)
+  })
+
+  executor.on('execution-error', (data) => {
+    event.sender.send('execution-error', data)
+  })
 })
 
 log.info('主进程初始化完成')
