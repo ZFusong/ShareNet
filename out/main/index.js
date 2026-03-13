@@ -3,12 +3,41 @@ const electron = require("electron");
 const os = require("os");
 const dgram = require("dgram");
 const events = require("events");
-const uuid = require("uuid");
+const crypto = require("crypto");
 const net = require("net");
 const Store = require("electron-store");
 const child_process = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const rnds8Pool = new Uint8Array(256);
+let poolPtr = rnds8Pool.length;
+function rng() {
+  if (poolPtr > rnds8Pool.length - 16) {
+    crypto.randomFillSync(rnds8Pool);
+    poolPtr = 0;
+  }
+  return rnds8Pool.slice(poolPtr, poolPtr += 16);
+}
+const byteToHex = [];
+for (let i = 0; i < 256; ++i) {
+  byteToHex.push((i + 256).toString(16).slice(1));
+}
+function unsafeStringify(arr, offset = 0) {
+  return byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]];
+}
+const native = {
+  randomUUID: crypto.randomUUID
+};
+function v4(options, buf, offset) {
+  if (native.randomUUID && true && !options) {
+    return native.randomUUID();
+  }
+  options = options || {};
+  const rnds = options.random || (options.rng || rng)();
+  rnds[6] = rnds[6] & 15 | 64;
+  rnds[8] = rnds[8] & 63 | 128;
+  return unsafeStringify(rnds);
+}
 const DEFAULT_CONFIG$1 = {
   port: 8888,
   broadcastInterval: 5e3,
@@ -38,7 +67,7 @@ class UDPService extends events.EventEmitter {
     const localIP = this.getLocalIP();
     const hostname = os.hostname();
     this.localDevice = {
-      id: localInfo.id || uuid.v4(),
+      id: localInfo.id || v4(),
       name: localInfo.name || hostname,
       ip: localIP,
       port: this.config.port,
@@ -153,7 +182,7 @@ class UDPService extends events.EventEmitter {
         capabilities: ["control", "share"]
       },
       timestamp: Date.now(),
-      request_id: uuid.v4()
+      request_id: v4()
     };
     const broadcastAddress = this.getBroadcastAddress();
     const messageBuffer = Buffer.from(JSON.stringify(message));
@@ -203,7 +232,7 @@ class UDPService extends events.EventEmitter {
         status: "online"
       },
       timestamp: Date.now(),
-      request_id: uuid.v4()
+      request_id: v4()
     };
     const broadcastAddress = this.getBroadcastAddress();
     const messageBuffer = Buffer.from(JSON.stringify(message));
@@ -426,7 +455,8 @@ class TCPServer extends events.EventEmitter {
       });
       this.server.on("listening", () => {
         const address = this.server?.address();
-        console.log(`[TCP] Listening on ${address instanceof net.AddressInfo ? address.address : "0.0.0.0"}:${address instanceof net.AddressInfo ? address.port : this.config.port}`);
+        const addrInfo = typeof address === "object" && address !== null ? address : null;
+        console.log(`[TCP] Listening on ${addrInfo ? addrInfo.address : "0.0.0.0"}:${addrInfo ? addrInfo.port : this.config.port}`);
         this.isRunning = true;
         this.emit("ready");
         resolve();
@@ -461,7 +491,7 @@ class TCPServer extends events.EventEmitter {
    * Handle incoming connection
    */
   handleConnection(socket) {
-    const clientId = uuid.v4();
+    const clientId = v4();
     console.log(`[TCP] New connection from ${socket.remoteAddress}:${socket.remotePort}`);
     socket.setTimeout(this.config.timeout);
     const client2 = {
@@ -589,7 +619,7 @@ class TCPServer extends events.EventEmitter {
   async connectTo(host, port, deviceInfo) {
     return new Promise((resolve) => {
       const socket = new net.Socket();
-      const clientId = uuid.v4();
+      const clientId = v4();
       socket.connect(port, host, () => {
         console.log(`[TCP] Connected to ${host}:${port}`);
         const client2 = {
@@ -604,7 +634,7 @@ class TCPServer extends events.EventEmitter {
           sender: deviceInfo,
           payload: { version: "1.0.0", capabilities: ["control", "share"] },
           timestamp: Date.now(),
-          request_id: uuid.v4()
+          request_id: v4()
         };
         socket.write(JSON.stringify(discoveryMsg) + "\n");
         this.emit("connected", client2);
@@ -666,7 +696,7 @@ class TCPServer extends events.EventEmitter {
         message
       },
       timestamp: Date.now(),
-      request_id: uuid.v4()
+      request_id: v4()
     };
     return this.sendMessage(targetIP, ackMessage);
   }
@@ -692,7 +722,7 @@ class TCPServer extends events.EventEmitter {
         message
       },
       timestamp: Date.now(),
-      request_id: uuid.v4()
+      request_id: v4()
     };
     return this.broadcastMessage(ackMessage);
   }
@@ -1505,7 +1535,7 @@ electron.ipcMain.handle("tcp-send", async (_event, targetIP, message) => {
   const fullMessage = {
     ...message,
     timestamp: Date.now(),
-    request_id: uuid.v4()
+    request_id: v4()
   };
   const success = await tcpServer.sendMessage(targetIP, fullMessage);
   return { success };
@@ -1515,7 +1545,7 @@ electron.ipcMain.handle("tcp-broadcast", async (_event, message) => {
   const fullMessage = {
     ...message,
     timestamp: Date.now(),
-    request_id: uuid.v4()
+    request_id: v4()
   };
   const count = await tcpServer.broadcastMessage(fullMessage);
   return { success: true, count };
@@ -1642,7 +1672,7 @@ electron.ipcMain.handle("execute-local", async (_event, command) => {
       sender: { id: "local", name: "Local", ip: "127.0.0.1" },
       payload: command,
       timestamp: Date.now(),
-      request_id: uuid.v4()
+      request_id: v4()
     });
     return { success: result.success, output: result.output, error: result.error, duration: result.duration };
   } catch (error) {

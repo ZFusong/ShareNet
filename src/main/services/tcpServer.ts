@@ -85,7 +85,8 @@ export class TCPServer extends EventEmitter {
 
       this.server.on('listening', () => {
         const address = this.server?.address()
-        console.log(`[TCP] Listening on ${address instanceof net.AddressInfo ? address.address : '0.0.0.0'}:${address instanceof net.AddressInfo ? address.port : this.config.port}`)
+        const addrInfo = typeof address === 'object' && address !== null ? address : null
+        console.log(`[TCP] Listening on ${addrInfo ? addrInfo.address : '0.0.0.0'}:${addrInfo ? addrInfo.port : this.config.port}`)
         this.isRunning = true
         this.emit('ready')
         resolve()

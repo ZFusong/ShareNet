@@ -1,0 +1,40 @@
+directories:
+  output: release
+  buildResources: build
+appId: com.sharenet.app
+productName: ShareNet
+copyright: Copyright © 2024 ShareNet
+files:
+  - filter:
+      - out/**/*
+      - package.json
+      - node_modules/**/*
+extraMetadata:
+  main: ./out/main/index.js
+asar: true
+win:
+  target:
+    - target: dir
+      arch:
+        - x64
+  artifactName: ${productName}-${version}-setup.${ext}
+  icon: build/icon.ico
+  sign: null
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+mac:
+  target:
+    - dmg
+  artifactName: ${productName}-${version}.${ext}
+  icon: build/icon.icns
+linux:
+  target:
+    - AppImage
+  artifactName: ${productName}-${version}.${ext}
+  icon: build/icon.png
+electronVersion: 33.4.11
