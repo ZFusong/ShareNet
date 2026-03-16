@@ -7,17 +7,12 @@
     "output": "dist"
   },
   "files": [
-    {
-      "from": ".",
-      "to": ".",
-      "filter": ["out/**/*", "package.json"]
-    },
-    "node_modules/**/*"
+    "out/**/*",
+    "node_modules/uuid/**/*"
   ],
   "extraMetadata": {
     "main": "./out/main/index.js"
   },
-  "asar": true,
   "win": {
     "target": [
       {
@@ -26,8 +21,7 @@
       }
     ],
     "artifactName": "${productName}-${version}-setup.${ext}",
-    "icon": "build/icon.ico",
-    "sign": null
+    "icon": "build/icon.ico"
   },
   "nsis": {
     "oneClick": false,

@@ -142,11 +142,11 @@ export function RecorderDialog({ open, onOpenChange, onSave }: Props) {
 
     let detail = ''
     if (step.type === 'keyPress' || step.type === 'keyCombo') {
-      const keys = []
+      const keys: string[] = []
       if (step.data.ctrlKey) keys.push('Ctrl')
       if (step.data.altKey) keys.push('Alt')
       if (step.data.shiftKey) keys.push('Shift')
-      keys.push(step.data.key as string)
+      if (step.data.key) keys.push(String(step.data.key))
       detail = keys.join('+')
     } else if (step.type === 'mouseClick') {
       const buttons = ['左键', '中键', '右键']

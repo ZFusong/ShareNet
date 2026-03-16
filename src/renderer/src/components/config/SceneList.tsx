@@ -43,7 +43,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
 
     const deps = await window.electronAPI?.checkSceneDependencies(testScene)
     if (deps && !deps.valid) {
-      setDependencyErrors(deps.missing)
+      setDependencyErrors(deps.missing || [])
       return
     }
 
