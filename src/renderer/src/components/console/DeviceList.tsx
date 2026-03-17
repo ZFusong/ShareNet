@@ -7,7 +7,7 @@ import * as Checkbox from '@radix-ui/react-checkbox'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import * as Select from '@radix-ui/react-select'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { type Device } from '../../stores/deviceStore'
 import { useDevices } from '../../hooks/useDevices'
 
@@ -62,6 +62,7 @@ export function DeviceList() {
     filter,
     localDevice,
     hiddenDevicesList,
+    persistentDevices,
     deviceAliases,
     toggleSelectDevice,
     selectDevice,
@@ -71,7 +72,10 @@ export function DeviceList() {
     hideDevice,
     unhideDevice,
     setAliasForDevice,
-    refreshDevices
+    addPersistentDevice,
+    removePersistentDevice,
+    refreshDevices,
+    removeDevice
   } = useDevices()
 
   const [showAddDialog, setShowAddDialog] = useState(false)
@@ -82,11 +86,17 @@ export function DeviceList() {
   const [tagFilter, setTagFilter] = useState<string>('all')
   const [aliasTarget, setAliasTarget] = useState<Device | null>(null)
   const [aliasInput, setAliasInput] = useState('')
+  const [searchHitCounts, setSearchHitCounts] = useState<Map<string, number>>(new Map())
+  const lastSearchText = useRef('')
+  const SEARCH_PERSIST_THRESHOLD = 3
 
   const handleAddDevice = async () => {
     if (!newDeviceIP.trim()) return
 
-    await addDeviceManually(newDeviceIP)
+    const result = await addDeviceManually(newDeviceIP)
+    if (result?.device) {
+      await addPersistentDevice(result.device)
+    }
     if (newDeviceAlias.trim()) {
       const trimmed = newDeviceIP.trim()
       const parts = trimmed.split(':')
@@ -179,6 +189,113 @@ export function DeviceList() {
   }
 
   const getAliasName = (device: Device) => deviceAliases.get(getDeviceKey(device)) || ''
+
+  const handleDeleteSelected = async () => {
+    if (selectedDevices.size === 0) return
+    const targets = devices.filter((device) => selectedDevices.has(device.id))
+    for (const device of targets) {
+      const key = getDeviceKey(device)
+      if (persistentDevices.has(key)) {
+        await removePersistentDevice(key)
+      }
+      await removeDevice(device.id)
+    }
+  }
+
+  useEffect(() => {
+    const text = searchText.trim().toLowerCase()
+    if (!text) {
+      lastSearchText.current = ''
+      return
+    }
+    if (text === lastSearchText.current) return
+    lastSearchText.current = text
+    const next = new Map(searchHitCounts)
+    visibleDevices.forEach((device) => {
+      const key = getDeviceKey(device)
+      const nextCount = (next.get(key) ?? 0) + 1
+      next.set(key, nextCount)
+      if (nextCount >= SEARCH_PERSIST_THRESHOLD && !persistentDevices.has(key)) {
+        addPersistentDevice(device)
+      }
+    })
+    setSearchHitCounts(next)
+  }, [addPersistentDevice, persistentDevices, searchText, searchHitCounts, visibleDevices])
+
+  const renderDeviceItem = (device: Device) => (
+    <div
+      key={device.id}
+      className={`device-item group p-3 border-b cursor-pointer transition-colors ${
+        selectedDevices.has(device.id) ? 'bg-primary/10' : 'hover:bg-accent'
+      }`}
+      onClick={() => toggleSelectDevice(device.id)}
+    >
+      <div className="flex items-center gap-3">
+        <Checkbox.Root
+          checked={selectedDevices.has(device.id)}
+          onCheckedChange={() => toggleSelectDevice(device.id)}
+          onClick={(e) => e.stopPropagation()}
+          className="w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary"
+        >
+          <Checkbox.Indicator>
+            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </Checkbox.Indicator>
+        </Checkbox.Root>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            {getAliasName(device) ? (
+              <div className="flex items-baseline gap-2 min-w-0">
+                <span className="font-medium truncate">{getAliasName(device)}</span>
+                <span className="text-xs text-muted-foreground truncate">{getDisplayName(device)}</span>
+              </div>
+            ) : (
+              <span className="font-medium truncate">{getDisplayName(device)}</span>
+            )}
+            <StatusBadge status={device.status} />
+            <RoleBadge role={device.role} />
+            <button
+              onClick={(e) => handleOpenAlias(device, e)}
+              className="text-xs px-2 py-0.5 border rounded text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100"
+              title="设置别名"
+            >
+              别名
+            </button>
+            <button
+              onClick={(e) => handleHideDevice(device, e)}
+              className="ml-auto text-xs px-2 py-0.5 border rounded text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100"
+              title="隐藏设备"
+            >
+              隐藏
+            </button>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+            <span className="truncate">{device.ip}:{device.port}</span>
+            {device.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {device.tags.slice(0, 2).map((tag) => (
+                  <span key={tag} className="px-1.5 py-0.5 text-xs bg-secondary rounded">
+                    {tag}
+                  </span>
+                ))}
+                {device.tags.length > 2 && (
+                  <span className="text-xs text-muted-foreground">+{device.tags.length - 2}</span>
+                )}
+              </div>
+            )}
+            {device.tags.length === 0 && (
+              <span className="text-xs text-muted-foreground">无标签</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const onlineDevices = visibleDevices.filter((device) => device.status !== 'offline')
+  const offlineDevices = visibleDevices.filter((device) => device.status === 'offline')
 
   return (
     <div className="device-list-container flex flex-col h-full">
@@ -347,12 +464,21 @@ export function DeviceList() {
         <label htmlFor="select-all" className="text-sm text-muted-foreground">
           {selectedDevices.size > 0 ? `已选择 ${selectedDevices.size} 个设备` : '全选本页'}
         </label>
-        <button
-          onClick={deselectAll}
-          className="ml-auto text-xs px-2 py-1 border rounded hover:bg-secondary"
-        >
-          清空已选
-        </button>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={handleDeleteSelected}
+            disabled={selectedDevices.size === 0}
+            className="text-xs px-2 py-1 border rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            删除
+          </button>
+          <button
+            onClick={deselectAll}
+            className="text-xs px-2 py-1 border rounded hover:bg-secondary"
+          >
+            清空已选
+          </button>
+        </div>
       </div>
 
       {/* Device list */}
@@ -368,77 +494,26 @@ export function DeviceList() {
             </div>
           ) : (
             <div className="device-list">
-              {visibleDevices.map((device) => (
-                <div
-                  key={device.id}
-                  className={`device-item group p-3 border-b cursor-pointer transition-colors ${
-                    selectedDevices.has(device.id) ? 'bg-primary/10' : 'hover:bg-accent'
-                  }`}
-                  onClick={() => toggleSelectDevice(device.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <Checkbox.Root
-                      checked={selectedDevices.has(device.id)}
-                      onCheckedChange={() => toggleSelectDevice(device.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary"
-                    >
-                      <Checkbox.Indicator>
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </Checkbox.Indicator>
-                    </Checkbox.Root>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {getAliasName(device) ? (
-                          <div className="flex items-baseline gap-2 min-w-0">
-                            <span className="font-medium truncate">{getAliasName(device)}</span>
-                            <span className="text-xs text-muted-foreground truncate">{getDisplayName(device)}</span>
-                          </div>
-                        ) : (
-                          <span className="font-medium truncate">{getDisplayName(device)}</span>
-                        )}
-                        <StatusBadge status={device.status} />
-                        <RoleBadge role={device.role} />
-                        <button
-                          onClick={(e) => handleOpenAlias(device, e)}
-                          className="text-xs px-2 py-0.5 border rounded text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100"
-                          title="设置别名"
-                        >
-                          别名
-                        </button>
-                        <button
-                          onClick={(e) => handleHideDevice(device, e)}
-                          className="ml-auto text-xs px-2 py-0.5 border rounded text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100"
-                          title="隐藏设备"
-                        >
-                          隐藏
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <span className="truncate">{device.ip}:{device.port}</span>
-                        {device.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {device.tags.slice(0, 2).map((tag) => (
-                              <span key={tag} className="px-1.5 py-0.5 text-xs bg-secondary rounded">
-                                {tag}
-                              </span>
-                            ))}
-                            {device.tags.length > 2 && (
-                              <span className="text-xs text-muted-foreground">+{device.tags.length - 2}</span>
-                            )}
-                          </div>
-                        )}
-                        {device.tags.length === 0 && (
-                          <span className="text-xs text-muted-foreground">无标签</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <details open className="border-b last:border-b-0">
+                <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-foreground bg-secondary/40">
+                  在线设备 ({onlineDevices.length})
+                </summary>
+                {onlineDevices.length === 0 ? (
+                  <div className="p-3 text-xs text-muted-foreground">暂无在线设备</div>
+                ) : (
+                  onlineDevices.map(renderDeviceItem)
+                )}
+              </details>
+              <details className="border-b last:border-b-0">
+                <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-foreground bg-secondary/40">
+                  离线设备 ({offlineDevices.length})
+                </summary>
+                {offlineDevices.length === 0 ? (
+                  <div className="p-3 text-xs text-muted-foreground">暂无离线设备</div>
+                ) : (
+                  offlineDevices.map(renderDeviceItem)
+                )}
+              </details>
             </div>
           )}
         </ScrollArea.Viewport>

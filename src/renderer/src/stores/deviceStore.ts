@@ -38,13 +38,18 @@ interface DeviceState {
   filter: DeviceFilter
   offlineDevices: Map<string, Device>
   hiddenDevices: Map<string, Device>
+  persistentDevices: Map<string, Device>
   deviceAliases: Map<string, string>
   networkStatus: string
   networkError: { udp?: string; tcp?: string } | null
+  deviceStatusCheckCount: number
 
   // Actions
   setDevices: (devices: Device[]) => void
   setHiddenDevices: (devices: Map<string, Device>) => void
+  setPersistentDevices: (devices: Map<string, Device>) => void
+  addPersistentDevice: (device: Device) => void
+  removePersistentDevice: (key: string) => void
   setDeviceAliases: (aliases: Map<string, string>) => void
   setDeviceAlias: (key: string, alias: string) => void
   removeDeviceAlias: (key: string) => void
@@ -63,6 +68,8 @@ interface DeviceState {
   unhideDevice: (key: string) => void
   setNetworkStatus: (status: string) => void
   setNetworkError: (error: { udp?: string; tcp?: string } | null) => void
+  beginDeviceStatusCheck: () => void
+  endDeviceStatusCheck: () => void
 
   // Getters
   getFilteredDevices: () => Device[]
@@ -77,17 +84,25 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   filter: { type: 'all' },
   offlineDevices: new Map(),
   hiddenDevices: new Map(),
+  persistentDevices: new Map(),
   deviceAliases: new Map(),
   networkStatus: '就绪',
   networkError: null,
+  deviceStatusCheckCount: 0,
 
   setDevices: (devices) =>
     set((state) => {
       const nextHidden = new Map(state.hiddenDevices)
+      const merged = new Map<string, Device>()
+      state.persistentDevices.forEach((device, key) => {
+        merged.set(key, device)
+      })
+      devices.forEach((device) => {
+        merged.set(getDeviceKey(device), device)
+      })
       const visible: Device[] = []
 
-      devices.forEach((device) => {
-        const key = getDeviceKey(device)
+      merged.forEach((device, key) => {
         if (nextHidden.has(key)) {
           const existing = nextHidden.get(key)
           nextHidden.set(key, { ...existing, ...device })
@@ -100,6 +115,44 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
     }),
 
   setHiddenDevices: (devices) => set({ hiddenDevices: devices }),
+  setPersistentDevices: (devices) =>
+    set((state) => {
+      const nextHidden = new Map(state.hiddenDevices)
+      const nextDevices = [...state.devices]
+      devices.forEach((device, key) => {
+        if (nextHidden.has(key)) {
+          const existing = nextHidden.get(key)
+          nextHidden.set(key, { ...existing, ...device })
+        } else if (!nextDevices.find((d) => getDeviceKey(d) === key)) {
+          nextDevices.push(device)
+        }
+      })
+      return { persistentDevices: devices, devices: nextDevices, hiddenDevices: nextHidden }
+    }),
+  addPersistentDevice: (device) =>
+    set((state) => {
+      const key = getDeviceKey(device)
+      const nextPersistent = new Map(state.persistentDevices)
+      nextPersistent.set(key, device)
+      if (state.hiddenDevices.has(key)) {
+        const nextHidden = new Map(state.hiddenDevices)
+        const existing = nextHidden.get(key)
+        nextHidden.set(key, { ...existing, ...device })
+        return { persistentDevices: nextPersistent, hiddenDevices: nextHidden }
+      }
+      const exists = state.devices.find((d) => getDeviceKey(d) === key)
+      return {
+        persistentDevices: nextPersistent,
+        devices: exists ? state.devices.map((d) => (getDeviceKey(d) === key ? { ...d, ...device } : d)) : [...state.devices, device]
+      }
+    }),
+  removePersistentDevice: (key) =>
+    set((state) => {
+      if (!state.persistentDevices.has(key)) return state
+      const nextPersistent = new Map(state.persistentDevices)
+      nextPersistent.delete(key)
+      return { persistentDevices: nextPersistent }
+    }),
   setDeviceAliases: (aliases) => set({ deviceAliases: aliases }),
   setDeviceAlias: (key, alias) =>
     set((state) => {
@@ -121,35 +174,49 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   addDevice: (device) =>
     set((state) => {
       const key = getDeviceKey(device)
+      const nextPersistent = new Map(state.persistentDevices)
+      if (nextPersistent.has(key)) {
+        const existingPersistent = nextPersistent.get(key)
+        nextPersistent.set(key, { ...existingPersistent, ...device })
+      }
       if (state.hiddenDevices.has(key)) {
         const nextHidden = new Map(state.hiddenDevices)
         const existing = nextHidden.get(key)
         nextHidden.set(key, { ...existing, ...device })
-        return { hiddenDevices: nextHidden }
+        return { hiddenDevices: nextHidden, persistentDevices: nextPersistent }
       }
       const exists = state.devices.find((d) => d.id === device.id)
       if (exists) {
-        return { devices: state.devices.map((d) => (d.id === device.id ? device : d)) }
+        return {
+          devices: state.devices.map((d) => (d.id === device.id ? device : d)),
+          persistentDevices: nextPersistent
+        }
       }
       const sameAddress = state.devices.find((d) => getDeviceKey(d) === key)
       if (sameAddress) {
         return {
           devices: state.devices.map((d) =>
             getDeviceKey(d) === key ? { ...d, ...device, id: d.id } : d
-          )
+          ),
+          persistentDevices: nextPersistent
         }
       }
-      return { devices: [...state.devices, device] }
+      return { devices: [...state.devices, device], persistentDevices: nextPersistent }
     }),
 
   updateDevice: (device) =>
     set((state) => {
       const key = getDeviceKey(device)
+      const nextPersistent = new Map(state.persistentDevices)
+      if (nextPersistent.has(key)) {
+        const existingPersistent = nextPersistent.get(key)
+        nextPersistent.set(key, { ...existingPersistent, ...device })
+      }
       if (state.hiddenDevices.has(key)) {
         const nextHidden = new Map(state.hiddenDevices)
         const existing = nextHidden.get(key)
         nextHidden.set(key, { ...existing, ...device })
-        return { hiddenDevices: nextHidden }
+        return { hiddenDevices: nextHidden, persistentDevices: nextPersistent }
       }
 
       return {
@@ -157,7 +224,8 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
           if (d.id === device.id) return device
           if (getDeviceKey(d) === key) return { ...d, ...device, id: d.id }
           return d
-        })
+        }),
+        persistentDevices: nextPersistent
       }
     }),
 
@@ -165,6 +233,15 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
     set((state) => {
       const device = state.devices.find((d) => d.id === id)
       if (device) {
+        const key = getDeviceKey(device)
+        if (state.persistentDevices.has(key)) {
+          return {
+            devices: state.devices.map((d) =>
+              d.id === id ? { ...d, status: 'offline', lastSeen: Date.now() } : d
+            ),
+            selectedDevices: new Set([...state.selectedDevices].filter((sid) => sid !== id))
+          }
+        }
         // Add to offline cache
         const newOffline = new Map(state.offlineDevices)
         newOffline.set(id, { ...device, status: 'offline', lastSeen: Date.now() })
@@ -258,6 +335,10 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
 
   setNetworkStatus: (status) => set({ networkStatus: status }),
   setNetworkError: (error) => set({ networkError: error }),
+  beginDeviceStatusCheck: () =>
+    set((state) => ({ deviceStatusCheckCount: state.deviceStatusCheckCount + 1 })),
+  endDeviceStatusCheck: () =>
+    set((state) => ({ deviceStatusCheckCount: Math.max(0, state.deviceStatusCheckCount - 1) })),
 
   getFilteredDevices: () => {
     const { devices, filter } = get()

@@ -14,9 +14,12 @@ export function useNetwork() {
     removeDevice,
     setLocalDevice,
     setHiddenDevices,
+    setPersistentDevices,
     setDeviceAliases,
     setNetworkStatus,
-    setNetworkError
+    setNetworkError,
+    beginDeviceStatusCheck,
+    endDeviceStatusCheck
   } = useDeviceStore()
 
   useEffect(() => {
@@ -30,6 +33,7 @@ export function useNetwork() {
         const tcpPort = savedSettings?.network?.tcpPort ?? 8889
         const hiddenRecord = (savedSettings?.device?.hiddenDevices as Record<string, Device>) || {}
         const aliasRecord = savedSettings?.device?.aliases || {}
+        const persistentRecord = (savedSettings?.device?.persistentDevices as Record<string, Device>) || {}
         const hiddenMap = new Map<string, Device>()
         Object.entries(hiddenRecord).forEach(([key, device]) => {
           hiddenMap.set(key, device as Device)
@@ -38,7 +42,12 @@ export function useNetwork() {
         Object.entries(aliasRecord).forEach(([key, alias]) => {
           aliasMap.set(key, alias)
         })
+        const persistentMap = new Map<string, Device>()
+        Object.entries(persistentRecord).forEach(([key, device]) => {
+          persistentMap.set(key, device as Device)
+        })
         setHiddenDevices(hiddenMap)
+        setPersistentDevices(persistentMap)
         setDeviceAliases(aliasMap)
 
         const errors: { udp?: string; tcp?: string } = {}
@@ -90,6 +99,37 @@ export function useNetwork() {
           if (local) {
             setLocalDevice(local as Device)
           }
+
+          const persistedDevices = Array.from(persistentMap.values())
+          if (persistedDevices.length > 0) {
+            const localInfo =
+              (local as Device) ||
+              ({
+                id: 'local',
+                name: savedSettings?.device?.name || hostname || 'ShareNet',
+                ip: (await window.electronAPI?.getLocalIP()) || '127.0.0.1',
+                port: tcpPort,
+                role: savedSettings?.device?.role || 'bidirectional',
+                tags: savedSettings?.device?.tags || [],
+                status: 'online',
+                lastSeen: Date.now()
+              } as Device)
+
+            await Promise.all(
+              persistedDevices.map(async (device) => {
+                beginDeviceStatusCheck()
+                try {
+                  const result = await window.electronAPI?.tcpConnect(device.ip, device.port, localInfo)
+                  const nextStatus = result?.success ? 'online' : 'offline'
+                  updateDevice({ ...device, status: nextStatus, lastSeen: Date.now() })
+                } catch (error) {
+                  updateDevice({ ...device, status: 'offline', lastSeen: Date.now() })
+                } finally {
+                  endDeviceStatusCheck()
+                }
+              })
+            )
+          }
         }
 
         const tcpResult = await window.electronAPI?.tcpStart({ port: tcpPort })
@@ -132,5 +172,18 @@ export function useNetwork() {
       window.electronAPI?.tcpStop()
       window.electronAPI?.removeAllListeners?.('network-error')
     }
-  }, [setDevices, addDevice, updateDevice, removeDevice, setLocalDevice, setHiddenDevices, setDeviceAliases, setNetworkStatus, setNetworkError])
+  }, [
+    setDevices,
+    addDevice,
+    updateDevice,
+    removeDevice,
+    setLocalDevice,
+    setHiddenDevices,
+    setPersistentDevices,
+    setDeviceAliases,
+    setNetworkStatus,
+    setNetworkError,
+    beginDeviceStatusCheck,
+    endDeviceStatusCheck
+  ])
 }

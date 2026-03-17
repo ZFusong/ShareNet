@@ -16,6 +16,7 @@ export interface Settings {
     avatar?: string
     aliases?: Record<string, string>
     hiddenDevices?: Record<string, unknown>
+    persistentDevices?: Record<string, unknown>
   }
   network: {
     udpPort: number
@@ -91,7 +92,8 @@ const defaultSettings: Settings = {
     role: 'bidirectional',
     tags: [],
     aliases: {},
-    hiddenDevices: {}
+    hiddenDevices: {},
+    persistentDevices: {}
   },
   network: {
     udpPort: 8888,

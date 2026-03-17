@@ -7,6 +7,7 @@ export interface AppSettings {
     tags?: string[]
     aliases?: Record<string, string>
     hiddenDevices?: Record<string, unknown>
+    persistentDevices?: Record<string, DeviceInfo>
   }
   network?: {
     udpPort?: number

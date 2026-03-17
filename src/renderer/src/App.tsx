@@ -13,7 +13,7 @@ type Tab = 'console' | 'resource' | 'config' | 'settings'
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('resource')
   const [appInfo, setAppInfo] = useState({ name: 'ShareNet', version: '1.0.0' })
-  const { networkStatus, networkError, devices, selectedDevices } = useDeviceStore()
+  const { networkStatus, networkError, devices, selectedDevices, deviceStatusCheckCount } = useDeviceStore()
   const hasNetworkError = !!(networkError?.udp || networkError?.tcp)
   const statusClass = hasNetworkError ? 'offline' : 'online'
   const deviceCount = devices.length
@@ -111,6 +111,19 @@ function App() {
               </Dialog.Content>
             </Dialog.Portal>
           </Dialog.Root>
+          {deviceStatusCheckCount > 0 && (
+            <div className="ml-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <span>检查设备状态</span>
+              <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M12 3a9 9 0 019 9h-2.5a6.5 6.5 0 10-6.5 6.5V21a9 9 0 010-18z"
+                />
+              </svg>
+            </div>
+          )}
         </div>
         <div className="footer-info">
           <span id="app-version">v{appInfo.version}</span>

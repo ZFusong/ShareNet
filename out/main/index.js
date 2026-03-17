@@ -308,16 +308,30 @@ class UDPService extends events.EventEmitter {
       console.error("[UDP] Failed to parse message:", error);
     }
   }
+  findDeviceByAddress(ip, port) {
+    for (const device of this.deviceList.values()) {
+      if (device.ip === ip && device.port === port) {
+        return device;
+      }
+    }
+    return void 0;
+  }
   /**
    * Handle discovery message
    */
   handleDiscovery(message) {
     const device = message.sender;
-    const existingDevice = this.deviceList.get(device.id);
+    const existingDevice = this.deviceList.get(device.id) || this.findDeviceByAddress(device.ip, device.port);
     if (existingDevice) {
-      existingDevice.lastSeen = Date.now();
-      existingDevice.status = "online";
-      this.emit("deviceUpdated", existingDevice);
+      const mergedDevice = {
+        ...existingDevice,
+        ...device,
+        id: existingDevice.id,
+        lastSeen: Date.now(),
+        status: "online"
+      };
+      this.deviceList.set(existingDevice.id, mergedDevice);
+      this.emit("deviceUpdated", mergedDevice);
     } else {
       device.lastSeen = Date.now();
       device.status = "online";
@@ -331,11 +345,17 @@ class UDPService extends events.EventEmitter {
    */
   handleHeartbeat(message) {
     const device = message.sender;
-    const existingDevice = this.deviceList.get(device.id);
+    const existingDevice = this.deviceList.get(device.id) || this.findDeviceByAddress(device.ip, device.port);
     if (existingDevice) {
-      existingDevice.lastSeen = Date.now();
-      existingDevice.status = message.payload.status || "online";
-      this.emit("deviceUpdated", existingDevice);
+      const mergedDevice = {
+        ...existingDevice,
+        ...device,
+        id: existingDevice.id,
+        lastSeen: Date.now(),
+        status: message.payload.status || "online"
+      };
+      this.deviceList.set(existingDevice.id, mergedDevice);
+      this.emit("deviceUpdated", mergedDevice);
       this.emit("devicesUpdated", this.getDeviceList());
     }
   }
@@ -795,7 +815,9 @@ const defaultSettings = {
   device: {
     name: "",
     role: "bidirectional",
-    tags: []
+    tags: [],
+    aliases: {},
+    hiddenDevices: {}
   },
   network: {
     udpPort: 8888,
@@ -827,7 +849,14 @@ function getSettings() {
 }
 function setSettings(settings) {
   const current = getSettings();
-  store.set("settings", { ...current, ...settings });
+  store.set("settings", {
+    ...current,
+    ...settings,
+    device: { ...current.device, ...settings.device },
+    network: { ...current.network, ...settings.network },
+    security: { ...current.security, ...settings.security },
+    ui: { ...current.ui, ...settings.ui }
+  });
 }
 function getSetting(key) {
   return getSettings()[key];
