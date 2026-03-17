@@ -22,17 +22,32 @@ export interface DeviceFilter {
   tag?: string
 }
 
+const getDeviceKey = (device: Pick<Device, 'ip' | 'port'>) => `${device.ip}:${device.port}`
+
+const findHiddenKeyById = (id: string, hiddenDevices: Map<string, Device>) => {
+  for (const [key, device] of hiddenDevices) {
+    if (device.id === id) return key
+  }
+  return null
+}
+
 interface DeviceState {
   devices: Device[]
   localDevice: Device | null
   selectedDevices: Set<string>
   filter: DeviceFilter
   offlineDevices: Map<string, Device>
+  hiddenDevices: Map<string, Device>
+  deviceAliases: Map<string, string>
   networkStatus: string
   networkError: { udp?: string; tcp?: string } | null
 
   // Actions
   setDevices: (devices: Device[]) => void
+  setHiddenDevices: (devices: Map<string, Device>) => void
+  setDeviceAliases: (aliases: Map<string, string>) => void
+  setDeviceAlias: (key: string, alias: string) => void
+  removeDeviceAlias: (key: string) => void
   addDevice: (device: Device) => void
   updateDevice: (device: Device) => void
   removeDevice: (id: string) => void
@@ -44,12 +59,15 @@ interface DeviceState {
   deselectAll: () => void
   setFilter: (filter: DeviceFilter) => void
   addOfflineDevice: (device: Device) => void
+  hideDevice: (device: Device) => void
+  unhideDevice: (key: string) => void
   setNetworkStatus: (status: string) => void
   setNetworkError: (error: { udp?: string; tcp?: string } | null) => void
 
   // Getters
   getFilteredDevices: () => Device[]
   getSelectedDevicesList: () => Device[]
+  getHiddenDevicesList: () => Device[]
 }
 
 export const useDeviceStore = create<DeviceState>((set, get) => ({
@@ -58,24 +76,90 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   selectedDevices: new Set(),
   filter: { type: 'all' },
   offlineDevices: new Map(),
+  hiddenDevices: new Map(),
+  deviceAliases: new Map(),
   networkStatus: '就绪',
   networkError: null,
 
-  setDevices: (devices) => set({ devices }),
+  setDevices: (devices) =>
+    set((state) => {
+      const nextHidden = new Map(state.hiddenDevices)
+      const visible: Device[] = []
+
+      devices.forEach((device) => {
+        const key = getDeviceKey(device)
+        if (nextHidden.has(key)) {
+          const existing = nextHidden.get(key)
+          nextHidden.set(key, { ...existing, ...device })
+        } else {
+          visible.push(device)
+        }
+      })
+
+      return { devices: visible, hiddenDevices: nextHidden }
+    }),
+
+  setHiddenDevices: (devices) => set({ hiddenDevices: devices }),
+  setDeviceAliases: (aliases) => set({ deviceAliases: aliases }),
+  setDeviceAlias: (key, alias) =>
+    set((state) => {
+      const next = new Map(state.deviceAliases)
+      if (alias.trim()) {
+        next.set(key, alias.trim())
+      } else {
+        next.delete(key)
+      }
+      return { deviceAliases: next }
+    }),
+  removeDeviceAlias: (key) =>
+    set((state) => {
+      const next = new Map(state.deviceAliases)
+      next.delete(key)
+      return { deviceAliases: next }
+    }),
 
   addDevice: (device) =>
     set((state) => {
+      const key = getDeviceKey(device)
+      if (state.hiddenDevices.has(key)) {
+        const nextHidden = new Map(state.hiddenDevices)
+        const existing = nextHidden.get(key)
+        nextHidden.set(key, { ...existing, ...device })
+        return { hiddenDevices: nextHidden }
+      }
       const exists = state.devices.find((d) => d.id === device.id)
       if (exists) {
         return { devices: state.devices.map((d) => (d.id === device.id ? device : d)) }
+      }
+      const sameAddress = state.devices.find((d) => getDeviceKey(d) === key)
+      if (sameAddress) {
+        return {
+          devices: state.devices.map((d) =>
+            getDeviceKey(d) === key ? { ...d, ...device, id: d.id } : d
+          )
+        }
       }
       return { devices: [...state.devices, device] }
     }),
 
   updateDevice: (device) =>
-    set((state) => ({
-      devices: state.devices.map((d) => (d.id === device.id ? device : d))
-    })),
+    set((state) => {
+      const key = getDeviceKey(device)
+      if (state.hiddenDevices.has(key)) {
+        const nextHidden = new Map(state.hiddenDevices)
+        const existing = nextHidden.get(key)
+        nextHidden.set(key, { ...existing, ...device })
+        return { hiddenDevices: nextHidden }
+      }
+
+      return {
+        devices: state.devices.map((d) => {
+          if (d.id === device.id) return device
+          if (getDeviceKey(d) === key) return { ...d, ...device, id: d.id }
+          return d
+        })
+      }
+    }),
 
   removeDevice: (id) =>
     set((state) => {
@@ -89,6 +173,15 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
           offlineDevices: newOffline,
           selectedDevices: new Set([...state.selectedDevices].filter((sid) => sid !== id))
         }
+      }
+      const hiddenKey = findHiddenKeyById(id, state.hiddenDevices)
+      if (hiddenKey) {
+        const nextHidden = new Map(state.hiddenDevices)
+        const hiddenDevice = nextHidden.get(hiddenKey)
+        if (hiddenDevice) {
+          nextHidden.set(hiddenKey, { ...hiddenDevice, status: 'offline', lastSeen: Date.now() })
+        }
+        return { hiddenDevices: nextHidden }
       }
       return state
     }),
@@ -136,6 +229,33 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       return { offlineDevices: newOffline }
     }),
 
+  hideDevice: (device) =>
+    set((state) => {
+      const key = getDeviceKey(device)
+      const nextHidden = new Map(state.hiddenDevices)
+      nextHidden.set(key, device)
+      const nextSelected = new Set(state.selectedDevices)
+      nextSelected.delete(device.id)
+      return {
+        hiddenDevices: nextHidden,
+        devices: state.devices.filter((d) => d.id !== device.id),
+        selectedDevices: nextSelected
+      }
+    }),
+
+  unhideDevice: (key) =>
+    set((state) => {
+      const nextHidden = new Map(state.hiddenDevices)
+      const device = nextHidden.get(key)
+      if (!device) return state
+      nextHidden.delete(key)
+      const exists = state.devices.find((d) => d.id === device.id)
+      return {
+        hiddenDevices: nextHidden,
+        devices: exists ? state.devices : [...state.devices, device]
+      }
+    }),
+
   setNetworkStatus: (status) => set({ networkStatus: status }),
   setNetworkError: (error) => set({ networkError: error }),
 
@@ -162,5 +282,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   getSelectedDevicesList: () => {
     const { devices, selectedDevices } = get()
     return devices.filter((d) => selectedDevices.has(d.id))
-  }
+  },
+
+  getHiddenDevicesList: () => Array.from(get().hiddenDevices.values())
 }))

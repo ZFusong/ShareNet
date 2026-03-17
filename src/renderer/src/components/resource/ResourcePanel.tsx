@@ -1,6 +1,6 @@
 /**
  * ShareNet - Resource Panel
- * 资源站面板 - 发送文字/图片/文件和接收历史
+ * 资源站面板 - 发送文字/图片/文件和分享记录
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -429,11 +429,11 @@ export function ResourcePanel() {
     <Tooltip.Provider>
       <section id="resource-panel" className="panel h-full">
         <div className="h-full p-4">
-          <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Receive Panel */}
             <div className="flex flex-col h-full bg-secondary/40 rounded-lg border p-4">
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-medium text-sm">接收历史</h3>
+                <h3 className="font-medium text-sm">分享记录</h3>
                 <AlertDialog.Root open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
                   <AlertDialog.Trigger asChild>
                     <button className="text-xs text-muted-foreground hover:text-foreground">
@@ -444,10 +444,10 @@ export function ResourcePanel() {
                     <AlertDialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
                     <AlertDialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border rounded shadow-lg p-6 w-[90vw] max-w-md z-50">
                       <AlertDialog.Title className="font-medium mb-2">
-                        清理接收历史
+                        清理分享记录
                       </AlertDialog.Title>
                       <AlertDialog.Description className="text-sm text-muted-foreground mb-4">
-                        确定要清理所有接收历史吗？此操作无法撤销。
+                        确定要清理所有分享记录吗？此操作无法撤销。
                       </AlertDialog.Description>
                       <div className="flex justify-end gap-2">
                         <AlertDialog.Cancel
@@ -468,11 +468,11 @@ export function ResourcePanel() {
                 </AlertDialog.Root>
               </div>
 
-              <ScrollArea.Root className="flex-1 border rounded bg-background">
-                <ScrollArea.Viewport className="h-full w-full">
+              <ScrollArea.Root className="flex-1 min-h-0 border rounded bg-background">
+                <ScrollArea.Viewport className="h-full w-full relative">
                   {receivedMessages.length === 0 ? (
-                    <div className="empty-state h-full flex items-center justify-center text-muted-foreground text-sm">
-                      暂无接收记录
+                    <div className="empty-state absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+                      暂无分享记录
                     </div>
                   ) : (
                     <div className="space-y-2 p-2">
@@ -606,9 +606,6 @@ export function ResourcePanel() {
                 </ScrollArea.Scrollbar>
               </ScrollArea.Root>
 
-              <div className="mt-3 text-xs text-muted-foreground text-center">
-                接收历史
-              </div>
             </div>
 
             {/* Send Panel */}
@@ -840,9 +837,6 @@ export function ResourcePanel() {
                 发送
               </button>
             </div>
-              <div className="mt-3 text-xs text-muted-foreground text-center">
-                发送
-              </div>
             </div>
           </div>
         </div>

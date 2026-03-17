@@ -14,6 +14,8 @@ export interface Settings {
     role: 'controller' | 'controlled' | 'bidirectional'
     tags: string[]
     avatar?: string
+    aliases?: Record<string, string>
+    hiddenDevices?: Record<string, unknown>
   }
   network: {
     udpPort: number
@@ -87,7 +89,9 @@ const defaultSettings: Settings = {
   device: {
     name: '',
     role: 'bidirectional',
-    tags: []
+    tags: [],
+    aliases: {},
+    hiddenDevices: {}
   },
   network: {
     udpPort: 8888,
@@ -126,7 +130,14 @@ export function getSettings(): Settings {
 
 export function setSettings(settings: Partial<Settings>): void {
   const current = getSettings()
-  store.set('settings', { ...current, ...settings })
+  store.set('settings', {
+    ...current,
+    ...settings,
+    device: { ...current.device, ...settings.device },
+    network: { ...current.network, ...settings.network },
+    security: { ...current.security, ...settings.security },
+    ui: { ...current.ui, ...settings.ui }
+  })
 }
 
 export function getSetting<K extends keyof Settings>(key: K): Settings[K] {

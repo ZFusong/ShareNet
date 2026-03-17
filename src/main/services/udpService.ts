@@ -325,18 +325,33 @@ export class UDPService extends EventEmitter {
     }
   }
 
+  private findDeviceByAddress(ip: string, port: number): DeviceInfo | undefined {
+    for (const device of this.deviceList.values()) {
+      if (device.ip === ip && device.port === port) {
+        return device
+      }
+    }
+    return undefined
+  }
+
   /**
    * Handle discovery message
    */
   private handleDiscovery(message: NetworkMessage): void {
     const device = message.sender
-    const existingDevice = this.deviceList.get(device.id)
+    const existingDevice = this.deviceList.get(device.id) || this.findDeviceByAddress(device.ip, device.port)
 
     if (existingDevice) {
       // Update existing device
-      existingDevice.lastSeen = Date.now()
-      existingDevice.status = 'online'
-      this.emit('deviceUpdated', existingDevice)
+      const mergedDevice: DeviceInfo = {
+        ...existingDevice,
+        ...device,
+        id: existingDevice.id,
+        lastSeen: Date.now(),
+        status: 'online'
+      }
+      this.deviceList.set(existingDevice.id, mergedDevice)
+      this.emit('deviceUpdated', mergedDevice)
     } else {
       // Add new device
       device.lastSeen = Date.now()
@@ -353,12 +368,18 @@ export class UDPService extends EventEmitter {
    */
   private handleHeartbeat(message: NetworkMessage): void {
     const device = message.sender
-    const existingDevice = this.deviceList.get(device.id)
+    const existingDevice = this.deviceList.get(device.id) || this.findDeviceByAddress(device.ip, device.port)
 
     if (existingDevice) {
-      existingDevice.lastSeen = Date.now()
-      existingDevice.status = message.payload.status || 'online'
-      this.emit('deviceUpdated', existingDevice)
+      const mergedDevice: DeviceInfo = {
+        ...existingDevice,
+        ...device,
+        id: existingDevice.id,
+        lastSeen: Date.now(),
+        status: message.payload.status || 'online'
+      }
+      this.deviceList.set(existingDevice.id, mergedDevice)
+      this.emit('deviceUpdated', mergedDevice)
       this.emit('devicesUpdated', this.getDeviceList())
     }
   }

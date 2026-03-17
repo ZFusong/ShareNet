@@ -13,6 +13,8 @@ export function useNetwork() {
     updateDevice,
     removeDevice,
     setLocalDevice,
+    setHiddenDevices,
+    setDeviceAliases,
     setNetworkStatus,
     setNetworkError
   } = useDeviceStore()
@@ -26,6 +28,18 @@ export function useNetwork() {
         const savedSettings = await window.electronAPI?.getSettings()
         const udpPort = savedSettings?.network?.udpPort ?? 8888
         const tcpPort = savedSettings?.network?.tcpPort ?? 8889
+        const hiddenRecord = (savedSettings?.device?.hiddenDevices as Record<string, Device>) || {}
+        const aliasRecord = savedSettings?.device?.aliases || {}
+        const hiddenMap = new Map<string, Device>()
+        Object.entries(hiddenRecord).forEach(([key, device]) => {
+          hiddenMap.set(key, device as Device)
+        })
+        const aliasMap = new Map<string, string>()
+        Object.entries(aliasRecord).forEach(([key, alias]) => {
+          aliasMap.set(key, alias)
+        })
+        setHiddenDevices(hiddenMap)
+        setDeviceAliases(aliasMap)
 
         const errors: { udp?: string; tcp?: string } = {}
 
@@ -43,8 +57,9 @@ export function useNetwork() {
           const hostname = await window.electronAPI?.getHostname()
 
           await window.electronAPI?.udpInitLocalDevice({
-            name: hostname || 'ShareNet',
-            role: 'bidirectional',
+            name: savedSettings?.device?.name || hostname || 'ShareNet',
+            role: savedSettings?.device?.role || 'bidirectional',
+            tags: savedSettings?.device?.tags || [],
             port: tcpPort
           })
 
@@ -117,5 +132,5 @@ export function useNetwork() {
       window.electronAPI?.tcpStop()
       window.electronAPI?.removeAllListeners?.('network-error')
     }
-  }, [setDevices, addDevice, updateDevice, removeDevice, setLocalDevice, setNetworkStatus, setNetworkError])
+  }, [setDevices, addDevice, updateDevice, removeDevice, setLocalDevice, setHiddenDevices, setDeviceAliases, setNetworkStatus, setNetworkError])
 }

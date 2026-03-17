@@ -130,14 +130,15 @@ export function SettingsPanel() {
           : `UDP 启动失败: ${message}`
       }
 
-      if (!errors.udp) {
-        const hostname = await window.electronAPI?.getHostname()
-        await window.electronAPI?.udpInitLocalDevice({
-          name: settings.deviceName || hostname || 'ShareNet',
-          role: settings.deviceRole,
-          port: settings.tcpPort
-        })
-      }
+        if (!errors.udp) {
+          const hostname = await window.electronAPI?.getHostname()
+          await window.electronAPI?.udpInitLocalDevice({
+            name: settings.deviceName || hostname || 'ShareNet',
+            role: settings.deviceRole,
+            tags: settings.deviceTags,
+            port: settings.tcpPort
+          })
+        }
 
       const tcpResult = await window.electronAPI?.tcpStart({ port: settings.tcpPort })
       if (!tcpResult?.success) {

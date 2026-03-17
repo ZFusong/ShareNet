@@ -97,8 +97,7 @@ function App() {
       {/* Footer */}
       <footer className="footer">
         <div className="status-info">
-          <span id="network-status">网络: {networkStatus}</span>
-          <span id="device-count">在线设备: {deviceCount}</span>
+          {/* <span id="network-status">网络: {networkStatus}</span> */}
           <Dialog.Root>
             <Dialog.Trigger asChild>
               <button id="selected-count" className="text-xs text-primary hover:underline">

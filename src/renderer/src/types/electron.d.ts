@@ -5,6 +5,8 @@ export interface AppSettings {
     name?: string
     role?: 'controller' | 'controlled' | 'bidirectional'
     tags?: string[]
+    aliases?: Record<string, string>
+    hiddenDevices?: Record<string, unknown>
   }
   network?: {
     udpPort?: number

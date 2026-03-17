@@ -6,7 +6,7 @@
 import * as Checkbox from '@radix-ui/react-checkbox'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
-import * as ToggleGroup from '@radix-ui/react-toggle-group'
+import * as Select from '@radix-ui/react-select'
 import { useState } from 'react'
 import { type Device } from '../../stores/deviceStore'
 import { useDevices } from '../../hooks/useDevices'
@@ -60,37 +60,73 @@ export function DeviceList() {
     filteredDevices,
     selectedDevices,
     filter,
+    localDevice,
+    hiddenDevicesList,
+    deviceAliases,
     toggleSelectDevice,
     selectDevice,
     deselectAll,
     setFilter,
     addDeviceManually,
-    removeDevice,
+    hideDevice,
+    unhideDevice,
+    setAliasForDevice,
     refreshDevices
   } = useDevices()
 
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [newDeviceIP, setNewDeviceIP] = useState('')
-  const [newDeviceName, setNewDeviceName] = useState('')
+  const [newDeviceAlias, setNewDeviceAlias] = useState('')
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline' | 'busy'>('all')
   const [tagFilter, setTagFilter] = useState<string>('all')
+  const [aliasTarget, setAliasTarget] = useState<Device | null>(null)
+  const [aliasInput, setAliasInput] = useState('')
 
   const handleAddDevice = async () => {
     if (!newDeviceIP.trim()) return
 
-    await addDeviceManually(newDeviceIP, newDeviceName || undefined)
+    await addDeviceManually(newDeviceIP)
+    if (newDeviceAlias.trim()) {
+      const trimmed = newDeviceIP.trim()
+      const parts = trimmed.split(':')
+      const host = parts[0] || trimmed
+      let port = 0
+      if (parts.length === 2 && parts[1]) {
+        const parsed = Number(parts[1])
+        port = Number.isFinite(parsed) ? parsed : 0
+      }
+      if (!port) {
+        const savedSettings = await window.electronAPI?.getSettings()
+        port = savedSettings?.network?.tcpPort ?? 8889
+      }
+      await setAliasForDevice(`${host}:${port}`, newDeviceAlias)
+    }
     setNewDeviceIP('')
-    setNewDeviceName('')
+    setNewDeviceAlias('')
     setShowAddDialog(false)
   }
 
-  const handleRemoveDevice = async (id: string, e: React.MouseEvent) => {
+  const handleHideDevice = (device: Device, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm('确定要移除此设备吗？')) {
-      await removeDevice(id)
-    }
+    hideDevice(device)
   }
+
+  const handleOpenAlias = (device: Device, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setAliasTarget(device)
+    const key = `${device.ip}:${device.port}`
+    setAliasInput(deviceAliases.get(key) || '')
+  }
+
+  const handleSaveAlias = async () => {
+    if (!aliasTarget) return
+    const key = `${aliasTarget.ip}:${aliasTarget.port}`
+    await setAliasForDevice(key, aliasInput)
+    setAliasTarget(null)
+  }
+
+  const getDeviceKey = (device: Device) => `${device.ip}:${device.port}`
 
   const allTags = Array.from(
     new Set(
@@ -105,7 +141,9 @@ export function DeviceList() {
 
       if (!searchText.trim()) return true
       const text = searchText.trim().toLowerCase()
+      const alias = getAliasName(device).toLowerCase()
       return (
+        (alias && alias.includes(text)) ||
         device.name.toLowerCase().includes(text) ||
         device.ip.toLowerCase().includes(text) ||
         device.tags.some((tag) => tag.toLowerCase().includes(text))
@@ -131,6 +169,16 @@ export function DeviceList() {
 
     visibleDevices.forEach((device) => selectDevice(device.id))
   }
+
+  const getDisplayName = (device: Device) => {
+    if (!localDevice) return device.name
+    const isSameDevice =
+      device.id === localDevice.id ||
+      (device.ip === localDevice.ip && device.port === localDevice.port)
+    return isSameDevice ? localDevice.name : device.name
+  }
+
+  const getAliasName = (device: Device) => deviceAliases.get(getDeviceKey(device)) || ''
 
   return (
     <div className="device-list-container flex flex-col h-full">
@@ -169,12 +217,12 @@ export function DeviceList() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">设备名称（可选）</label>
+                    <label className="block text-sm font-medium mb-1">设备别名（可选）</label>
                     <input
                       type="text"
-                      value={newDeviceName}
-                      onChange={(e) => setNewDeviceName(e.target.value)}
-                      placeholder="设备名称"
+                      value={newDeviceAlias}
+                      onChange={(e) => setNewDeviceAlias(e.target.value)}
+                      placeholder="设备别名"
                       className="w-full px-3 py-2 border rounded-md"
                     />
                   </div>
@@ -194,77 +242,89 @@ export function DeviceList() {
       </div>
 
       {/* Filter bar */}
-      <div className="filter-bar p-4 border-b space-y-3">
-        <input
-          type="text"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          placeholder="搜索设备名称或标签"
-          className="w-full px-3 py-2 border rounded-md text-sm bg-background"
-        />
-        <div className="flex gap-3 flex-wrap items-center">
-          <div className="text-xs text-muted-foreground">分组:</div>
-          <ToggleGroup.Root
-            type="single"
+      <div className="filter-bar p-4 border-b">
+        <div className="flex items-center gap-2">
+          <Select.Root
             value={filter.type}
             onValueChange={(value) => value && setFilter({ type: value as any })}
-            className="flex gap-1 flex-wrap"
           >
-            <ToggleGroup.Item
-              value="all"
-              className={`px-3 py-1.5 text-sm rounded ${
-                filter.type === 'all' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-              }`}
-            >
-              全部
-            </ToggleGroup.Item>
-            <ToggleGroup.Item
-              value="controller"
-              className={`px-3 py-1.5 text-sm rounded ${
-                filter.type === 'controller' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-              }`}
-            >
-              主控
-            </ToggleGroup.Item>
-            <ToggleGroup.Item
-              value="controlled"
-              className={`px-3 py-1.5 text-sm rounded ${
-                filter.type === 'controlled' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-              }`}
-            >
-              被控
-            </ToggleGroup.Item>
-            <ToggleGroup.Item
-              value="bidirectional"
-              className={`px-3 py-1.5 text-sm rounded ${
-                filter.type === 'bidirectional' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-              }`}
-            >
-              双向
-            </ToggleGroup.Item>
-          </ToggleGroup.Root>
-        </div>
-        <div className="flex gap-2 flex-wrap text-sm">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-2 py-1 border rounded text-sm bg-background"
-          >
-            <option value="all">全部状态</option>
-            <option value="online">在线</option>
-            <option value="busy">忙碌</option>
-            <option value="offline">离线</option>
-          </select>
-          <select
-            value={tagFilter}
-            onChange={(e) => setTagFilter(e.target.value)}
-            className="px-2 py-1 border rounded text-sm bg-background"
-          >
-            <option value="all">全部标签</option>
-            {allTags.map((tag) => (
-              <option key={tag} value={tag}>{tag}</option>
-            ))}
-          </select>
+            <Select.Trigger className="flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28">
+              <Select.Value />
+              <Select.Icon>▼</Select.Icon>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Content className="bg-background border rounded shadow-lg z-50">
+                <Select.Viewport className="p-1">
+                  <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.ItemText>全部分组</Select.ItemText>
+                  </Select.Item>
+                  <Select.Item value="controller" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.ItemText>主控</Select.ItemText>
+                  </Select.Item>
+                  <Select.Item value="controlled" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.ItemText>被控</Select.ItemText>
+                  </Select.Item>
+                  <Select.Item value="bidirectional" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.ItemText>双向</Select.ItemText>
+                  </Select.Item>
+                </Select.Viewport>
+              </Select.Content>
+            </Select.Portal>
+          </Select.Root>
+
+          <Select.Root value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+            <Select.Trigger className="flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28">
+              <Select.Value />
+              <Select.Icon>▼</Select.Icon>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Content className="bg-background border rounded shadow-lg z-50">
+                <Select.Viewport className="p-1">
+                  <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.ItemText>全部状态</Select.ItemText>
+                  </Select.Item>
+                  <Select.Item value="online" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.ItemText>在线</Select.ItemText>
+                  </Select.Item>
+                  <Select.Item value="busy" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.ItemText>忙碌</Select.ItemText>
+                  </Select.Item>
+                  <Select.Item value="offline" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.ItemText>离线</Select.ItemText>
+                  </Select.Item>
+                </Select.Viewport>
+              </Select.Content>
+            </Select.Portal>
+          </Select.Root>
+
+          <Select.Root value={tagFilter} onValueChange={(value) => setTagFilter(value)}>
+            <Select.Trigger className="flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28">
+              <Select.Value />
+              <Select.Icon>▼</Select.Icon>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Content className="bg-background border rounded shadow-lg z-50">
+                <Select.Viewport className="p-1">
+                  <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.ItemText>全部标签</Select.ItemText>
+                  </Select.Item>
+                  {allTags.map((tag) => (
+                    <Select.Item key={tag} value={tag} className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                      <Select.ItemText>{tag}</Select.ItemText>
+                    </Select.Item>
+                  ))}
+                </Select.Viewport>
+              </Select.Content>
+            </Select.Portal>
+          </Select.Root>
+
+          <input
+            type="text"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="搜索设备名称或标签"
+            className="flex-1 min-w-0 px-3 py-2 border rounded-md text-sm bg-background"
+          />
         </div>
       </div>
 
@@ -296,7 +356,7 @@ export function DeviceList() {
       </div>
 
       {/* Device list */}
-      <ScrollArea.Root className="flex-1 overflow-hidden">
+      <ScrollArea.Root className="h-[50vh] overflow-hidden">
         <ScrollArea.Viewport className="h-full w-full">
           {visibleDevices.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
@@ -311,17 +371,17 @@ export function DeviceList() {
               {visibleDevices.map((device) => (
                 <div
                   key={device.id}
-                  className={`device-item p-4 border-b cursor-pointer transition-colors ${
+                  className={`device-item group p-3 border-b cursor-pointer transition-colors ${
                     selectedDevices.has(device.id) ? 'bg-primary/10' : 'hover:bg-accent'
                   }`}
                   onClick={() => toggleSelectDevice(device.id)}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-center gap-3">
                     <Checkbox.Root
                       checked={selectedDevices.has(device.id)}
                       onCheckedChange={() => toggleSelectDevice(device.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 mt-0.5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary"
+                      className="w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary"
                     >
                       <Checkbox.Indicator>
                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -332,23 +392,33 @@ export function DeviceList() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">{device.name}</span>
-                        <button
-                          onClick={(e) => handleRemoveDevice(device.id, e)}
-                          className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
-                          title="移除设备"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="text-sm text-muted-foreground truncate mt-0.5">
-                        {device.ip}
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
+                        {getAliasName(device) ? (
+                          <div className="flex items-baseline gap-2 min-w-0">
+                            <span className="font-medium truncate">{getAliasName(device)}</span>
+                            <span className="text-xs text-muted-foreground truncate">{getDisplayName(device)}</span>
+                          </div>
+                        ) : (
+                          <span className="font-medium truncate">{getDisplayName(device)}</span>
+                        )}
                         <StatusBadge status={device.status} />
                         <RoleBadge role={device.role} />
+                        <button
+                          onClick={(e) => handleOpenAlias(device, e)}
+                          className="text-xs px-2 py-0.5 border rounded text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100"
+                          title="设置别名"
+                        >
+                          别名
+                        </button>
+                        <button
+                          onClick={(e) => handleHideDevice(device, e)}
+                          className="ml-auto text-xs px-2 py-0.5 border rounded text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100"
+                          title="隐藏设备"
+                        >
+                          隐藏
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <span className="truncate">{device.ip}:{device.port}</span>
                         {device.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {device.tags.slice(0, 2).map((tag) => (
@@ -360,6 +430,9 @@ export function DeviceList() {
                               <span className="text-xs text-muted-foreground">+{device.tags.length - 2}</span>
                             )}
                           </div>
+                        )}
+                        {device.tags.length === 0 && (
+                          <span className="text-xs text-muted-foreground">无标签</span>
                         )}
                       </div>
                     </div>
@@ -375,14 +448,111 @@ export function DeviceList() {
       </ScrollArea.Root>
 
       {/* Device count */}
-      <div className="device-count p-3 border-t text-sm text-muted-foreground">
-        共 {visibleDevices.length} 个设备
-        {selectedDevices.size > 0 && (
-          <span className="ml-2 text-primary">
-            (已选 {selectedDevices.size})
-          </span>
-        )}
+      <div className="device-count p-3 border-t text-sm text-muted-foreground flex items-center justify-between">
+        <div>
+          共 {visibleDevices.length} 个设备
+          {selectedDevices.size > 0 && (
+            <span className="ml-2 text-primary">
+              (已选 {selectedDevices.size})
+            </span>
+          )}
+        </div>
+        <Dialog.Root>
+          <Dialog.Trigger asChild>
+            <button className="text-xs px-2 py-1 border rounded hover:bg-secondary text-foreground">
+              隐藏列表{hiddenDevicesList.length > 0 ? `(${hiddenDevicesList.length})` : ''}
+            </button>
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[520px] max-w-[90vw]">
+              <Dialog.Title className="text-lg font-semibold mb-4">隐藏列表</Dialog.Title>
+              <div className="border rounded">
+                {hiddenDevicesList.length === 0 ? (
+                  <div className="p-4 text-sm text-muted-foreground text-center">暂无隐藏设备</div>
+                ) : (
+                  <div className="divide-y">
+                    {hiddenDevicesList.map((device) => (
+                      <div key={device.id} className="p-3 flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            {getAliasName(device) ? (
+                              <div className="flex items-baseline gap-2 min-w-0">
+                                <span className="font-medium truncate">{getAliasName(device)}</span>
+                                <span className="text-xs text-muted-foreground truncate">{getDisplayName(device)}</span>
+                              </div>
+                            ) : (
+                              <span className="font-medium truncate">{getDisplayName(device)}</span>
+                            )}
+                            <StatusBadge status={device.status} />
+                            <RoleBadge role={device.role} />
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                            <span className="truncate">{device.ip}:{device.port}</span>
+                            {device.tags.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {device.tags.slice(0, 2).map((tag) => (
+                                  <span key={tag} className="px-1.5 py-0.5 text-xs bg-secondary rounded">
+                                    {tag}
+                                  </span>
+                                ))}
+                                {device.tags.length > 2 && (
+                                  <span className="text-xs text-muted-foreground">+{device.tags.length - 2}</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">无标签</span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => unhideDevice(`${device.ip}:${device.port}`)}
+                          className="text-xs px-2 py-1 border rounded hover:bg-secondary"
+                        >
+                          取消隐藏
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end mt-4">
+                <Dialog.Close asChild>
+                  <button className="btn-secondary">关闭</button>
+                </Dialog.Close>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
       </div>
+      <Dialog.Root open={!!aliasTarget} onOpenChange={(open) => !open && setAliasTarget(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96">
+            <Dialog.Title className="text-lg font-semibold mb-4">设置设备别名</Dialog.Title>
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">
+                {aliasTarget ? `${aliasTarget.ip}:${aliasTarget.port}` : ''}
+              </div>
+              <input
+                type="text"
+                value={aliasInput}
+                onChange={(e) => setAliasInput(e.target.value)}
+                placeholder="输入别名"
+                className="w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <Dialog.Close asChild>
+                <button className="btn-secondary" onClick={() => setAliasTarget(null)}>取消</button>
+              </Dialog.Close>
+              <button onClick={handleSaveAlias} className="btn-primary">
+                保存
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   )
 }

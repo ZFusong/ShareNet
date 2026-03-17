@@ -13,6 +13,8 @@ export function useDevices() {
     selectedDevices,
     filter,
     offlineDevices,
+    hiddenDevices,
+    deviceAliases,
     selectDevice,
     deselectDevice,
     setDevices,
@@ -24,8 +26,13 @@ export function useDevices() {
     selectAll,
     deselectAll,
     setFilter,
+    hideDevice,
+    unhideDevice,
+    setDeviceAlias,
+    removeDeviceAlias,
     getFilteredDevices,
-    getSelectedDevicesList
+    getSelectedDevicesList,
+    getHiddenDevicesList
   } = useDeviceStore()
 
   // Refresh devices manually
@@ -106,6 +113,56 @@ export function useDevices() {
 
   const filteredDevices = getFilteredDevices()
   const selectedDevicesList = getSelectedDevicesList()
+  const hiddenDevicesList = getHiddenDevicesList()
+
+  const persistDeviceSettings = useCallback(async (updates: { hiddenDevices?: Map<string, Device>; aliases?: Map<string, string> }) => {
+    const settings = await window.electronAPI?.getSettings()
+    const currentDevice = settings?.device || {}
+    const nextHidden = updates.hiddenDevices ?? hiddenDevices
+    const nextAliases = updates.aliases ?? deviceAliases
+    const hiddenRecord: Record<string, Device> = {}
+    for (const [key, device] of nextHidden) {
+      hiddenRecord[key] = device
+    }
+    const aliasRecord: Record<string, string> = {}
+    for (const [key, alias] of nextAliases) {
+      aliasRecord[key] = alias
+    }
+    await window.electronAPI?.setSetting('device', {
+      ...currentDevice,
+      hiddenDevices: hiddenRecord,
+      aliases: aliasRecord
+    })
+  }, [deviceAliases, hiddenDevices])
+
+  const hideDeviceWithPersist = useCallback(async (device: Device) => {
+    hideDevice(device)
+    const nextHidden = new Map(hiddenDevices)
+    nextHidden.set(`${device.ip}:${device.port}`, device)
+    await persistDeviceSettings({ hiddenDevices: nextHidden })
+  }, [hideDevice, hiddenDevices, persistDeviceSettings])
+
+  const unhideDeviceWithPersist = useCallback(async (key: string) => {
+    unhideDevice(key)
+    const nextHidden = new Map(hiddenDevices)
+    nextHidden.delete(key)
+    await persistDeviceSettings({ hiddenDevices: nextHidden })
+  }, [unhideDevice, hiddenDevices, persistDeviceSettings])
+
+  const setAliasWithPersist = useCallback(async (key: string, alias: string) => {
+    if (alias.trim()) {
+      setDeviceAlias(key, alias)
+    } else {
+      removeDeviceAlias(key)
+    }
+    const nextAliases = new Map(deviceAliases)
+    if (alias.trim()) {
+      nextAliases.set(key, alias.trim())
+    } else {
+      nextAliases.delete(key)
+    }
+    await persistDeviceSettings({ aliases: nextAliases })
+  }, [deviceAliases, persistDeviceSettings, removeDeviceAlias, setDeviceAlias])
 
   return {
     // State
@@ -114,14 +171,20 @@ export function useDevices() {
     selectedDevices,
     filter,
     offlineDevices,
+    hiddenDevices,
+    deviceAliases,
     filteredDevices,
     selectedDevicesList,
+    hiddenDevicesList,
 
     // Actions
     refreshDevices,
     addDeviceManually,
     removeDevice: removeDeviceById,
     updateLocalDeviceInfo,
+    hideDevice: hideDeviceWithPersist,
+    unhideDevice: unhideDeviceWithPersist,
+    setAliasForDevice: setAliasWithPersist,
     toggleSelectDevice,
     selectDevice,
     deselectDevice,
