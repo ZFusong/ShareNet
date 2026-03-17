@@ -8,6 +8,7 @@ export interface AppSettings {
     aliases?: Record<string, string>
     hiddenDevices?: Record<string, unknown>
     persistentDevices?: Record<string, DeviceInfo>
+    deviceGroups?: Array<{ id: string; name: string; deviceKeys: string[] }>
   }
   network?: {
     udpPort?: number

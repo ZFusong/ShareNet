@@ -15,6 +15,7 @@ export function useNetwork() {
     setLocalDevice,
     setHiddenDevices,
     setPersistentDevices,
+    setDeviceGroups,
     setDeviceAliases,
     setNetworkStatus,
     setNetworkError,
@@ -34,6 +35,7 @@ export function useNetwork() {
         const hiddenRecord = (savedSettings?.device?.hiddenDevices as Record<string, Device>) || {}
         const aliasRecord = savedSettings?.device?.aliases || {}
         const persistentRecord = (savedSettings?.device?.persistentDevices as Record<string, Device>) || {}
+        const groupsRecord = (savedSettings?.device?.deviceGroups as Array<{ id: string; name: string; deviceKeys: string[] }>) || []
         const hiddenMap = new Map<string, Device>()
         Object.entries(hiddenRecord).forEach(([key, device]) => {
           hiddenMap.set(key, device as Device)
@@ -48,6 +50,7 @@ export function useNetwork() {
         })
         setHiddenDevices(hiddenMap)
         setPersistentDevices(persistentMap)
+        setDeviceGroups(groupsRecord)
         setDeviceAliases(aliasMap)
 
         const errors: { udp?: string; tcp?: string } = {}
@@ -180,6 +183,7 @@ export function useNetwork() {
     setLocalDevice,
     setHiddenDevices,
     setPersistentDevices,
+    setDeviceGroups,
     setDeviceAliases,
     setNetworkStatus,
     setNetworkError,

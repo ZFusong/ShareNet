@@ -7,8 +7,8 @@ import * as Checkbox from '@radix-ui/react-checkbox'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import * as Select from '@radix-ui/react-select'
-import { useEffect, useRef, useState } from 'react'
-import { type Device } from '../../stores/deviceStore'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type Device, type DeviceGroup } from '../../stores/deviceStore'
 import { useDevices } from '../../hooks/useDevices'
 
 // Status indicator component
@@ -63,6 +63,7 @@ export function DeviceList() {
     localDevice,
     hiddenDevicesList,
     persistentDevices,
+    deviceGroups,
     deviceAliases,
     toggleSelectDevice,
     selectDevice,
@@ -74,6 +75,10 @@ export function DeviceList() {
     setAliasForDevice,
     addPersistentDevice,
     removePersistentDevice,
+    addDeviceGroup,
+    deleteDeviceGroup,
+    addDeviceToGroup,
+    removeDeviceFromGroup,
     refreshDevices,
     removeDevice
   } = useDevices()
@@ -89,6 +94,15 @@ export function DeviceList() {
   const [searchHitCounts, setSearchHitCounts] = useState<Map<string, number>>(new Map())
   const lastSearchText = useRef('')
   const SEARCH_PERSIST_THRESHOLD = 3
+  const [showGroupDialog, setShowGroupDialog] = useState(false)
+  const [groupNameInput, setGroupNameInput] = useState('')
+  const [groupNameError, setGroupNameError] = useState('')
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState<DeviceGroup | null>(null)
+  const groupNameInputRef = useRef<HTMLInputElement | null>(null)
+  const [onlineOpen, setOnlineOpen] = useState(true)
+  const [offlineOpen, setOfflineOpen] = useState(false)
+  const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({})
 
   const handleAddDevice = async () => {
     if (!newDeviceIP.trim()) return
@@ -189,6 +203,55 @@ export function DeviceList() {
   }
 
   const getAliasName = (device: Device) => deviceAliases.get(getDeviceKey(device)) || ''
+
+  const isGroupNameDuplicate = (name: string) => {
+    const trimmed = name.trim().toLowerCase()
+    if (!trimmed) return false
+    return deviceGroups.some((group) => group.name.trim().toLowerCase() === trimmed)
+  }
+
+  const handleCreateGroup = async () => {
+    const trimmed = groupNameInput.trim()
+    if (!trimmed) {
+      setGroupNameError('请输入分组名称')
+      return
+    }
+    if (isGroupNameDuplicate(trimmed)) {
+      setGroupNameError('分组名称已存在')
+      return
+    }
+    const group: DeviceGroup = {
+      id: `group-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: trimmed,
+      deviceKeys: []
+    }
+    await addDeviceGroup(group)
+    setGroupNameInput('')
+    setGroupNameError('')
+    setShowGroupDialog(false)
+  }
+
+  const handleDeleteGroup = async () => {
+    if (!deleteGroupTarget) return
+    await deleteDeviceGroup(deleteGroupTarget.id)
+    if (editingGroupId === deleteGroupTarget.id) {
+      setEditingGroupId(null)
+    }
+    setDeleteGroupTarget(null)
+  }
+
+  useEffect(() => {
+    setGroupOpen((prev) => {
+      const next: Record<string, boolean> = { ...prev }
+      deviceGroups.forEach((group) => {
+        if (next[group.id] === undefined) next[group.id] = true
+      })
+      Object.keys(next).forEach((id) => {
+        if (!deviceGroups.find((group) => group.id === id)) delete next[id]
+      })
+      return next
+    })
+  }, [deviceGroups])
 
   const handleDeleteSelected = async () => {
     if (selectedDevices.size === 0) return
@@ -296,6 +359,47 @@ export function DeviceList() {
 
   const onlineDevices = visibleDevices.filter((device) => device.status !== 'offline')
   const offlineDevices = visibleDevices.filter((device) => device.status === 'offline')
+  const groupedKeys = new Set(deviceGroups.flatMap((group) => group.deviceKeys))
+  const ungroupedOnlineDevices = onlineDevices.filter((device) => !groupedKeys.has(getDeviceKey(device)))
+  const groupsWithDevices = deviceGroups.map((group) => ({
+    group,
+    devices: onlineDevices.filter((device) => group.deviceKeys.includes(getDeviceKey(device)))
+  }))
+  const editingGroup = deviceGroups.find((group) => group.id === editingGroupId) || null
+  const editingGroupDevices = editingGroup
+    ? onlineDevices.filter((device) => editingGroup.deviceKeys.includes(getDeviceKey(device)))
+    : []
+  const editUngroupedOnline = onlineDevices.filter((device) => {
+    if (!editingGroup) return false
+    return !editingGroup.deviceKeys.includes(getDeviceKey(device))
+  })
+  const deviceGroupMap = new Map<string, DeviceGroup>()
+  deviceGroups.forEach((group) => {
+    group.deviceKeys.forEach((key) => deviceGroupMap.set(key, group))
+  })
+  const moveDeviceToGroup = async (device: Device, targetGroupId: string) => {
+    const key = getDeviceKey(device)
+    const currentGroup = deviceGroupMap.get(key)
+    if (currentGroup && currentGroup.id !== targetGroupId) {
+      await removeDeviceFromGroup(currentGroup.id, key)
+    }
+    await addDeviceToGroup(targetGroupId, key)
+  }
+
+  const renderGroupDeviceRow = (device: Device, action: ReactNode, meta?: ReactNode) => (
+    <div key={device.id} className="flex items-center gap-2 p-2 border-b last:border-b-0">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium truncate">{getDisplayName(device)}</span>
+          {meta}
+          <StatusBadge status={device.status} />
+          <RoleBadge role={device.role} />
+        </div>
+        <div className="text-xs text-muted-foreground truncate">{device.ip}:{device.port}</div>
+      </div>
+      {action}
+    </div>
+  )
 
   return (
     <div className="device-list-container flex flex-col h-full">
@@ -494,26 +598,123 @@ export function DeviceList() {
             </div>
           ) : (
             <div className="device-list">
-              <details open className="border-b last:border-b-0">
-                <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-foreground bg-secondary/40">
-                  在线设备 ({onlineDevices.length})
-                </summary>
-                {onlineDevices.length === 0 ? (
-                  <div className="p-3 text-xs text-muted-foreground">暂无在线设备</div>
-                ) : (
-                  onlineDevices.map(renderDeviceItem)
-                )}
-              </details>
-              <details className="border-b last:border-b-0">
-                <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-foreground bg-secondary/40">
+              <div className="group border-b last:border-b-0">
+                <div
+                  className="group-summary cursor-pointer select-none px-3 py-2 text-sm font-medium text-foreground bg-secondary/40 flex items-center justify-between"
+                  onClick={() => setOnlineOpen((prev) => !prev)}
+                >
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className={`details-arrow w-3.5 h-3.5 ${onlineOpen ? 'is-open' : ''}`}
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path fillRule="evenodd" d="M7.293 4.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414-1.414L11.586 10 7.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                    在线设备 ({onlineDevices.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setShowGroupDialog(true)
+                      setGroupNameInput('')
+                      setGroupNameError('')
+                      setTimeout(() => groupNameInputRef.current?.focus(), 0)
+                    }}
+                    className="group-actions text-xs px-2 py-0.5 border rounded hover:bg-secondary"
+                    title="添加分组"
+                  >
+                    +
+                  </button>
+                </div>
+                <div className={`accordion-content ${onlineOpen ? 'is-open' : ''}`}>
+                  <div className="accordion-content-inner">
+                    {ungroupedOnlineDevices.map(renderDeviceItem)}
+                    {groupsWithDevices.map(({ group, devices: groupDevices }) => (
+                      <div key={group.id} className="border-t">
+                        <div
+                          className="group-summary cursor-pointer select-none px-3 py-2 pl-8 text-sm font-medium text-foreground bg-background/60 flex items-center justify-between"
+                          onClick={() =>
+                            setGroupOpen((prev) => ({ ...prev, [group.id]: !prev[group.id] }))
+                          }
+                        >
+                          <span className="flex items-center gap-2">
+                            <svg
+                              className={`details-arrow w-3.5 h-3.5 ${groupOpen[group.id] ? 'is-open' : ''}`}
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path fillRule="evenodd" d="M7.293 4.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414-1.414L11.586 10 7.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            {group.name} ({groupDevices.length})
+                          </span>
+                          <span className="group-actions flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                setEditingGroupId(group.id)
+                              }}
+                              className="text-xs px-2 py-0.5 border rounded hover:bg-secondary"
+                            >
+                              编辑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                setDeleteGroupTarget(group)
+                              }}
+                              className="text-xs px-2 py-0.5 border rounded hover:bg-secondary text-destructive"
+                            >
+                              删除
+                            </button>
+                          </span>
+                        </div>
+                        <div className={`accordion-content ${groupOpen[group.id] ? 'is-open' : ''}`}>
+                          <div className="accordion-content-inner">
+                            {groupDevices.length === 0 ? (
+                              <div className="p-3 text-center text-xs text-muted-foreground">暂无在线设备</div>
+                            ) : (
+                              <div className="pl-6">
+                                {groupDevices.map(renderDeviceItem)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="border-b last:border-b-0">
+                <div
+                  className="group-summary cursor-pointer select-none px-3 py-2 text-sm font-medium text-foreground bg-secondary/40 flex items-center gap-2"
+                  onClick={() => setOfflineOpen((prev) => !prev)}
+                >
+                  <svg
+                    className={`details-arrow w-3.5 h-3.5 ${offlineOpen ? 'is-open' : ''}`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path fillRule="evenodd" d="M7.293 4.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414-1.414L11.586 10 7.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
                   离线设备 ({offlineDevices.length})
-                </summary>
-                {offlineDevices.length === 0 ? (
-                  <div className="p-3 text-xs text-muted-foreground">暂无离线设备</div>
-                ) : (
-                  offlineDevices.map(renderDeviceItem)
-                )}
-              </details>
+                </div>
+                <div className={`accordion-content ${offlineOpen ? 'is-open' : ''}`}>
+                  <div className="accordion-content-inner">
+                    {offlineDevices.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-muted-foreground">暂无离线设备</div>
+                    ) : (
+                      offlineDevices.map(renderDeviceItem)
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </ScrollArea.Viewport>
@@ -623,6 +824,118 @@ export function DeviceList() {
               </Dialog.Close>
               <button onClick={handleSaveAlias} className="btn-primary">
                 保存
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+      <Dialog.Root open={showGroupDialog} onOpenChange={setShowGroupDialog}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96">
+            <Dialog.Title className="text-lg font-semibold mb-4">添加在线分组</Dialog.Title>
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={groupNameInput}
+                ref={groupNameInputRef}
+                onChange={(e) => {
+                  setGroupNameInput(e.target.value)
+                  setGroupNameError('')
+                }}
+                placeholder="输入分组名称"
+                className="w-full px-3 py-2 border rounded-md"
+              />
+              {groupNameError && <div className="text-xs text-destructive">{groupNameError}</div>}
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <Dialog.Close asChild>
+                <button className="btn-secondary" onClick={() => setGroupNameError('')}>取消</button>
+              </Dialog.Close>
+              <button onClick={handleCreateGroup} className="btn-primary">
+                创建
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+      <Dialog.Root open={!!editingGroup} onOpenChange={(open) => !open && setEditingGroupId(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[720px] max-w-[95vw] max-h-[90vh] overflow-hidden">
+            <Dialog.Title className="text-lg font-semibold mb-4">
+              {editingGroup ? `编辑分组：${editingGroup.name}` : '编辑分组'}
+            </Dialog.Title>
+            <div className="border rounded mb-4">
+              <div className="px-3 py-2 text-sm font-medium bg-secondary/40">可加入的在线设备 ({editUngroupedOnline.length})</div>
+              {editUngroupedOnline.length === 0 ? (
+                <div className="p-3 text-xs text-muted-foreground">暂无可加入设备</div>
+              ) : (
+                editUngroupedOnline.map((device) =>
+                  renderGroupDeviceRow(
+                    device,
+                    <button
+                      type="button"
+                      onClick={() => editingGroup && moveDeviceToGroup(device, editingGroup.id)}
+                      className="text-xs px-2 py-0.5 border rounded hover:bg-secondary"
+                      title="加入分组"
+                    >
+                      +
+                    </button>
+                    ,
+                    deviceGroupMap.get(getDeviceKey(device))?.id
+                      ? (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
+                            {deviceGroupMap.get(getDeviceKey(device))?.name}
+                          </span>
+                        )
+                      : null
+                  )
+                )
+              )}
+            </div>
+            <div className="border rounded">
+              <div className="px-3 py-2 text-sm font-medium bg-secondary/40">分组内设备 ({editingGroupDevices.length})</div>
+              {editingGroupDevices.length === 0 ? (
+                <div className="p-3 text-xs text-muted-foreground">暂无分组内设备</div>
+              ) : (
+                editingGroupDevices.map((device) =>
+                  renderGroupDeviceRow(
+                    device,
+                    <button
+                      type="button"
+                      onClick={() => editingGroup && removeDeviceFromGroup(editingGroup.id, getDeviceKey(device))}
+                      className="text-xs px-2 py-0.5 border rounded hover:bg-secondary"
+                      title="移出分组"
+                    >
+                      -
+                    </button>
+                  )
+                )
+              )}
+            </div>
+            <div className="flex justify-end mt-4">
+              <Dialog.Close asChild>
+                <button className="btn-secondary" onClick={() => setEditingGroupId(null)}>关闭</button>
+              </Dialog.Close>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+      <Dialog.Root open={!!deleteGroupTarget} onOpenChange={(open) => !open && setDeleteGroupTarget(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96">
+            <Dialog.Title className="text-lg font-semibold mb-2">确认删除分组</Dialog.Title>
+            <div className="text-sm text-muted-foreground">
+              {deleteGroupTarget ? `确认删除分组“${deleteGroupTarget.name}”？删除后分组内设备将回到在线列表。` : ''}
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <Dialog.Close asChild>
+                <button className="btn-secondary">取消</button>
+              </Dialog.Close>
+              <button onClick={handleDeleteGroup} className="btn-primary">
+                确认删除
               </button>
             </div>
           </Dialog.Content>

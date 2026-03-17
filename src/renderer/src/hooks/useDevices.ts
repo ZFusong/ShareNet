@@ -15,6 +15,7 @@ export function useDevices() {
     offlineDevices,
     hiddenDevices,
     persistentDevices,
+    deviceGroups,
     deviceAliases,
     selectDevice,
     deselectDevice,
@@ -31,6 +32,12 @@ export function useDevices() {
     unhideDevice,
     addPersistentDevice,
     removePersistentDevice,
+    setDeviceGroups,
+    addDeviceGroup,
+    updateDeviceGroup,
+    deleteDeviceGroup,
+    addDeviceToGroup,
+    removeDeviceFromGroup,
     setDeviceAlias,
     removeDeviceAlias,
     getFilteredDevices,
@@ -151,6 +158,15 @@ export function useDevices() {
     })
   }, [])
 
+  const persistDeviceGroups = useCallback(async (groups: { id: string; name: string; deviceKeys: string[] }[]) => {
+    const settings = await window.electronAPI?.getSettings()
+    const currentDevice = settings?.device || {}
+    await window.electronAPI?.setSetting('device', {
+      ...currentDevice,
+      deviceGroups: groups
+    })
+  }, [])
+
   const hideDeviceWithPersist = useCallback(async (device: Device) => {
     hideDevice(device)
     const nextHidden = new Map(hiddenDevices)
@@ -196,6 +212,46 @@ export function useDevices() {
     await persistPersistentDevices(nextPersistent)
   }, [persistPersistentDevices, persistentDevices, removePersistentDevice])
 
+  const addDeviceGroupWithPersist = useCallback(async (group: { id: string; name: string; deviceKeys: string[] }) => {
+    const nextGroups = [...deviceGroups, group]
+    addDeviceGroup(group)
+    await persistDeviceGroups(nextGroups)
+  }, [addDeviceGroup, deviceGroups, persistDeviceGroups])
+
+  const updateDeviceGroupWithPersist = useCallback(async (groupId: string, updates: Partial<{ name: string; deviceKeys: string[] }>) => {
+    const nextGroups = deviceGroups.map((group) =>
+      group.id === groupId ? { ...group, ...updates } : group
+    )
+    updateDeviceGroup(groupId, updates)
+    await persistDeviceGroups(nextGroups)
+  }, [deviceGroups, persistDeviceGroups, updateDeviceGroup])
+
+  const deleteDeviceGroupWithPersist = useCallback(async (groupId: string) => {
+    const nextGroups = deviceGroups.filter((group) => group.id !== groupId)
+    deleteDeviceGroup(groupId)
+    await persistDeviceGroups(nextGroups)
+  }, [deleteDeviceGroup, deviceGroups, persistDeviceGroups])
+
+  const addDeviceToGroupWithPersist = useCallback(async (groupId: string, key: string) => {
+    const nextGroups = deviceGroups.map((group) =>
+      group.id === groupId && !group.deviceKeys.includes(key)
+        ? { ...group, deviceKeys: [...group.deviceKeys, key] }
+        : group
+    )
+    addDeviceToGroup(groupId, key)
+    await persistDeviceGroups(nextGroups)
+  }, [addDeviceToGroup, deviceGroups, persistDeviceGroups])
+
+  const removeDeviceFromGroupWithPersist = useCallback(async (groupId: string, key: string) => {
+    const nextGroups = deviceGroups.map((group) =>
+      group.id === groupId
+        ? { ...group, deviceKeys: group.deviceKeys.filter((deviceKey) => deviceKey !== key) }
+        : group
+    )
+    removeDeviceFromGroup(groupId, key)
+    await persistDeviceGroups(nextGroups)
+  }, [deviceGroups, persistDeviceGroups, removeDeviceFromGroup])
+
   return {
     // State
     devices,
@@ -205,6 +261,7 @@ export function useDevices() {
     offlineDevices,
     hiddenDevices,
     persistentDevices,
+    deviceGroups,
     deviceAliases,
     filteredDevices,
     selectedDevicesList,
@@ -220,6 +277,11 @@ export function useDevices() {
     setAliasForDevice: setAliasWithPersist,
     addPersistentDevice: addPersistentDeviceWithPersist,
     removePersistentDevice: removePersistentDeviceWithPersist,
+    addDeviceGroup: addDeviceGroupWithPersist,
+    updateDeviceGroup: updateDeviceGroupWithPersist,
+    deleteDeviceGroup: deleteDeviceGroupWithPersist,
+    addDeviceToGroup: addDeviceToGroupWithPersist,
+    removeDeviceFromGroup: removeDeviceFromGroupWithPersist,
     toggleSelectDevice,
     selectDevice,
     deselectDevice,

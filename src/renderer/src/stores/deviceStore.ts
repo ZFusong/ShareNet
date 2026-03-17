@@ -22,6 +22,12 @@ export interface DeviceFilter {
   tag?: string
 }
 
+export interface DeviceGroup {
+  id: string
+  name: string
+  deviceKeys: string[]
+}
+
 const getDeviceKey = (device: Pick<Device, 'ip' | 'port'>) => `${device.ip}:${device.port}`
 
 const findHiddenKeyById = (id: string, hiddenDevices: Map<string, Device>) => {
@@ -39,6 +45,7 @@ interface DeviceState {
   offlineDevices: Map<string, Device>
   hiddenDevices: Map<string, Device>
   persistentDevices: Map<string, Device>
+  deviceGroups: DeviceGroup[]
   deviceAliases: Map<string, string>
   networkStatus: string
   networkError: { udp?: string; tcp?: string } | null
@@ -50,6 +57,12 @@ interface DeviceState {
   setPersistentDevices: (devices: Map<string, Device>) => void
   addPersistentDevice: (device: Device) => void
   removePersistentDevice: (key: string) => void
+  setDeviceGroups: (groups: DeviceGroup[]) => void
+  addDeviceGroup: (group: DeviceGroup) => void
+  updateDeviceGroup: (groupId: string, updates: Partial<DeviceGroup>) => void
+  deleteDeviceGroup: (groupId: string) => void
+  addDeviceToGroup: (groupId: string, key: string) => void
+  removeDeviceFromGroup: (groupId: string, key: string) => void
   setDeviceAliases: (aliases: Map<string, string>) => void
   setDeviceAlias: (key: string, alias: string) => void
   removeDeviceAlias: (key: string) => void
@@ -85,6 +98,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   offlineDevices: new Map(),
   hiddenDevices: new Map(),
   persistentDevices: new Map(),
+  deviceGroups: [],
   deviceAliases: new Map(),
   networkStatus: '就绪',
   networkError: null,
@@ -153,6 +167,37 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       nextPersistent.delete(key)
       return { persistentDevices: nextPersistent }
     }),
+  setDeviceGroups: (groups) => set({ deviceGroups: groups }),
+  addDeviceGroup: (group) =>
+    set((state) => ({
+      deviceGroups: [...state.deviceGroups, group]
+    })),
+  updateDeviceGroup: (groupId, updates) =>
+    set((state) => ({
+      deviceGroups: state.deviceGroups.map((group) =>
+        group.id === groupId ? { ...group, ...updates } : group
+      )
+    })),
+  deleteDeviceGroup: (groupId) =>
+    set((state) => ({
+      deviceGroups: state.deviceGroups.filter((group) => group.id !== groupId)
+    })),
+  addDeviceToGroup: (groupId, key) =>
+    set((state) => ({
+      deviceGroups: state.deviceGroups.map((group) =>
+        group.id === groupId && !group.deviceKeys.includes(key)
+          ? { ...group, deviceKeys: [...group.deviceKeys, key] }
+          : group
+      )
+    })),
+  removeDeviceFromGroup: (groupId, key) =>
+    set((state) => ({
+      deviceGroups: state.deviceGroups.map((group) =>
+        group.id === groupId
+          ? { ...group, deviceKeys: group.deviceKeys.filter((deviceKey) => deviceKey !== key) }
+          : group
+      )
+    })),
   setDeviceAliases: (aliases) => set({ deviceAliases: aliases }),
   setDeviceAlias: (key, alias) =>
     set((state) => {

@@ -203,6 +203,41 @@
   background: hsl(var(--primary) / 0.1);
 }
 
+.details-arrow {
+  transition: transform 0.15s ease;
+}
+
+.details-arrow.is-open {
+  transform: rotate(90deg);
+}
+
+.group-actions {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.group-summary:hover .group-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.2s ease, opacity 0.2s ease;
+}
+
+.accordion-content-inner {
+  overflow: hidden;
+}
+
+.accordion-content.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
 .status-dot {
   width: 8px;
   height: 8px;

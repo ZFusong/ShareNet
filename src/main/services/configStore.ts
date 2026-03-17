@@ -17,6 +17,7 @@ export interface Settings {
     aliases?: Record<string, string>
     hiddenDevices?: Record<string, unknown>
     persistentDevices?: Record<string, unknown>
+    deviceGroups?: Array<{ id: string; name: string; deviceKeys: string[] }>
   }
   network: {
     udpPort: number
@@ -93,7 +94,8 @@ const defaultSettings: Settings = {
     tags: [],
     aliases: {},
     hiddenDevices: {},
-    persistentDevices: {}
+    persistentDevices: {},
+    deviceGroups: []
   },
   network: {
     udpPort: 8888,
