@@ -10,11 +10,12 @@ type Tab = 'console' | 'resource' | 'config' | 'settings'
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('console')
-  const [deviceCount, setDeviceCount] = useState(0)
   const [appInfo, setAppInfo] = useState({ name: 'ShareNet', version: '1.0.0' })
-  const { networkStatus, networkError } = useDeviceStore()
+  const { networkStatus, networkError, devices, selectedDevices } = useDeviceStore()
   const hasNetworkError = !!(networkError?.udp || networkError?.tcp)
   const statusClass = hasNetworkError ? 'offline' : 'online'
+  const deviceCount = devices.length
+  const selectedCount = selectedDevices.size
 
   useNetwork()
 
@@ -95,6 +96,7 @@ function App() {
         <div className="status-info">
           <span id="network-status">网络: {networkStatus}</span>
           <span id="device-count">在线设备: {deviceCount}</span>
+          <span id="selected-count">已选设备: {selectedCount}</span>
         </div>
         <div className="footer-info">
           <span id="app-version">v{appInfo.version}</span>

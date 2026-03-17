@@ -46,6 +46,7 @@ export interface ElectronAPI {
 
   udpStart: (config?: { port?: number }) => Promise<{ success: boolean; error?: string }>
   udpStop: () => Promise<{ success: boolean; error?: string }>
+  udpSubscribe: () => void
   udpGetDevices: () => Promise<DeviceInfo[]>
   udpGetLocalDevice: () => Promise<DeviceInfo | null>
   udpInitLocalDevice: (deviceInfo: Partial<DeviceInfo>) => Promise<{ success: boolean; device?: DeviceInfo; error?: string }>
@@ -57,7 +58,7 @@ export interface ElectronAPI {
 
   tcpStart: (config?: { port?: number }) => Promise<{ success: boolean; error?: string }>
   tcpStop: () => Promise<{ success: boolean; error?: string }>
-  tcpSend: (targetIP: string, message: unknown) => Promise<{ success: boolean; error?: string }>
+  tcpSend: (targetIP: string, targetPort: number, message: unknown) => Promise<{ success: boolean; error?: string }>
   tcpBroadcast: (message: unknown) => Promise<{ success: boolean; count?: number; error?: string }>
   tcpConnect: (host: string, port: number, deviceInfo: unknown) => Promise<{ success: boolean; clientId?: string | null; error?: string }>
   tcpGetConnections: () => Promise<number>
@@ -91,6 +92,7 @@ export interface ElectronAPI {
 
   sendFile: (targetId: string, filePath: string) => Promise<void>
   saveReceivedFile: (messageId: string, savePath: string) => Promise<void>
+  saveReceived: (data: { type: 'text' | 'image' | 'file'; content: string; fileName?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
 
   onDeviceUpdate: (callback: (data: unknown) => void) => void
   onMessageReceived: (callback: (data: unknown) => void) => void

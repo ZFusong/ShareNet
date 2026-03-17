@@ -16,6 +16,7 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   // UDP Service
   udpStart: (config) => electron.ipcRenderer.invoke("udp-start", config),
   udpStop: () => electron.ipcRenderer.invoke("udp-stop"),
+  udpSubscribe: () => electron.ipcRenderer.send("udp-subscribe"),
   udpGetDevices: () => electron.ipcRenderer.invoke("udp-get-devices"),
   udpGetLocalDevice: () => electron.ipcRenderer.invoke("udp-get-local-device"),
   udpInitLocalDevice: (deviceInfo) => electron.ipcRenderer.invoke("udp-init-local-device", deviceInfo),
@@ -27,7 +28,7 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   // TCP Service
   tcpStart: (config) => electron.ipcRenderer.invoke("tcp-start", config),
   tcpStop: () => electron.ipcRenderer.invoke("tcp-stop"),
-  tcpSend: (targetIP, message) => electron.ipcRenderer.invoke("tcp-send", targetIP, message),
+  tcpSend: (targetIP, targetPort, message) => electron.ipcRenderer.invoke("tcp-send", targetIP, targetPort, message),
   tcpBroadcast: (message) => electron.ipcRenderer.invoke("tcp-broadcast", message),
   tcpConnect: (host, port, deviceInfo) => electron.ipcRenderer.invoke("tcp-connect", host, port, deviceInfo),
   tcpGetConnections: () => electron.ipcRenderer.invoke("tcp-get-connections"),
@@ -73,6 +74,7 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   // File transfer
   sendFile: (targetId, filePath) => electron.ipcRenderer.invoke("send-file", targetId, filePath),
   saveReceivedFile: (messageId, savePath) => electron.ipcRenderer.invoke("save-received-file", messageId, savePath),
+  saveReceived: (data) => electron.ipcRenderer.invoke("save-received", data),
   // Receive events
   onDeviceUpdate: (callback) => {
     electron.ipcRenderer.on("device-update", (_event, data) => callback(data));

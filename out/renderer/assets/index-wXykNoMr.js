@@ -14284,6 +14284,8 @@ const useDeviceStore = create((set, get) => ({
   selectedDevices: /* @__PURE__ */ new Set(),
   filter: { type: "all" },
   offlineDevices: /* @__PURE__ */ new Map(),
+  networkStatus: "就绪",
+  networkError: null,
   setDevices: (devices) => set({ devices }),
   addDevice: (device) => set((state) => {
     const exists = state.devices.find((d) => d.id === device.id);
@@ -14338,6 +14340,8 @@ const useDeviceStore = create((set, get) => ({
     newOffline.set(device.id, device);
     return { offlineDevices: newOffline };
   }),
+  setNetworkStatus: (status) => set({ networkStatus: status }),
+  setNetworkError: (error) => set({ networkError: error }),
   getFilteredDevices: () => {
     const { devices, filter } = get();
     return devices.filter((device) => {
@@ -14381,49 +14385,6 @@ function useDevices() {
     getFilteredDevices,
     getSelectedDevicesList
   } = useDeviceStore();
-  reactExports.useEffect(() => {
-    const initNetwork = async () => {
-      try {
-        await window.electronAPI?.udpStart({ port: 8888 });
-        const hostname = await window.electronAPI?.getHostname();
-        const localIP = await window.electronAPI?.getLocalIP();
-        await window.electronAPI?.udpInitLocalDevice({
-          name: hostname || "ShareNet",
-          role: "bidirectional"
-        });
-        window.electronAPI?.onUdpDevicesUpdated((deviceList) => {
-          setDevices(deviceList);
-        });
-        window.electronAPI?.onUdpDeviceAdded((device) => {
-          addDevice(device);
-        });
-        window.electronAPI?.onUdpDeviceUpdated((device) => {
-          updateDevice(device);
-        });
-        window.electronAPI?.onUdpDevicesRemoved((deviceList) => {
-          deviceList.forEach((device) => {
-            removeDevice(device.id);
-          });
-        });
-        const initialDevices = await window.electronAPI?.udpGetDevices();
-        if (initialDevices) {
-          setDevices(initialDevices);
-        }
-        const local = await window.electronAPI?.udpGetLocalDevice();
-        if (local) {
-          setLocalDevice(local);
-        }
-        await window.electronAPI?.tcpStart({ port: 8889 });
-      } catch (error) {
-        console.error("Failed to initialize network services:", error);
-      }
-    };
-    initNetwork();
-    return () => {
-      window.electronAPI?.udpStop();
-      window.electronAPI?.tcpStop();
-    };
-  }, [setDevices, addDevice, updateDevice, removeDevice, setLocalDevice]);
   const refreshDevices = reactExports.useCallback(async () => {
     const deviceList = await window.electronAPI?.udpGetDevices();
     if (deviceList) {
@@ -14431,18 +14392,46 @@ function useDevices() {
     }
   }, [setDevices]);
   const addDeviceManually = reactExports.useCallback(async (ip, name) => {
+    const trimmed = ip.trim();
+    let host = trimmed;
+    let port = 0;
+    const parts = trimmed.split(":");
+    if (parts.length === 2 && parts[0] && parts[1]) {
+      host = parts[0];
+      const parsed = Number(parts[1]);
+      port = Number.isFinite(parsed) ? parsed : 0;
+    }
+    if (!port) {
+      const savedSettings2 = await window.electronAPI?.getSettings();
+      port = savedSettings2?.network?.tcpPort ?? 8889;
+    }
+    const savedSettings = await window.electronAPI?.getSettings();
+    const localDevice2 = await window.electronAPI?.udpGetLocalDevice() || {
+      id: "local",
+      name: savedSettings?.device?.name || await window.electronAPI?.getHostname() || "ShareNet",
+      ip: await window.electronAPI?.getLocalIP() || "127.0.0.1",
+      port: savedSettings?.network?.tcpPort ?? 8889,
+      role: savedSettings?.device?.role || "bidirectional",
+      tags: savedSettings?.device?.tags || [],
+      status: "online",
+      lastSeen: Date.now()
+    };
     const device = {
-      id: `manual-${ip}`,
-      name: name || `Device-${ip}`,
-      ip,
-      port: 8889,
+      id: `manual-${host}:${port}`,
+      name: name || `Device-${host}`,
+      ip: host,
+      port,
       role: "controlled",
       tags: [],
       status: "online",
       lastSeen: Date.now()
     };
     const result = await window.electronAPI?.udpAddDevice(device);
-    return result;
+    const connectResult = await window.electronAPI?.tcpConnect(host, port, localDevice2);
+    if (!connectResult?.success) {
+      console.warn("Failed to connect to device:", connectResult?.error || "Unknown error");
+    }
+    return { ...result, connect: connectResult };
   }, []);
   const removeDeviceById = reactExports.useCallback(async (id2) => {
     const result = await window.electronAPI?.udpRemoveDevice(id2);
@@ -14561,14 +14550,14 @@ function DeviceList() {
               /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: "手动添加设备" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-sm font-medium mb-1", children: "IP 地址" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-sm font-medium mb-1", children: "IP 地址（可带端口）" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(
                     "input",
                     {
                       type: "text",
                       value: newDeviceIP,
                       onChange: (e) => setNewDeviceIP(e.target.value),
-                      placeholder: "192.168.1.100",
+                      placeholder: "192.168.1.100:8899",
                       className: "w-full px-3 py-2 border rounded-md"
                     }
                   )
@@ -14644,9 +14633,8 @@ function DeviceList() {
         Checkbox,
         {
           checked: allSelected,
-          indeterminate: someSelected && !allSelected,
           onCheckedChange: (checked) => checked ? selectAll() : deselectAll(),
-          className: "w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary",
+          className: `w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary ${someSelected && !allSelected ? "bg-primary/50" : ""}`,
           id: "select-all",
           children: /* @__PURE__ */ jsxRuntimeExports.jsx(CheckboxIndicator, { children: allSelected || someSelected && !allSelected ? /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { className: "w-3 h-3 text-white", fill: "currentColor", viewBox: "0 0 20 20", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { fillRule: "evenodd", d: "M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z", clipRule: "evenodd" }) }) : null })
         }
@@ -15767,6 +15755,10 @@ function ResourcePanel() {
   const [receivedMessages, setReceivedMessages] = reactExports.useState([]);
   const [previewImage, setPreviewImage] = reactExports.useState(null);
   const [isClearDialogOpen, setIsClearDialogOpen] = reactExports.useState(false);
+  const [isDevicePickerOpen, setIsDevicePickerOpen] = reactExports.useState(false);
+  const incomingTransfersRef = reactExports.useRef(/* @__PURE__ */ new Map());
+  const { devices, selectedDevices, toggleSelectDevice, selectAll, deselectAll, localDevice } = useDeviceStore();
+  const selectedCount = selectedDevices.size;
   const textInputRef = reactExports.useRef(null);
   const fileInputRef = reactExports.useRef(null);
   const imageInputRef = reactExports.useRef(null);
@@ -15801,17 +15793,165 @@ function ResourcePanel() {
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
   }, []);
+  const base64FromUint8 = (bytes) => {
+    let binary = "";
+    const chunkSize = 32768;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    return btoa(binary);
+  };
+  const uint8FromBase64 = (base64) => {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  };
+  const sendMessageToTargets = async (message) => {
+    const sender = localDevice || {
+      id: "local",
+      name: "Local",
+      ip: "127.0.0.1",
+      port: 0,
+      role: "bidirectional",
+      tags: [],
+      status: "online",
+      lastSeen: Date.now()
+    };
+    const targets = sendTarget === "broadcast" ? devices : devices.filter((d) => selectedDevices.has(d.id));
+    if (targets.length === 0) {
+      alert("没有可发送的目标设备");
+      return;
+    }
+    for (const device of targets) {
+      await window.electronAPI?.tcpConnect(device.ip, device.port, sender);
+      await window.electronAPI?.tcpSend(device.ip, message);
+    }
+  };
+  reactExports.useEffect(() => {
+    window.electronAPI?.onTcpMessage((message, from) => {
+      if (message?.msg_type === "SHARE_TEXT") {
+        setReceivedMessages((prev) => [
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            type: "text",
+            content: message.payload?.content || "",
+            from: from?.ip || "unknown",
+            fromName: from?.name || "Unknown",
+            timestamp: message.timestamp || Date.now()
+          },
+          ...prev
+        ]);
+        return;
+      }
+      if (message?.msg_type === "SHARE_IMAGE" || message?.msg_type === "SHARE_FILE") {
+        const payload = message.payload || {};
+        const fileId = payload.fileId;
+        const totalChunks = payload.totalChunks;
+        const chunkIndex = payload.chunkIndex;
+        const data = payload.data;
+        const fileName = payload.fileName || "file";
+        const fileSize = payload.fileSize || 0;
+        const type = message.msg_type === "SHARE_IMAGE" ? "image" : "file";
+        if (!fileId || typeof totalChunks !== "number" || typeof chunkIndex !== "number" || !data) {
+          return;
+        }
+        let transfer = incomingTransfersRef.current.get(fileId);
+        if (!transfer) {
+          transfer = {
+            fileId,
+            type,
+            fileName,
+            fileSize,
+            totalChunks,
+            receivedCount: 0,
+            chunks: new Array(totalChunks).fill(null)
+          };
+          incomingTransfersRef.current.set(fileId, transfer);
+        }
+        if (!transfer.chunks[chunkIndex]) {
+          transfer.chunks[chunkIndex] = uint8FromBase64(data);
+          transfer.receivedCount += 1;
+        }
+        if (transfer.receivedCount === transfer.totalChunks) {
+          const blob = new Blob(transfer.chunks.filter(Boolean));
+          if (transfer.type === "image") {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const dataUrl = typeof reader.result === "string" ? reader.result : "";
+              setReceivedMessages((prev) => [
+                {
+                  id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                  type: "image",
+                  content: dataUrl,
+                  from: from?.ip || "unknown",
+                  fromName: from?.name || "Unknown",
+                  timestamp: message.timestamp || Date.now(),
+                  fileName: transfer?.fileName,
+                  fileSize: transfer?.fileSize,
+                  thumbnail: dataUrl
+                },
+                ...prev
+              ]);
+              window.electronAPI?.saveReceived?.({
+                type: "image",
+                content: dataUrl,
+                fileName: transfer?.fileName
+              });
+            };
+            reader.readAsDataURL(blob);
+          } else {
+            const reader = new FileReader();
+            reader.onload = async () => {
+              const dataUrl = typeof reader.result === "string" ? reader.result : "";
+              const saved = await window.electronAPI?.saveReceived?.({
+                type: "file",
+                content: dataUrl,
+                fileName: transfer?.fileName
+              });
+              setReceivedMessages((prev) => [
+                {
+                  id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                  type: "file",
+                  content: saved?.path || "",
+                  from: from?.ip || "unknown",
+                  fromName: from?.name || "Unknown",
+                  timestamp: message.timestamp || Date.now(),
+                  fileName: transfer?.fileName,
+                  fileSize: transfer?.fileSize
+                },
+                ...prev
+              ]);
+            };
+            reader.readAsDataURL(blob);
+          }
+          incomingTransfersRef.current.delete(fileId);
+        }
+      }
+    });
+    return () => {
+      window.electronAPI?.removeAllListeners?.("tcp-message");
+    };
+  }, []);
   const handleTextSend = reactExports.useCallback(() => {
     if (!textContent.trim()) return;
+    if (sendTarget === "selected" && selectedCount === 0) {
+      alert("请先选择设备");
+      return;
+    }
     const message = {
       msg_type: "SHARE_TEXT",
-      content: textContent,
-      target: sendTarget
+      payload: {
+        content: textContent
+      }
     };
-    console.log("Sending text:", message);
+    sendMessageToTargets(message);
     setTextContent("");
     textInputRef.current?.focus();
-  }, [textContent, sendTarget]);
+  }, [textContent, sendTarget, selectedCount, sendMessageToTargets]);
   const handleImageSelect = reactExports.useCallback((e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -15821,7 +15961,8 @@ function ResourcePanel() {
       newFiles.push({
         name: file.name,
         path: URL.createObjectURL(file),
-        size: file.size
+        size: file.size,
+        file
       });
     }
     setSelectedFiles((prev) => [...prev, ...newFiles]);
@@ -15836,7 +15977,8 @@ function ResourcePanel() {
       newFiles.push({
         name: file.name,
         path: URL.createObjectURL(file),
-        size: file.size
+        size: file.size,
+        file
       });
     }
     setSelectedFiles((prev) => [...prev, ...newFiles]);
@@ -15854,7 +15996,8 @@ function ResourcePanel() {
       newFiles.push({
         name: file.name,
         path: URL.createObjectURL(file),
-        size: file.size
+        size: file.size,
+        file
       });
     }
     if (newFiles.length > 0) {
@@ -15862,18 +16005,41 @@ function ResourcePanel() {
       setSelectedFiles((prev) => [...prev, ...newFiles]);
     }
   }, []);
-  const handleSend = () => {
+  const handleSend = async () => {
     if (contentType === "text") {
       handleTextSend();
       return;
     }
-    const message = {
-      msg_type: contentType === "image" ? "SHARE_IMAGE" : "SHARE_FILE",
-      files: selectedFiles,
-      quality: imageQuality,
-      target: sendTarget
-    };
-    console.log("Sending:", message);
+    if (sendTarget === "selected" && selectedCount === 0) {
+      alert("请先选择设备");
+      return;
+    }
+    const chunkSize = 256 * 1024;
+    for (const item of selectedFiles) {
+      const arrayBuffer = await item.file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      const totalChunks = Math.ceil(bytes.length / chunkSize);
+      const fileId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(start + chunkSize, bytes.length);
+        const chunk = bytes.subarray(start, end);
+        const data = base64FromUint8(chunk);
+        const message = {
+          msg_type: contentType === "image" ? "SHARE_IMAGE" : "SHARE_FILE",
+          payload: {
+            fileId,
+            fileName: item.name,
+            fileSize: item.size,
+            chunkIndex: i,
+            totalChunks,
+            data,
+            quality: imageQuality
+          }
+        };
+        await sendMessageToTargets(message);
+      }
+    }
     setSelectedFiles([]);
   };
   const handleClearReceived = () => {
@@ -16087,6 +16253,40 @@ function ResourcePanel() {
               }
             ),
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm", children: "已选设备" })
+          ] }),
+          sendTarget === "selected" && /* @__PURE__ */ jsxRuntimeExports.jsxs(Root$1, { open: isDevicePickerOpen, onOpenChange: setIsDevicePickerOpen, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger$1, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { className: "text-xs text-primary hover:underline", children: [
+              "已选 ",
+              selectedCount,
+              " 个设备"
+            ] }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal$1, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(Content, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border rounded shadow-lg p-4 w-[420px] max-w-[90vw] z-50", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-sm font-medium mb-3", children: "选择设备" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2 mb-3", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: selectAll, className: "text-xs px-2 py-1 border rounded hover:bg-secondary", children: "全选" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: deselectAll, className: "text-xs px-2 py-1 border rounded hover:bg-secondary", children: "清空" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "max-h-60 overflow-auto border rounded", children: devices.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-3 text-xs text-muted-foreground", children: "暂无在线设备" }) : devices.map((device) => /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "flex items-center gap-2 p-2 border-b last:border-b-0 cursor-pointer", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "input",
+                    {
+                      type: "checkbox",
+                      checked: selectedDevices.has(device.id),
+                      onChange: () => toggleSelectDevice(device.id)
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm", children: device.name }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
+                    device.ip,
+                    ":",
+                    device.port
+                  ] })
+                ] }, device.id)) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "btn-primary text-sm", children: "完成" }) }) })
+              ] })
+            ] })
           ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -17234,7 +17434,7 @@ function SceneList({ onSelect, multiSelect = false, selectedIds = [] }) {
     };
     const deps = await window.electronAPI?.checkSceneDependencies(testScene);
     if (deps && !deps.valid) {
-      setDependencyErrors(deps.missing);
+      setDependencyErrors(deps.missing || []);
       return;
     }
     setDependencyErrors([]);
@@ -17653,6 +17853,7 @@ function ConfigPanel() {
   ] }) });
 }
 function SettingsPanel() {
+  const { setNetworkStatus, setNetworkError } = useDeviceStore();
   const [settings, setSettings] = reactExports.useState({
     deviceName: "",
     deviceRole: "bidirectional",
@@ -17727,7 +17928,38 @@ function SettingsPanel() {
           logLevel: settings.logLevel
         }
       });
-      alert("设置已保存");
+      setNetworkStatus("启动中");
+      setNetworkError(null);
+      await window.electronAPI?.udpStop();
+      await window.electronAPI?.tcpStop();
+      const errors = {};
+      const udpResult = await window.electronAPI?.udpStart({ port: settings.udpPort });
+      if (!udpResult?.success) {
+        const message = udpResult?.error || "Unknown UDP error";
+        errors.udp = message.includes("EADDRINUSE") ? `UDP 端口 ${settings.udpPort} 已被占用` : `UDP 启动失败: ${message}`;
+      }
+      if (!errors.udp) {
+        const hostname = await window.electronAPI?.getHostname();
+        await window.electronAPI?.udpInitLocalDevice({
+          name: settings.deviceName || hostname || "ShareNet",
+          role: settings.deviceRole,
+          port: settings.tcpPort
+        });
+      }
+      const tcpResult = await window.electronAPI?.tcpStart({ port: settings.tcpPort });
+      if (!tcpResult?.success) {
+        const message = tcpResult?.error || "Unknown TCP error";
+        errors.tcp = message.includes("EADDRINUSE") ? `TCP 端口 ${settings.tcpPort} 已被占用` : `TCP 启动失败: ${message}`;
+      }
+      if (errors.udp || errors.tcp) {
+        setNetworkStatus("异常");
+        setNetworkError(errors);
+        alert(`设置已保存，但网络服务启动失败：${errors.udp || errors.tcp}`);
+      } else {
+        setNetworkStatus("就绪");
+        setNetworkError(null);
+        alert("设置已保存并应用");
+      }
     } catch (error) {
       console.error("Failed to save settings:", error);
       alert("保存失败");
@@ -18016,11 +18248,106 @@ function SettingsPanel() {
     ) })
   ] });
 }
+function useNetwork() {
+  const {
+    setDevices,
+    addDevice,
+    updateDevice,
+    removeDevice,
+    setLocalDevice,
+    setNetworkStatus,
+    setNetworkError
+  } = useDeviceStore();
+  reactExports.useEffect(() => {
+    const initNetwork = async () => {
+      try {
+        setNetworkStatus("启动中");
+        setNetworkError(null);
+        const savedSettings = await window.electronAPI?.getSettings();
+        const udpPort = savedSettings?.network?.udpPort ?? 8888;
+        const tcpPort = savedSettings?.network?.tcpPort ?? 8889;
+        const errors = {};
+        const udpResult = await window.electronAPI?.udpStart({ port: udpPort });
+        if (!udpResult?.success) {
+          const message = udpResult?.error || "Unknown UDP error";
+          errors.udp = message.includes("EADDRINUSE") ? `UDP 端口 ${udpPort} 已被占用` : `UDP 启动失败: ${message}`;
+        }
+        if (!errors.udp) {
+          window.electronAPI?.udpSubscribe();
+          const hostname = await window.electronAPI?.getHostname();
+          await window.electronAPI?.udpInitLocalDevice({
+            name: hostname || "ShareNet",
+            role: "bidirectional",
+            port: tcpPort
+          });
+          window.electronAPI?.onUdpDevicesUpdated((deviceList) => {
+            setDevices(deviceList);
+          });
+          window.electronAPI?.onUdpDeviceAdded((device) => {
+            addDevice(device);
+          });
+          window.electronAPI?.onUdpDeviceUpdated((device) => {
+            updateDevice(device);
+          });
+          window.electronAPI?.onUdpDevicesRemoved((deviceList) => {
+            deviceList.forEach((device) => {
+              removeDevice(device.id);
+            });
+          });
+          const initialDevices = await window.electronAPI?.udpGetDevices();
+          if (initialDevices) {
+            setDevices(initialDevices);
+          }
+          const local = await window.electronAPI?.udpGetLocalDevice();
+          if (local) {
+            setLocalDevice(local);
+          }
+        }
+        const tcpResult = await window.electronAPI?.tcpStart({ port: tcpPort });
+        if (!tcpResult?.success) {
+          const message = tcpResult?.error || "Unknown TCP error";
+          errors.tcp = message.includes("EADDRINUSE") ? `TCP 端口 ${tcpPort} 已被占用` : `TCP 启动失败: ${message}`;
+        }
+        if (errors.udp || errors.tcp) {
+          setNetworkStatus("异常");
+          setNetworkError(errors);
+        } else {
+          setNetworkStatus("就绪");
+          setNetworkError(null);
+        }
+        window.electronAPI?.onNetworkError?.((payload) => {
+          const message = payload.error || "Unknown error";
+          const current = useDeviceStore.getState().networkError || {};
+          setNetworkStatus("异常");
+          setNetworkError({
+            ...current,
+            udp: payload.service === "udp" ? message : current.udp,
+            tcp: payload.service === "tcp" ? message : current.tcp
+          });
+        });
+      } catch (error) {
+        console.error("Failed to initialize network services:", error);
+        setNetworkStatus("异常");
+        setNetworkError({ udp: String(error) });
+      }
+    };
+    initNetwork();
+    return () => {
+      window.electronAPI?.udpStop();
+      window.electronAPI?.tcpStop();
+      window.electronAPI?.removeAllListeners?.("network-error");
+    };
+  }, [setDevices, addDevice, updateDevice, removeDevice, setLocalDevice, setNetworkStatus, setNetworkError]);
+}
 function App() {
   const [activeTab, setActiveTab] = reactExports.useState("console");
-  const [deviceCount, setDeviceCount] = reactExports.useState(0);
-  const [networkStatus, setNetworkStatus] = reactExports.useState("就绪");
   const [appInfo, setAppInfo] = reactExports.useState({ name: "ShareNet", version: "1.0.0" });
+  const { networkStatus, networkError, devices, selectedDevices } = useDeviceStore();
+  const hasNetworkError = !!(networkError?.udp || networkError?.tcp);
+  const statusClass = hasNetworkError ? "offline" : "online";
+  const deviceCount = devices.length;
+  const selectedCount = selectedDevices.size;
+  useNetwork();
   reactExports.useEffect(() => {
     window.electronAPI?.getAppInfo().then((info) => {
       setAppInfo({ name: info.name, version: info.version });
@@ -18055,8 +18382,22 @@ function App() {
       )) }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "header-right", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "device-info", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { id: "local-device-name", children: "本机" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "status-dot online" })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `status-dot ${statusClass}` })
       ] }) })
+    ] }),
+    hasNetworkError && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "network-alert", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "network-alert-text", children: [
+        "网络服务启动失败：",
+        networkError?.udp || networkError?.tcp
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          className: "network-alert-action",
+          onClick: () => setActiveTab("settings"),
+          children: "去设置端口"
+        }
+      )
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: "main-content", children: [
       activeTab === "console" && /* @__PURE__ */ jsxRuntimeExports.jsx(ConsolePanel, {}),
@@ -18073,6 +18414,10 @@ function App() {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { id: "device-count", children: [
           "在线设备: ",
           deviceCount
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { id: "selected-count", children: [
+          "已选设备: ",
+          selectedCount
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "footer-info", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { id: "app-version", children: [

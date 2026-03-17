@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // UDP Service
   udpStart: (config?: { port?: number }) => ipcRenderer.invoke('udp-start', config),
   udpStop: () => ipcRenderer.invoke('udp-stop'),
+  udpSubscribe: () => ipcRenderer.send('udp-subscribe'),
   udpGetDevices: () => ipcRenderer.invoke('udp-get-devices'),
   udpGetLocalDevice: () => ipcRenderer.invoke('udp-get-local-device'),
   udpInitLocalDevice: (deviceInfo: unknown) => ipcRenderer.invoke('udp-init-local-device', deviceInfo),
@@ -37,7 +38,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // TCP Service
   tcpStart: (config?: { port?: number }) => ipcRenderer.invoke('tcp-start', config),
   tcpStop: () => ipcRenderer.invoke('tcp-stop'),
-  tcpSend: (targetIP: string, message: unknown) => ipcRenderer.invoke('tcp-send', targetIP, message),
+  tcpSend: (targetIP: string, targetPort: number, message: unknown) =>
+    ipcRenderer.invoke('tcp-send', targetIP, targetPort, message),
   tcpBroadcast: (message: unknown) => ipcRenderer.invoke('tcp-broadcast', message),
   tcpConnect: (host: string, port: number, deviceInfo: unknown) => ipcRenderer.invoke('tcp-connect', host, port, deviceInfo),
   tcpGetConnections: () => ipcRenderer.invoke('tcp-get-connections'),
@@ -88,6 +90,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // File transfer
   sendFile: (targetId: string, filePath: string) => ipcRenderer.invoke('send-file', targetId, filePath),
   saveReceivedFile: (messageId: string, savePath: string) => ipcRenderer.invoke('save-received-file', messageId, savePath),
+  saveReceived: (data: { type: 'text' | 'image' | 'file'; content: string; fileName?: string }) =>
+    ipcRenderer.invoke('save-received', data),
 
   // Receive events
   onDeviceUpdate: (callback: (data: unknown) => void) => {
@@ -150,7 +154,7 @@ export interface ElectronAPI {
   // TCP Service
   tcpStart: (config?: { port?: number }) => Promise<{ success: boolean; error?: string }>
   tcpStop: () => Promise<{ success: boolean; error?: string }>
-  tcpSend: (targetIP: string, message: unknown) => Promise<{ success: boolean; error?: string }>
+  tcpSend: (targetIP: string, targetPort: number, message: unknown) => Promise<{ success: boolean; error?: string }>
   tcpBroadcast: (message: unknown) => Promise<{ success: boolean; count?: number; error?: string }>
   tcpConnect: (host: string, port: number, deviceInfo: unknown) => Promise<{ success: boolean; clientId?: string | null; error?: string }>
   tcpGetConnections: () => Promise<number>
@@ -183,6 +187,7 @@ export interface ElectronAPI {
   // File transfer
   sendFile: (targetId: string, filePath: string) => Promise<void>
   saveReceivedFile: (messageId: string, savePath: string) => Promise<void>
+  saveReceived: (data: { type: 'text' | 'image' | 'file'; content: string; fileName?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
 
   // Receive events
   onDeviceUpdate: (callback: (data: unknown) => void) => void

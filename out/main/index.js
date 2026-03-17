@@ -489,8 +489,8 @@ class TCPServer extends events.EventEmitter {
    */
   async stop() {
     if (!this.isRunning || !this.server) return;
-    for (const [id, client2] of this.clients) {
-      client2.socket.destroy();
+    for (const [id, client] of this.clients) {
+      client.socket.destroy();
     }
     this.clients.clear();
     return new Promise((resolve) => {
@@ -508,7 +508,7 @@ class TCPServer extends events.EventEmitter {
     const clientId = v4();
     console.log(`[TCP] New connection from ${socket.remoteAddress}:${socket.remotePort}`);
     socket.setTimeout(this.config.timeout);
-    const client2 = {
+    const client = {
       id: clientId,
       device: {
         id: "",
@@ -524,27 +524,27 @@ class TCPServer extends events.EventEmitter {
       lastActive: Date.now()
     };
     socket.on("data", (data) => {
-      this.handleData(client2, data);
+      this.handleData(client, data);
     });
     socket.on("close", () => {
-      this.handleClose(client2);
+      this.handleClose(client);
     });
     socket.on("error", (err) => {
       console.error(`[TCP] Socket error for ${clientId}:`, err);
-      this.handleClose(client2);
+      this.handleClose(client);
     });
     socket.on("timeout", () => {
       console.log(`[TCP] Connection timeout: ${clientId}`);
       socket.destroy();
     });
-    this.clients.set(clientId, client2);
-    this.emit("clientConnected", client2);
+    this.clients.set(clientId, client);
+    this.emit("clientConnected", client);
   }
   /**
    * Handle incoming data
    */
-  handleData(client2, data) {
-    client2.lastActive = Date.now();
+  handleData(client, data) {
+    client.lastActive = Date.now();
     try {
       const messages = data.toString().split("\n").filter(Boolean);
       for (const msgStr of messages) {
@@ -560,13 +560,13 @@ class TCPServer extends events.EventEmitter {
           continue;
         }
         if (message.msg_type === "DISCOVERY") {
-          client2.device = message.sender;
-          this.emit("deviceIdentified", client2);
+          client.device = message.sender;
+          this.emit("deviceIdentified", client);
         }
         for (const handler of this.messageHandlers) {
-          handler.onMessage(message, client2.device);
+          handler.onMessage(message, client.device);
         }
-        this.emit("message", message, client2.device);
+        this.emit("message", message, client.device);
       }
     } catch (error) {
       console.error("[TCP] Failed to parse message:", error);
@@ -575,33 +575,33 @@ class TCPServer extends events.EventEmitter {
   /**
    * Handle connection close
    */
-  handleClose(client2) {
-    this.clients.delete(client2.id);
-    console.log(`[TCP] Connection closed: ${client2.id}`);
-    this.emit("clientDisconnected", client2);
+  handleClose(client) {
+    this.clients.delete(client.id);
+    console.log(`[TCP] Connection closed: ${client.id}`);
+    this.emit("clientDisconnected", client);
     for (const handler of this.messageHandlers) {
       if (handler.onDisconnect) {
-        handler.onDisconnect(client2.device);
+        handler.onDisconnect(client.device);
       }
     }
   }
   /**
    * Send message to a specific client
    */
-  sendMessage(targetIP, message) {
+  sendMessage(targetIP, message, targetPort) {
     return new Promise((resolve) => {
-      const client2 = Array.from(this.clients.values()).find(
-        (c) => c.device.ip === targetIP
+      const client = Array.from(this.clients.values()).find(
+        (c) => c.device.ip === targetIP && (targetPort ? c.device.port === targetPort : true)
       );
-      if (!client2) {
-        console.log(`[TCP] Client not found: ${targetIP}`);
+      if (!client) {
+        console.log(`[TCP] Client not found: ${targetIP}${targetPort ? `:${targetPort}` : ""}`);
         resolve(false);
         return;
       }
       const data = JSON.stringify(message) + "\n";
-      client2.socket.write(data, (err) => {
+      client.socket.write(data, (err) => {
         if (err) {
-          console.error(`[TCP] Failed to send to ${targetIP}:`, err);
+          console.error(`[TCP] Failed to send to ${targetIP}${targetPort ? `:${targetPort}` : ""}:`, err);
           resolve(false);
         } else {
           resolve(true);
@@ -616,9 +616,9 @@ class TCPServer extends events.EventEmitter {
     return new Promise((resolve) => {
       let successCount = 0;
       const data = JSON.stringify(message) + "\n";
-      const sendPromises = Array.from(this.clients.values()).map((client2) => {
+      const sendPromises = Array.from(this.clients.values()).map((client) => {
         return new Promise((res) => {
-          client2.socket.write(data, (err) => {
+          client.socket.write(data, (err) => {
             if (!err) successCount++;
             res();
           });
@@ -634,15 +634,16 @@ class TCPServer extends events.EventEmitter {
     return new Promise((resolve) => {
       const socket = new net.Socket();
       const clientId = v4();
+      let client = null;
       socket.connect(port, host, () => {
         console.log(`[TCP] Connected to ${host}:${port}`);
-        const client2 = {
+        client = {
           id: clientId,
-          device: { ...deviceInfo, ip: host },
+          device: { ...deviceInfo, ip: host, port },
           socket,
           lastActive: Date.now()
         };
-        this.clients.set(clientId, client2);
+        this.clients.set(clientId, client);
         const discoveryMsg = {
           msg_type: "DISCOVERY",
           sender: deviceInfo,
@@ -651,7 +652,7 @@ class TCPServer extends events.EventEmitter {
           request_id: v4()
         };
         socket.write(JSON.stringify(discoveryMsg) + "\n");
-        this.emit("connected", client2);
+        this.emit("connected", client);
         resolve(clientId);
       });
       socket.on("error", (err) => {
@@ -666,7 +667,10 @@ class TCPServer extends events.EventEmitter {
         }
       });
       socket.on("data", (data) => {
-        this.handleData(client, data);
+        const current = client || this.clients.get(clientId);
+        if (current) {
+          this.handleData(current, data);
+        }
       });
     });
   }
@@ -744,9 +748,9 @@ class TCPServer extends events.EventEmitter {
    * Disconnect a client
    */
   disconnect(id) {
-    const client2 = this.clients.get(id);
-    if (client2) {
-      client2.socket.destroy();
+    const client = this.clients.get(id);
+    if (client) {
+      client.socket.destroy();
       return true;
     }
     return false;
@@ -1552,14 +1556,16 @@ electron.ipcMain.handle("tcp-stop", async () => {
     return { success: false, error: String(error) };
   }
 });
-electron.ipcMain.handle("tcp-send", async (_event, targetIP, message) => {
+electron.ipcMain.handle("tcp-send", async (_event, targetIP, portOrMessage, maybeMessage) => {
   if (!tcpServer) return { success: false, error: "TCP server not running" };
+  const targetPort = typeof portOrMessage === "number" ? portOrMessage : void 0;
+  const message = typeof portOrMessage === "number" ? maybeMessage : portOrMessage;
   const fullMessage = {
     ...message,
     timestamp: Date.now(),
     request_id: v4()
   };
-  const success = await tcpServer.sendMessage(targetIP, fullMessage);
+  const success = await tcpServer.sendMessage(targetIP, fullMessage, targetPort);
   return { success };
 });
 electron.ipcMain.handle("tcp-broadcast", async (_event, message) => {

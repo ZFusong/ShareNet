@@ -9,6 +9,7 @@ import * as ScrollArea from '@radix-ui/react-scroll-area'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
+import { useDeviceStore } from '../../stores/deviceStore'
 
 type ContentType = 'text' | 'image' | 'file'
 type ImageQuality = 'original' | 'high' | 'preview'
@@ -29,6 +30,17 @@ interface SelectedFile {
   name: string
   path: string
   size: number
+  file: File
+}
+
+interface IncomingTransfer {
+  fileId: string
+  type: 'image' | 'file'
+  fileName: string
+  fileSize: number
+  totalChunks: number
+  receivedCount: number
+  chunks: Array<Uint8Array | null>
 }
 
 export function ResourcePanel() {
@@ -40,6 +52,11 @@ export function ResourcePanel() {
   const [receivedMessages, setReceivedMessages] = useState<ReceivedMessage[]>([])
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false)
+  const [isDevicePickerOpen, setIsDevicePickerOpen] = useState(false)
+  const incomingTransfersRef = useRef<Map<string, IncomingTransfer>>(new Map())
+
+  const { devices, selectedDevices, toggleSelectDevice, selectAll, deselectAll, localDevice } = useDeviceStore()
+  const selectedCount = selectedDevices.size
 
   const textInputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -82,21 +99,189 @@ export function ResourcePanel() {
     return () => document.removeEventListener('paste', handlePaste)
   }, [])
 
+  const base64FromUint8 = (bytes: Uint8Array): string => {
+    let binary = ''
+    const chunkSize = 0x8000
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize)
+      binary += String.fromCharCode(...chunk)
+    }
+    return btoa(binary)
+  }
+
+  const uint8FromBase64 = (base64: string): Uint8Array => {
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i)
+    }
+    return bytes
+  }
+
+  const sendMessageToTargets = async (message: any) => {
+    const sender = localDevice || {
+      id: 'local',
+      name: 'Local',
+      ip: '127.0.0.1',
+      port: 0,
+      role: 'bidirectional',
+      tags: [],
+      status: 'online',
+      lastSeen: Date.now()
+    }
+
+    const targets = sendTarget === 'broadcast'
+      ? devices
+      : devices.filter((d) => selectedDevices.has(d.id))
+
+    if (targets.length === 0) {
+      alert('没有可发送的目标设备')
+      return
+    }
+
+    for (const device of targets) {
+      await window.electronAPI?.tcpConnect(device.ip, device.port, sender)
+      await window.electronAPI?.tcpSend(device.ip, device.port, message)
+    }
+  }
+
+  // Subscribe to incoming TCP messages
+  useEffect(() => {
+    window.electronAPI?.onTcpMessage((message: any, from: any) => {
+      if (message?.msg_type === 'SHARE_TEXT') {
+        setReceivedMessages((prev) => [
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            type: 'text',
+            content: message.payload?.content || '',
+            from: from?.ip || 'unknown',
+            fromName: from?.name || 'Unknown',
+            timestamp: message.timestamp || Date.now()
+          },
+          ...prev
+        ])
+        return
+      }
+
+      if (message?.msg_type === 'SHARE_IMAGE' || message?.msg_type === 'SHARE_FILE') {
+        const payload = message.payload || {}
+        const fileId = payload.fileId
+        const totalChunks = payload.totalChunks
+        const chunkIndex = payload.chunkIndex
+        const data = payload.data
+        const fileName = payload.fileName || 'file'
+        const fileSize = payload.fileSize || 0
+        const type = message.msg_type === 'SHARE_IMAGE' ? 'image' : 'file'
+
+        if (!fileId || typeof totalChunks !== 'number' || typeof chunkIndex !== 'number' || !data) {
+          return
+        }
+
+        let transfer = incomingTransfersRef.current.get(fileId)
+        if (!transfer) {
+          transfer = {
+            fileId,
+            type,
+            fileName,
+            fileSize,
+            totalChunks,
+            receivedCount: 0,
+            chunks: new Array(totalChunks).fill(null)
+          }
+          incomingTransfersRef.current.set(fileId, transfer)
+        }
+
+        if (!transfer.chunks[chunkIndex]) {
+          transfer.chunks[chunkIndex] = uint8FromBase64(data)
+          transfer.receivedCount += 1
+        }
+
+        if (transfer.receivedCount === transfer.totalChunks) {
+          const blob = new Blob(transfer.chunks.filter(Boolean) as Uint8Array[])
+
+          if (transfer.type === 'image') {
+            const reader = new FileReader()
+            reader.onload = () => {
+              const dataUrl = typeof reader.result === 'string' ? reader.result : ''
+              setReceivedMessages((prev) => [
+                {
+                  id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                  type: 'image',
+                  content: dataUrl,
+                  from: from?.ip || 'unknown',
+                  fromName: from?.name || 'Unknown',
+                  timestamp: message.timestamp || Date.now(),
+                  fileName: transfer?.fileName,
+                  fileSize: transfer?.fileSize,
+                  thumbnail: dataUrl
+                },
+                ...prev
+              ])
+
+              window.electronAPI?.saveReceived?.({
+                type: 'image',
+                content: dataUrl,
+                fileName: transfer?.fileName
+              })
+            }
+            reader.readAsDataURL(blob)
+          } else {
+            const reader = new FileReader()
+            reader.onload = async () => {
+              const dataUrl = typeof reader.result === 'string' ? reader.result : ''
+              const saved = await window.electronAPI?.saveReceived?.({
+                type: 'file',
+                content: dataUrl,
+                fileName: transfer?.fileName
+              })
+
+              setReceivedMessages((prev) => [
+                {
+                  id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                  type: 'file',
+                  content: saved?.path || '',
+                  from: from?.ip || 'unknown',
+                  fromName: from?.name || 'Unknown',
+                  timestamp: message.timestamp || Date.now(),
+                  fileName: transfer?.fileName,
+                  fileSize: transfer?.fileSize
+                },
+                ...prev
+              ])
+            }
+            reader.readAsDataURL(blob)
+          }
+
+          incomingTransfersRef.current.delete(fileId)
+        }
+      }
+    })
+
+    return () => {
+      window.electronAPI?.removeAllListeners?.('tcp-message')
+    }
+  }, [])
+
   const handleTextSend = useCallback(() => {
     if (!textContent.trim()) return
 
-    const message = {
-      msg_type: 'SHARE_TEXT',
-      content: textContent,
-      target: sendTarget
+    if (sendTarget === 'selected' && selectedCount === 0) {
+      alert('请先选择设备')
+      return
     }
 
-    console.log('Sending text:', message)
-    // TODO: Send via TCP
+    const message = {
+      msg_type: 'SHARE_TEXT',
+      payload: {
+        content: textContent
+      }
+    }
+
+    sendMessageToTargets(message)
 
     setTextContent('')
     textInputRef.current?.focus()
-  }, [textContent, sendTarget])
+  }, [textContent, sendTarget, selectedCount, sendMessageToTargets])
 
   const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -108,7 +293,8 @@ export function ResourcePanel() {
       newFiles.push({
         name: file.name,
         path: URL.createObjectURL(file),
-        size: file.size
+        size: file.size,
+        file
       })
     }
 
@@ -126,7 +312,8 @@ export function ResourcePanel() {
       newFiles.push({
         name: file.name,
         path: URL.createObjectURL(file),
-        size: file.size
+        size: file.size,
+        file
       })
     }
 
@@ -149,7 +336,8 @@ export function ResourcePanel() {
       newFiles.push({
         name: file.name,
         path: URL.createObjectURL(file),
-        size: file.size
+        size: file.size,
+        file
       })
     }
 
@@ -159,21 +347,46 @@ export function ResourcePanel() {
     }
   }, [])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (contentType === 'text') {
       handleTextSend()
       return
     }
 
-    const message = {
-      msg_type: contentType === 'image' ? 'SHARE_IMAGE' : 'SHARE_FILE',
-      files: selectedFiles,
-      quality: imageQuality,
-      target: sendTarget
+    if (sendTarget === 'selected' && selectedCount === 0) {
+      alert('请先选择设备')
+      return
     }
 
-    console.log('Sending:', message)
-    // TODO: Send via TCP/file transfer
+    const chunkSize = 256 * 1024
+    for (const item of selectedFiles) {
+      const arrayBuffer = await item.file.arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      const totalChunks = Math.ceil(bytes.length / chunkSize)
+      const fileId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize
+        const end = Math.min(start + chunkSize, bytes.length)
+        const chunk = bytes.subarray(start, end)
+        const data = base64FromUint8(chunk)
+
+        const message = {
+          msg_type: contentType === 'image' ? 'SHARE_IMAGE' : 'SHARE_FILE',
+          payload: {
+            fileId,
+            fileName: item.name,
+            fileSize: item.size,
+            chunkIndex: i,
+            totalChunks,
+            data,
+            quality: imageQuality
+          }
+        }
+
+        await sendMessageToTargets(message)
+      }
+    }
 
     setSelectedFiles([])
   }
@@ -409,6 +622,47 @@ export function ResourcePanel() {
                   />
                   <span className="text-sm">已选设备</span>
                 </label>
+                {sendTarget === 'selected' && (
+                  <Dialog.Root open={isDevicePickerOpen} onOpenChange={setIsDevicePickerOpen}>
+                    <Dialog.Trigger asChild>
+                      <button className="text-xs text-primary hover:underline">
+                        已选 {selectedCount} 个设备
+                      </button>
+                    </Dialog.Trigger>
+                    <Dialog.Portal>
+                      <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+                      <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border rounded shadow-lg p-4 w-[420px] max-w-[90vw] z-50">
+                        <Dialog.Title className="text-sm font-medium mb-3">选择设备</Dialog.Title>
+                        <div className="flex gap-2 mb-3">
+                          <button onClick={selectAll} className="text-xs px-2 py-1 border rounded hover:bg-secondary">全选</button>
+                          <button onClick={deselectAll} className="text-xs px-2 py-1 border rounded hover:bg-secondary">清空</button>
+                        </div>
+                        <div className="max-h-60 overflow-auto border rounded">
+                          {devices.length === 0 ? (
+                            <div className="p-3 text-xs text-muted-foreground">暂无在线设备</div>
+                          ) : (
+                            devices.map((device) => (
+                              <label key={device.id} className="flex items-center gap-2 p-2 border-b last:border-b-0 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedDevices.has(device.id)}
+                                  onChange={() => toggleSelectDevice(device.id)}
+                                />
+                                <span className="text-sm">{device.name}</span>
+                                <span className="text-xs text-muted-foreground">{device.ip}:{device.port}</span>
+                              </label>
+                            ))
+                          )}
+                        </div>
+                        <div className="flex justify-end mt-3">
+                          <Dialog.Close asChild>
+                            <button className="btn-primary text-sm">完成</button>
+                          </Dialog.Close>
+                        </div>
+                      </Dialog.Content>
+                    </Dialog.Portal>
+                  </Dialog.Root>
+                )}
               </div>
 
               {/* Send Button */}

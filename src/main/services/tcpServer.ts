@@ -235,14 +235,14 @@ export class TCPServer extends EventEmitter {
   /**
    * Send message to a specific client
    */
-  sendMessage(targetIP: string, message: NetworkMessage): Promise<boolean> {
+  sendMessage(targetIP: string, message: NetworkMessage, targetPort?: number): Promise<boolean> {
     return new Promise((resolve) => {
       const client = Array.from(this.clients.values()).find(
-        (c) => c.device.ip === targetIP
+        (c) => c.device.ip === targetIP && (targetPort ? c.device.port === targetPort : true)
       )
 
       if (!client) {
-        console.log(`[TCP] Client not found: ${targetIP}`)
+        console.log(`[TCP] Client not found: ${targetIP}${targetPort ? `:${targetPort}` : ''}`)
         resolve(false)
         return
       }
@@ -250,7 +250,7 @@ export class TCPServer extends EventEmitter {
       const data = JSON.stringify(message) + '\n'
       client.socket.write(data, (err) => {
         if (err) {
-          console.error(`[TCP] Failed to send to ${targetIP}:`, err)
+          console.error(`[TCP] Failed to send to ${targetIP}${targetPort ? `:${targetPort}` : ''}:`, err)
           resolve(false)
         } else {
           resolve(true)
@@ -287,13 +287,14 @@ export class TCPServer extends EventEmitter {
     return new Promise((resolve) => {
       const socket = new net.Socket()
       const clientId = uuidv4()
+      let client: ClientConnection | null = null
 
       socket.connect(port, host, () => {
         console.log(`[TCP] Connected to ${host}:${port}`)
 
-        const client: ClientConnection = {
+        client = {
           id: clientId,
-          device: { ...deviceInfo, ip: host },
+          device: { ...deviceInfo, ip: host, port },
           socket,
           lastActive: Date.now()
         }
@@ -328,7 +329,10 @@ export class TCPServer extends EventEmitter {
       })
 
       socket.on('data', (data) => {
-        this.handleData(client, data)
+        const current = client || this.clients.get(clientId)
+        if (current) {
+          this.handleData(current, data)
+        }
       })
     })
   }

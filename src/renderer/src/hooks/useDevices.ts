@@ -52,6 +52,19 @@ export function useDevices() {
       port = savedSettings?.network?.tcpPort ?? 8889
     }
 
+    const savedSettings = await window.electronAPI?.getSettings()
+    const localDevice =
+      (await window.electronAPI?.udpGetLocalDevice()) || {
+        id: 'local',
+        name: savedSettings?.device?.name || (await window.electronAPI?.getHostname()) || 'ShareNet',
+        ip: (await window.electronAPI?.getLocalIP()) || '127.0.0.1',
+        port: savedSettings?.network?.tcpPort ?? 8889,
+        role: savedSettings?.device?.role || 'bidirectional',
+        tags: savedSettings?.device?.tags || [],
+        status: 'online',
+        lastSeen: Date.now()
+      }
+
     const device: Device = {
       id: `manual-${host}:${port}`,
       name: name || `Device-${host}`,
@@ -64,7 +77,11 @@ export function useDevices() {
     }
 
     const result = await window.electronAPI?.udpAddDevice(device)
-    return result
+    const connectResult = await window.electronAPI?.tcpConnect(host, port, localDevice)
+    if (!connectResult?.success) {
+      console.warn('Failed to connect to device:', connectResult?.error || 'Unknown error')
+    }
+    return { ...result, connect: connectResult }
   }, [])
 
   // Remove device

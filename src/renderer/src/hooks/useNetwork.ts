@@ -38,6 +38,8 @@ export function useNetwork() {
         }
 
         if (!errors.udp) {
+          window.electronAPI?.udpSubscribe()
+
           const hostname = await window.electronAPI?.getHostname()
 
           await window.electronAPI?.udpInitLocalDevice({

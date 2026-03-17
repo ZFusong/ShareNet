@@ -353,8 +353,11 @@ ipcMain.handle('tcp-stop', async () => {
 })
 
 // Send message to device
-ipcMain.handle('tcp-send', async (_event, targetIP: string, message: Omit<NetworkMessage, 'timestamp' | 'request_id'>) => {
+ipcMain.handle('tcp-send', async (_event, targetIP: string, portOrMessage: any, maybeMessage?: any) => {
   if (!tcpServer) return { success: false, error: 'TCP server not running' }
+
+  const targetPort = typeof portOrMessage === 'number' ? portOrMessage : undefined
+  const message = typeof portOrMessage === 'number' ? maybeMessage : portOrMessage
 
   const fullMessage: NetworkMessage = {
     ...message,
@@ -362,7 +365,7 @@ ipcMain.handle('tcp-send', async (_event, targetIP: string, message: Omit<Networ
     request_id: uuidv4()
   } as NetworkMessage
 
-  const success = await tcpServer.sendMessage(targetIP, fullMessage)
+  const success = await tcpServer.sendMessage(targetIP, fullMessage, targetPort)
   return { success }
 })
 
