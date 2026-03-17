@@ -28,6 +28,8 @@ interface DeviceState {
   selectedDevices: Set<string>
   filter: DeviceFilter
   offlineDevices: Map<string, Device>
+  networkStatus: string
+  networkError: { udp?: string; tcp?: string } | null
 
   // Actions
   setDevices: (devices: Device[]) => void
@@ -42,6 +44,8 @@ interface DeviceState {
   deselectAll: () => void
   setFilter: (filter: DeviceFilter) => void
   addOfflineDevice: (device: Device) => void
+  setNetworkStatus: (status: string) => void
+  setNetworkError: (error: { udp?: string; tcp?: string } | null) => void
 
   // Getters
   getFilteredDevices: () => Device[]
@@ -54,6 +58,8 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   selectedDevices: new Set(),
   filter: { type: 'all' },
   offlineDevices: new Map(),
+  networkStatus: '就绪',
+  networkError: null,
 
   setDevices: (devices) => set({ devices }),
 
@@ -129,6 +135,9 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       newOffline.set(device.id, device)
       return { offlineDevices: newOffline }
     }),
+
+  setNetworkStatus: (status) => set({ networkStatus: status }),
+  setNetworkError: (error) => set({ networkError: error }),
 
   getFilteredDevices: () => {
     const { devices, filter } = get()

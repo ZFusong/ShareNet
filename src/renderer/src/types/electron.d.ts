@@ -69,6 +69,7 @@ export interface ElectronAPI {
   onUdpDeviceUpdated: (callback: (device: DeviceInfo) => void) => void
   onUdpDevicesRemoved: (callback: (devices: DeviceInfo[]) => void) => void
   onTcpMessage: (callback: (message: unknown, from: unknown) => void) => void
+  onNetworkError: (callback: (payload: { service: string; error: string }) => void) => void
 
   getDevices: () => Promise<DeviceInfo[]>
   refreshDevices: () => Promise<void>

@@ -3,14 +3,20 @@ import { ConsolePanel } from './components/console/ConsolePanel'
 import { ResourcePanel } from './components/resource/ResourcePanel'
 import { ConfigPanel } from './components/config/ConfigPanel'
 import { SettingsPanel } from './components/settings/SettingsPanel'
+import { useDeviceStore } from './stores/deviceStore'
+import { useNetwork } from './hooks/useNetwork'
 
 type Tab = 'console' | 'resource' | 'config' | 'settings'
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('console')
   const [deviceCount, setDeviceCount] = useState(0)
-  const [networkStatus, setNetworkStatus] = useState('就绪')
   const [appInfo, setAppInfo] = useState({ name: 'ShareNet', version: '1.0.0' })
+  const { networkStatus, networkError } = useDeviceStore()
+  const hasNetworkError = !!(networkError?.udp || networkError?.tcp)
+  const statusClass = hasNetworkError ? 'offline' : 'online'
+
+  useNetwork()
 
   useEffect(() => {
     // Get app info on mount
@@ -57,10 +63,24 @@ function App() {
         <div className="header-right">
           <div className="device-info">
             <span id="local-device-name">本机</span>
-            <span className="status-dot online"></span>
+            <span className={`status-dot ${statusClass}`}></span>
           </div>
         </div>
       </header>
+
+      {hasNetworkError && (
+        <div className="network-alert">
+          <div className="network-alert-text">
+            网络服务启动失败：{networkError?.udp || networkError?.tcp}
+          </div>
+          <button
+            className="network-alert-action"
+            onClick={() => setActiveTab('settings')}
+          >
+            去设置端口
+          </button>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="main-content">

@@ -119,12 +119,12 @@ export function DeviceList() {
                 <Dialog.Title className="text-lg font-semibold mb-4">手动添加设备</Dialog.Title>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">IP 地址</label>
+                    <label className="block text-sm font-medium mb-1">IP 地址（可带端口）</label>
                     <input
                       type="text"
                       value={newDeviceIP}
                       onChange={(e) => setNewDeviceIP(e.target.value)}
-                      placeholder="192.168.1.100"
+                      placeholder="192.168.1.100:8899"
                       className="w-full px-3 py-2 border rounded-md"
                     />
                   </div>

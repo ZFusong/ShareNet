@@ -43,7 +43,7 @@ export class UDPService extends EventEmitter {
       id: localInfo.id || uuidv4(),
       name: localInfo.name || hostname,
       ip: localIP,
-      port: this.config.port,
+      port: localInfo.port ?? this.config.port,
       role: localInfo.role || 'bidirectional',
       tags: localInfo.tags || [],
       status: 'online',
@@ -80,11 +80,23 @@ export class UDPService extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       try {
+        let settled = false
         this.socket = dgram.createSocket({ type: 'udp4', reuseAddr: true })
 
         this.socket.on('error', (err) => {
           console.error('[UDP] Socket error:', err)
-          this.emit('error', err)
+          if (this.isRunning) {
+            this.emit('error', err)
+            return
+          }
+          if (!settled) {
+            settled = true
+            this.emit('error', err)
+            this.socket?.close()
+            this.socket = null
+            this.isRunning = false
+            reject(err)
+          }
         })
 
         this.socket.on('message', (msg, rinfo) => {
@@ -92,6 +104,8 @@ export class UDPService extends EventEmitter {
         })
 
         this.socket.on('listening', () => {
+          if (settled) return
+          settled = true
           const address = this.socket?.address()
           console.log(`[UDP] Listening on ${address?.address}:${address?.port}`)
 
@@ -292,7 +306,7 @@ export class UDPService extends EventEmitter {
       const message: NetworkMessage = JSON.parse(msg.toString())
 
       // Ignore own messages
-      if (this.localDevice && message.sender.ip === this.localDevice.ip) {
+      if (this.localDevice && message.sender.id === this.localDevice.id) {
         return
       }
 

@@ -60,6 +60,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onTcpMessage: (callback: (message: unknown, from: unknown) => void) => {
     ipcRenderer.on('tcp-message', (_event, message, from) => callback(message, from))
   },
+  onNetworkError: (callback: (payload: { service: string; error: string }) => void) => {
+    ipcRenderer.on('network-error', (_event, payload) => callback(payload))
+  },
 
   // Device management
   getDevices: () => ipcRenderer.invoke('get-devices'),
@@ -160,6 +163,7 @@ export interface ElectronAPI {
   onUdpDeviceUpdated: (callback: (device: unknown) => void) => void
   onUdpDevicesRemoved: (callback: (devices: unknown[]) => void) => void
   onTcpMessage: (callback: (message: unknown, from: unknown) => void) => void
+  onNetworkError: (callback: (payload: { service: string; error: string }) => void) => void
 
   // Device management
   getDevices: () => Promise<unknown[]>

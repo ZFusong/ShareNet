@@ -70,7 +70,7 @@ class UDPService extends events.EventEmitter {
       id: localInfo.id || v4(),
       name: localInfo.name || hostname,
       ip: localIP,
-      port: this.config.port,
+      port: localInfo.port ?? this.config.port,
       role: localInfo.role || "bidirectional",
       tags: localInfo.tags || [],
       status: "online",
@@ -103,15 +103,29 @@ class UDPService extends events.EventEmitter {
     }
     return new Promise((resolve, reject) => {
       try {
+        let settled = false;
         this.socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
         this.socket.on("error", (err) => {
           console.error("[UDP] Socket error:", err);
-          this.emit("error", err);
+          if (this.isRunning) {
+            this.emit("error", err);
+            return;
+          }
+          if (!settled) {
+            settled = true;
+            this.emit("error", err);
+            this.socket?.close();
+            this.socket = null;
+            this.isRunning = false;
+            reject(err);
+          }
         });
         this.socket.on("message", (msg, rinfo) => {
           this.handleMessage(msg, rinfo);
         });
         this.socket.on("listening", () => {
+          if (settled) return;
+          settled = true;
           const address = this.socket?.address();
           console.log(`[UDP] Listening on ${address?.address}:${address?.port}`);
           this.socket?.setBroadcast(true);
@@ -277,7 +291,7 @@ class UDPService extends events.EventEmitter {
   handleMessage(msg, rinfo) {
     try {
       const message = JSON.parse(msg.toString());
-      if (this.localDevice && message.sender.ip === this.localDevice.ip) {
+      if (this.localDevice && message.sender.id === this.localDevice.id) {
         return;
       }
       switch (message.msg_type) {
@@ -1425,6 +1439,10 @@ let udpService = null;
 electron.ipcMain.handle("udp-start", async (_event, config) => {
   try {
     udpService = getUDPService(config);
+    udpService.removeAllListeners("error");
+    udpService.on("error", (err) => {
+      mainWindow?.webContents.send("network-error", { service: "udp", error: String(err) });
+    });
     await udpService.start();
     log.info("UDP service started");
     return { success: true };
@@ -1507,6 +1525,10 @@ let tcpServer = null;
 electron.ipcMain.handle("tcp-start", async (_event, config) => {
   try {
     tcpServer = getTCPServer(config);
+    tcpServer.removeAllListeners("error");
+    tcpServer.on("error", (err) => {
+      mainWindow?.webContents.send("network-error", { service: "tcp", error: String(err) });
+    });
     tcpServer.on("message", (message, from) => {
       mainWindow?.webContents.send("tcp-message", message, from);
     });

@@ -49,6 +49,9 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   onTcpMessage: (callback) => {
     electron.ipcRenderer.on("tcp-message", (_event, message, from) => callback(message, from));
   },
+  onNetworkError: (callback) => {
+    electron.ipcRenderer.on("network-error", (_event, payload) => callback(payload));
+  },
   // Device management
   getDevices: () => electron.ipcRenderer.invoke("get-devices"),
   refreshDevices: () => electron.ipcRenderer.invoke("refresh-devices"),

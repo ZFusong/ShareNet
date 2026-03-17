@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import * as Select from '@radix-ui/react-select'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
+import { useDeviceStore } from '../../stores/deviceStore'
 
 interface Settings {
   deviceName: string
@@ -31,6 +32,7 @@ interface LogEntry {
 type LogType = 'all' | 'run' | 'audit'
 
 export function SettingsPanel() {
+  const { setNetworkStatus, setNetworkError } = useDeviceStore()
   const [settings, setSettings] = useState<Settings>({
     deviceName: '',
     deviceRole: 'bidirectional',
@@ -112,7 +114,48 @@ export function SettingsPanel() {
           logLevel: settings.logLevel
         }
       })
-      alert('设置已保存')
+
+      setNetworkStatus('启动中')
+      setNetworkError(null)
+
+      await window.electronAPI?.udpStop()
+      await window.electronAPI?.tcpStop()
+
+      const errors: { udp?: string; tcp?: string } = {}
+      const udpResult = await window.electronAPI?.udpStart({ port: settings.udpPort })
+      if (!udpResult?.success) {
+        const message = udpResult?.error || 'Unknown UDP error'
+        errors.udp = message.includes('EADDRINUSE')
+          ? `UDP 端口 ${settings.udpPort} 已被占用`
+          : `UDP 启动失败: ${message}`
+      }
+
+      if (!errors.udp) {
+        const hostname = await window.electronAPI?.getHostname()
+        await window.electronAPI?.udpInitLocalDevice({
+          name: settings.deviceName || hostname || 'ShareNet',
+          role: settings.deviceRole,
+          port: settings.tcpPort
+        })
+      }
+
+      const tcpResult = await window.electronAPI?.tcpStart({ port: settings.tcpPort })
+      if (!tcpResult?.success) {
+        const message = tcpResult?.error || 'Unknown TCP error'
+        errors.tcp = message.includes('EADDRINUSE')
+          ? `TCP 端口 ${settings.tcpPort} 已被占用`
+          : `TCP 启动失败: ${message}`
+      }
+
+      if (errors.udp || errors.tcp) {
+        setNetworkStatus('异常')
+        setNetworkError(errors)
+        alert(`设置已保存，但网络服务启动失败：${errors.udp || errors.tcp}`)
+      } else {
+        setNetworkStatus('就绪')
+        setNetworkError(null)
+        alert('设置已保存并应用')
+      }
     } catch (error) {
       console.error('Failed to save settings:', error)
       alert('保存失败')

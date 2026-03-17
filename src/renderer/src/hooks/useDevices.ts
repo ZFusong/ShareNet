@@ -3,7 +3,7 @@
  * 设备管理 Hook
  */
 
-import { useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useDeviceStore, type Device } from '../stores/deviceStore'
 
 export function useDevices() {
@@ -26,69 +26,6 @@ export function useDevices() {
     getSelectedDevicesList
   } = useDeviceStore()
 
-  // Initialize network services and subscribe to updates
-  useEffect(() => {
-    const initNetwork = async () => {
-      try {
-        // Start UDP service
-        await window.electronAPI?.udpStart({ port: 8888 })
-
-        // Initialize local device
-        const hostname = await window.electronAPI?.getHostname()
-        const localIP = await window.electronAPI?.getLocalIP()
-
-        await window.electronAPI?.udpInitLocalDevice({
-          name: hostname || 'ShareNet',
-          role: 'bidirectional'
-        })
-
-        // Subscribe to device updates
-        window.electronAPI?.onUdpDevicesUpdated((deviceList: unknown[]) => {
-          setDevices(deviceList as Device[])
-        })
-
-        window.electronAPI?.onUdpDeviceAdded((device: unknown) => {
-          addDevice(device as Device)
-        })
-
-        window.electronAPI?.onUdpDeviceUpdated((device: unknown) => {
-          updateDevice(device as Device)
-        })
-
-        window.electronAPI?.onUdpDevicesRemoved((deviceList: unknown[]) => {
-          deviceList.forEach((device) => {
-            removeDevice((device as Device).id)
-          })
-        })
-
-        // Get initial device list
-        const initialDevices = await window.electronAPI?.udpGetDevices()
-        if (initialDevices) {
-          setDevices(initialDevices as Device[])
-        }
-
-        // Get local device
-        const local = await window.electronAPI?.udpGetLocalDevice()
-        if (local) {
-          setLocalDevice(local as Device)
-        }
-
-        // Start TCP service
-        await window.electronAPI?.tcpStart({ port: 8889 })
-      } catch (error) {
-        console.error('Failed to initialize network services:', error)
-      }
-    }
-
-    initNetwork()
-
-    // Cleanup on unmount
-    return () => {
-      window.electronAPI?.udpStop()
-      window.electronAPI?.tcpStop()
-    }
-  }, [setDevices, addDevice, updateDevice, removeDevice, setLocalDevice])
-
   // Refresh devices manually
   const refreshDevices = useCallback(async () => {
     const deviceList = await window.electronAPI?.udpGetDevices()
@@ -99,11 +36,27 @@ export function useDevices() {
 
   // Add device manually
   const addDeviceManually = useCallback(async (ip: string, name?: string) => {
+    const trimmed = ip.trim()
+    let host = trimmed
+    let port = 0
+
+    const parts = trimmed.split(':')
+    if (parts.length === 2 && parts[0] && parts[1]) {
+      host = parts[0]
+      const parsed = Number(parts[1])
+      port = Number.isFinite(parsed) ? parsed : 0
+    }
+
+    if (!port) {
+      const savedSettings = await window.electronAPI?.getSettings()
+      port = savedSettings?.network?.tcpPort ?? 8889
+    }
+
     const device: Device = {
-      id: `manual-${ip}`,
-      name: name || `Device-${ip}`,
-      ip,
-      port: 8889,
+      id: `manual-${host}:${port}`,
+      name: name || `Device-${host}`,
+      ip: host,
+      port,
       role: 'controlled',
       tags: [],
       status: 'online',

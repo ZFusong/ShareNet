@@ -205,6 +205,10 @@ let udpService: ReturnType<typeof getUDPService> | null = null
 ipcMain.handle('udp-start', async (_event, config?: { port?: number }) => {
   try {
     udpService = getUDPService(config)
+    udpService.removeAllListeners('error')
+    udpService.on('error', (err) => {
+      mainWindow?.webContents.send('network-error', { service: 'udp', error: String(err) })
+    })
     await udpService.start()
     log.info('UDP service started')
     return { success: true }
@@ -315,6 +319,10 @@ let messageHandler: any = null
 ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
   try {
     tcpServer = getTCPServer(config)
+    tcpServer.removeAllListeners('error')
+    tcpServer.on('error', (err) => {
+      mainWindow?.webContents.send('network-error', { service: 'tcp', error: String(err) })
+    })
 
     // Register message handler to forward to renderer
     tcpServer.on('message', (message: NetworkMessage, from: DeviceInfo) => {
