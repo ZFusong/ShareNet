@@ -3,19 +3,22 @@ import { ConsolePanel } from './components/console/ConsolePanel'
 import { ResourcePanel } from './components/resource/ResourcePanel'
 import { ConfigPanel } from './components/config/ConfigPanel'
 import { SettingsPanel } from './components/settings/SettingsPanel'
+import { DeviceList } from './components/console/DeviceList'
 import { useDeviceStore } from './stores/deviceStore'
 import { useNetwork } from './hooks/useNetwork'
+import * as Dialog from '@radix-ui/react-dialog'
 
 type Tab = 'console' | 'resource' | 'config' | 'settings'
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('console')
+  const [activeTab, setActiveTab] = useState<Tab>('resource')
   const [appInfo, setAppInfo] = useState({ name: 'ShareNet', version: '1.0.0' })
   const { networkStatus, networkError, devices, selectedDevices } = useDeviceStore()
   const hasNetworkError = !!(networkError?.udp || networkError?.tcp)
   const statusClass = hasNetworkError ? 'offline' : 'online'
   const deviceCount = devices.length
   const selectedCount = selectedDevices.size
+  const selectedOnlineCount = devices.filter((device) => selectedDevices.has(device.id) && device.status === 'online').length
 
   useNetwork()
 
@@ -36,8 +39,8 @@ function App() {
   }, [])
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'console', label: '操作台' },
     { id: 'resource', label: '资源站' },
+    { id: 'console', label: '操作台' },
     { id: 'config', label: '配置中心' },
     { id: 'settings', label: '系统设置' }
   ]
@@ -96,7 +99,19 @@ function App() {
         <div className="status-info">
           <span id="network-status">网络: {networkStatus}</span>
           <span id="device-count">在线设备: {deviceCount}</span>
-          <span id="selected-count">已选设备: {selectedCount}</span>
+          <Dialog.Root>
+            <Dialog.Trigger asChild>
+              <button id="selected-count" className="text-xs text-primary hover:underline">
+                已选设备: {selectedCount}（在线 {selectedOnlineCount}）
+              </button>
+            </Dialog.Trigger>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+              <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border rounded shadow-lg w-[760px] max-w-[95vw] max-h-[90vh] overflow-hidden z-50">
+                <DeviceList />
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         </div>
         <div className="footer-info">
           <span id="app-version">v{appInfo.version}</span>

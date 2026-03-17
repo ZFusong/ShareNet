@@ -4,10 +4,8 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import * as Tabs from '@radix-ui/react-tabs'
 import * as Select from '@radix-ui/react-select'
 import * as Popover from '@radix-ui/react-popover'
-import { DeviceList } from './DeviceList'
 import { useConfigStore, type Scene, type SoftwarePreset, type InputPreset } from '../../stores/configStore'
 
 type CommandType = 'scene' | 'software' | 'input'
@@ -131,7 +129,7 @@ export function ConsolePanel() {
     }
 
     const presetName = 'name' in preset ? preset.name : 'Unknown'
-    const targetDevices = '已选择 X 台设备' // TODO: 获取实际选中设备
+    const targetDevices = '已选择设备'
 
     if (scheduleTime) {
       addLog(`已安排 [${presetName}] 在 ${scheduleTime} 执行到 ${targetDevices}`, 'info')
@@ -157,27 +155,8 @@ export function ConsolePanel() {
 
   return (
     <section id="console-panel" className="panel active h-full">
-      <Tabs.Root defaultValue="devices" className="h-full flex flex-col">
-        <Tabs.List className="flex border-b">
-          <Tabs.Trigger
-            value="devices"
-            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
-          >
-            设备列表
-          </Tabs.Trigger>
-          <Tabs.Trigger
-            value="command"
-            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
-          >
-            指令编排
-          </Tabs.Trigger>
-        </Tabs.List>
-
-        <Tabs.Content value="devices" className="flex-1 overflow-hidden">
-          <DeviceList />
-        </Tabs.Content>
-
-        <Tabs.Content value="command" className="flex-1 p-4 overflow-auto">
+      <div className="h-full flex flex-col">
+        <div className="flex-1 p-4 overflow-auto">
           <div className="command-panel space-y-4">
             {/* Command Type Selection */}
             <div className="command-type flex gap-4">
@@ -412,8 +391,9 @@ export function ConsolePanel() {
               )}
             </div>
           </div>
-        </Tabs.Content>
-      </Tabs.Root>
+        </div>
+
+      </div>
     </section>
   )
 }

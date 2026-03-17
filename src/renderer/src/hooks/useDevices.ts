@@ -13,6 +13,8 @@ export function useDevices() {
     selectedDevices,
     filter,
     offlineDevices,
+    selectDevice,
+    deselectDevice,
     setDevices,
     addDevice,
     updateDevice,
@@ -121,6 +123,8 @@ export function useDevices() {
     removeDevice: removeDeviceById,
     updateLocalDeviceInfo,
     toggleSelectDevice,
+    selectDevice,
+    deselectDevice,
     selectAll,
     deselectAll,
     setFilter

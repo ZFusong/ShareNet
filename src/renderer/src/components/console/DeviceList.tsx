@@ -4,12 +4,11 @@
  */
 
 import * as Checkbox from '@radix-ui/react-checkbox'
-import * as Select from '@radix-ui/react-select'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import * as ToggleGroup from '@radix-ui/react-toggle-group'
 import { useState } from 'react'
-import { type Device, useDeviceStore } from '../../stores/deviceStore'
+import { type Device } from '../../stores/deviceStore'
 import { useDevices } from '../../hooks/useDevices'
 
 // Status indicator component
@@ -57,11 +56,12 @@ function RoleBadge({ role }: { role: Device['role'] }) {
 
 export function DeviceList() {
   const {
+    devices,
     filteredDevices,
     selectedDevices,
     filter,
     toggleSelectDevice,
-    selectAll,
+    selectDevice,
     deselectAll,
     setFilter,
     addDeviceManually,
@@ -72,6 +72,9 @@ export function DeviceList() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [newDeviceIP, setNewDeviceIP] = useState('')
   const [newDeviceName, setNewDeviceName] = useState('')
+  const [searchText, setSearchText] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline' | 'busy'>('all')
+  const [tagFilter, setTagFilter] = useState<string>('all')
 
   const handleAddDevice = async () => {
     if (!newDeviceIP.trim()) return
@@ -89,14 +92,51 @@ export function DeviceList() {
     }
   }
 
-  const allSelected = filteredDevices.length > 0 && filteredDevices.every((d) => selectedDevices.has(d.id))
-  const someSelected = filteredDevices.some((d) => selectedDevices.has(d.id))
+  const allTags = Array.from(
+    new Set(
+      devices.flatMap((device) => device.tags)
+    )
+  )
+
+  const visibleDevices = filteredDevices
+    .filter((device) => {
+      if (statusFilter !== 'all' && device.status !== statusFilter) return false
+      if (tagFilter !== 'all' && !device.tags.includes(tagFilter)) return false
+
+      if (!searchText.trim()) return true
+      const text = searchText.trim().toLowerCase()
+      return (
+        device.name.toLowerCase().includes(text) ||
+        device.ip.toLowerCase().includes(text) ||
+        device.tags.some((tag) => tag.toLowerCase().includes(text))
+      )
+    })
+    .sort((a, b) => {
+      if (a.lastSeen !== b.lastSeen) return b.lastSeen - a.lastSeen
+      const statusOrder = { online: 0, busy: 1, offline: 2 }
+      if (statusOrder[a.status] !== statusOrder[b.status]) {
+        return statusOrder[a.status] - statusOrder[b.status]
+      }
+      return a.name.localeCompare(b.name, 'zh-CN')
+    })
+
+  const allVisibleSelected = visibleDevices.length > 0 && visibleDevices.every((d) => selectedDevices.has(d.id))
+  const someVisibleSelected = visibleDevices.some((d) => selectedDevices.has(d.id))
+
+  const handleSelectVisible = (checked: boolean | string) => {
+    if (!checked) {
+      deselectAll()
+      return
+    }
+
+    visibleDevices.forEach((device) => selectDevice(device.id))
+  }
 
   return (
     <div className="device-list-container flex flex-col h-full">
       {/* Header */}
       <div className="device-list-header flex items-center justify-between p-4 border-b">
-        <h3 className="text-lg font-semibold">设备列表</h3>
+        <h3 className="text-lg font-semibold">选择设备</h3>
         <div className="flex gap-2">
           <button
             onClick={refreshDevices}
@@ -154,58 +194,90 @@ export function DeviceList() {
       </div>
 
       {/* Filter bar */}
-      <div className="filter-bar p-4 border-b">
-        <ToggleGroup.Root
-          type="single"
-          value={filter.type}
-          onValueChange={(value) => value && setFilter({ type: value as any })}
-          className="flex gap-1 flex-wrap"
-        >
-          <ToggleGroup.Item
-            value="all"
-            className={`px-3 py-1.5 text-sm rounded ${
-              filter.type === 'all' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-            }`}
+      <div className="filter-bar p-4 border-b space-y-3">
+        <input
+          type="text"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          placeholder="搜索设备名称或标签"
+          className="w-full px-3 py-2 border rounded-md text-sm bg-background"
+        />
+        <div className="flex gap-3 flex-wrap items-center">
+          <div className="text-xs text-muted-foreground">分组:</div>
+          <ToggleGroup.Root
+            type="single"
+            value={filter.type}
+            onValueChange={(value) => value && setFilter({ type: value as any })}
+            className="flex gap-1 flex-wrap"
           >
-            全部
-          </ToggleGroup.Item>
-          <ToggleGroup.Item
-            value="controller"
-            className={`px-3 py-1.5 text-sm rounded ${
-              filter.type === 'controller' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-            }`}
+            <ToggleGroup.Item
+              value="all"
+              className={`px-3 py-1.5 text-sm rounded ${
+                filter.type === 'all' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+              }`}
+            >
+              全部
+            </ToggleGroup.Item>
+            <ToggleGroup.Item
+              value="controller"
+              className={`px-3 py-1.5 text-sm rounded ${
+                filter.type === 'controller' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+              }`}
+            >
+              主控
+            </ToggleGroup.Item>
+            <ToggleGroup.Item
+              value="controlled"
+              className={`px-3 py-1.5 text-sm rounded ${
+                filter.type === 'controlled' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+              }`}
+            >
+              被控
+            </ToggleGroup.Item>
+            <ToggleGroup.Item
+              value="bidirectional"
+              className={`px-3 py-1.5 text-sm rounded ${
+                filter.type === 'bidirectional' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+              }`}
+            >
+              双向
+            </ToggleGroup.Item>
+          </ToggleGroup.Root>
+        </div>
+        <div className="flex gap-2 flex-wrap text-sm">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="px-2 py-1 border rounded text-sm bg-background"
           >
-            主控
-          </ToggleGroup.Item>
-          <ToggleGroup.Item
-            value="controlled"
-            className={`px-3 py-1.5 text-sm rounded ${
-              filter.type === 'controlled' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-            }`}
+            <option value="all">全部状态</option>
+            <option value="online">在线</option>
+            <option value="busy">忙碌</option>
+            <option value="offline">离线</option>
+          </select>
+          <select
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            className="px-2 py-1 border rounded text-sm bg-background"
           >
-            被控
-          </ToggleGroup.Item>
-          <ToggleGroup.Item
-            value="bidirectional"
-            className={`px-3 py-1.5 text-sm rounded ${
-              filter.type === 'bidirectional' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-            }`}
-          >
-            双向
-          </ToggleGroup.Item>
-        </ToggleGroup.Root>
+            <option value="all">全部标签</option>
+            {allTags.map((tag) => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Select all */}
       <div className="select-all-bar p-3 border-b flex items-center gap-3">
         <Checkbox.Root
-          checked={allSelected}
-          onCheckedChange={(checked) => checked ? selectAll() : deselectAll()}
-          className={`w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary ${someSelected && !allSelected ? 'bg-primary/50' : ''}`}
+          checked={allVisibleSelected}
+          onCheckedChange={handleSelectVisible}
+          className={`w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary ${someVisibleSelected && !allVisibleSelected ? 'bg-primary/50' : ''}`}
           id="select-all"
         >
           <Checkbox.Indicator>
-            {allSelected || (someSelected && !allSelected) ? (
+            {allVisibleSelected || (someVisibleSelected && !allVisibleSelected) ? (
               <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
@@ -213,24 +285,30 @@ export function DeviceList() {
           </Checkbox.Indicator>
         </Checkbox.Root>
         <label htmlFor="select-all" className="text-sm text-muted-foreground">
-          {selectedDevices.size > 0 ? `已选择 ${selectedDevices.size} 个设备` : '全选'}
+          {selectedDevices.size > 0 ? `已选择 ${selectedDevices.size} 个设备` : '全选本页'}
         </label>
+        <button
+          onClick={deselectAll}
+          className="ml-auto text-xs px-2 py-1 border rounded hover:bg-secondary"
+        >
+          清空已选
+        </button>
       </div>
 
       {/* Device list */}
       <ScrollArea.Root className="flex-1 overflow-hidden">
         <ScrollArea.Viewport className="h-full w-full">
-          {filteredDevices.length === 0 ? (
+          {visibleDevices.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
               <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              <p>未发现设备</p>
-              <p className="text-xs mt-1">点击"添加"手动添加设备</p>
+              <p>未发现匹配设备</p>
+              <p className="text-xs mt-1">请调整筛选或搜索条件</p>
             </div>
           ) : (
             <div className="device-list">
-              {filteredDevices.map((device) => (
+              {visibleDevices.map((device) => (
                 <div
                   key={device.id}
                   className={`device-item p-4 border-b cursor-pointer transition-colors ${
@@ -271,6 +349,18 @@ export function DeviceList() {
                       <div className="flex items-center gap-2 mt-2">
                         <StatusBadge status={device.status} />
                         <RoleBadge role={device.role} />
+                        {device.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {device.tags.slice(0, 2).map((tag) => (
+                              <span key={tag} className="px-1.5 py-0.5 text-xs bg-secondary rounded">
+                                {tag}
+                              </span>
+                            ))}
+                            {device.tags.length > 2 && (
+                              <span className="text-xs text-muted-foreground">+{device.tags.length - 2}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -286,7 +376,7 @@ export function DeviceList() {
 
       {/* Device count */}
       <div className="device-count p-3 border-t text-sm text-muted-foreground">
-        共 {filteredDevices.length} 个设备
+        共 {visibleDevices.length} 个设备
         {selectedDevices.size > 0 && (
           <span className="ml-2 text-primary">
             (已选 {selectedDevices.size})
