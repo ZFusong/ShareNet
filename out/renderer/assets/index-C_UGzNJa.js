@@ -9673,7 +9673,7 @@ const arrow = (options, deps) => {
     options: [options, deps]
   };
 };
-var NAME$2 = "Arrow";
+var NAME$1 = "Arrow";
 var Arrow$1 = reactExports.forwardRef((props, forwardedRef) => {
   const { children, width = 10, height = 5, ...arrowProps } = props;
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -9689,7 +9689,7 @@ var Arrow$1 = reactExports.forwardRef((props, forwardedRef) => {
     }
   );
 });
-Arrow$1.displayName = NAME$2;
+Arrow$1.displayName = NAME$1;
 var Root$4 = Arrow$1;
 function useSize(element) {
   const [size2, setSize] = reactExports.useState(void 0);
@@ -9990,7 +9990,7 @@ function getSideAndAlignFromPlacement(placement) {
   const [side, align = "center"] = placement.split("-");
   return [side, align];
 }
-var Root2$6 = Popper;
+var Root2$5 = Popper;
 var Anchor = PopperAnchor;
 var Content$2 = PopperContent;
 var Arrow = PopperArrow;
@@ -10090,7 +10090,7 @@ var VISUALLY_HIDDEN_STYLES = Object.freeze({
   whiteSpace: "nowrap",
   wordWrap: "normal"
 });
-var NAME$1 = "VisuallyHidden";
+var NAME = "VisuallyHidden";
 var VisuallyHidden = reactExports.forwardRef(
   (props, forwardedRef) => {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -10103,7 +10103,7 @@ var VisuallyHidden = reactExports.forwardRef(
     );
   }
 );
-VisuallyHidden.displayName = NAME$1;
+VisuallyHidden.displayName = NAME;
 var Root$3 = VisuallyHidden;
 var getDefaultParent = function(originalTarget) {
   if (typeof document === "undefined") {
@@ -10933,7 +10933,7 @@ var Select = (props) => {
   const isFormControl = trigger ? form || !!trigger.closest("form") : true;
   const [nativeOptionsSet, setNativeOptionsSet] = reactExports.useState(/* @__PURE__ */ new Set());
   const nativeSelectKey = Array.from(nativeOptionsSet).map((option) => option.props.value).join(";");
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$6, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$5, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
     SelectProvider,
     {
       required,
@@ -11650,8 +11650,8 @@ var SelectLabel = reactExports.forwardRef(
   }
 );
 SelectLabel.displayName = LABEL_NAME;
-var ITEM_NAME$2 = "SelectItem";
-var [SelectItemContextProvider, useSelectItemContext] = createSelectContext(ITEM_NAME$2);
+var ITEM_NAME$1 = "SelectItem";
+var [SelectItemContextProvider, useSelectItemContext] = createSelectContext(ITEM_NAME$1);
 var SelectItem = reactExports.forwardRef(
   (props, forwardedRef) => {
     const {
@@ -11661,8 +11661,8 @@ var SelectItem = reactExports.forwardRef(
       textValue: textValueProp,
       ...itemProps
     } = props;
-    const context = useSelectContext(ITEM_NAME$2, __scopeSelect);
-    const contentContext = useSelectContentContext(ITEM_NAME$2, __scopeSelect);
+    const context = useSelectContext(ITEM_NAME$1, __scopeSelect);
+    const contentContext = useSelectContentContext(ITEM_NAME$1, __scopeSelect);
     const isSelected = context.value === value;
     const [textValue, setTextValue] = reactExports.useState(textValueProp ?? "");
     const [isFocused, setIsFocused] = reactExports.useState(false);
@@ -11752,7 +11752,7 @@ var SelectItem = reactExports.forwardRef(
     );
   }
 );
-SelectItem.displayName = ITEM_NAME$2;
+SelectItem.displayName = ITEM_NAME$1;
 var ITEM_TEXT_NAME = "SelectItemText";
 var SelectItemText = reactExports.forwardRef(
   (props, forwardedRef) => {
@@ -11998,7 +11998,7 @@ function findNextItem(items, search, currentItem) {
 function wrapArray$1(array, startIndex) {
   return array.map((_, index2) => array[(startIndex + index2) % array.length]);
 }
-var Root2$5 = Select;
+var Root2$4 = Select;
 var Trigger$4 = SelectTrigger;
 var Value = SelectValue;
 var Icon = SelectIcon;
@@ -12153,7 +12153,7 @@ var Popover = (props) => {
     onChange: onOpenChange,
     caller: POPOVER_NAME
   });
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$6, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$5, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
     PopoverProvider,
     {
       scope: __scopePopover,
@@ -12403,7 +12403,7 @@ PopoverArrow.displayName = ARROW_NAME$1;
 function getState$2(open) {
   return open ? "open" : "closed";
 }
-var Root2$4 = Popover;
+var Root2$3 = Popover;
 var Trigger$3 = PopoverTrigger;
 var Portal$2 = PopoverPortal;
 var Content2$2 = PopoverContent;
@@ -12721,7 +12721,7 @@ function ConsolePanel() {
         )) })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "command-selector", className: "command-selector", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        Root2$5,
+        Root2$4,
         {
           value: commandType === "scene" ? selectedScene : commandType === "software" ? selectedSoftware : selectedInput,
           onValueChange: (value) => {
@@ -12766,7 +12766,7 @@ function ConsolePanel() {
           ]
         }
       ) }),
-      commandType === "scene" && selectedScene && /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$4, { open: isAdjustOpen, onOpenChange: setIsAdjustOpen, children: [
+      commandType === "scene" && selectedScene && /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$3, { open: isAdjustOpen, onOpenChange: setIsAdjustOpen, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger$3, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "text-xs text-primary hover:underline", children: "临时调整" }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$2, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Content2$2, { className: "bg-background border rounded shadow-lg p-3 w-64 z-50", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
@@ -13682,7 +13682,7 @@ var Tooltip = (props) => {
       }
     };
   }, []);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$6, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$5, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
     TooltipContextProvider,
     {
       scope: __scopeTooltip,
@@ -14471,7 +14471,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/alert-
   }, [MESSAGE, contentRef]);
   return null;
 };
-var Root2$3 = AlertDialog;
+var Root2$2 = AlertDialog;
 var Trigger2 = AlertDialogTrigger;
 var Portal2 = AlertDialogPortal;
 var Overlay2 = AlertDialogOverlay;
@@ -14480,28 +14480,184 @@ var Action = AlertDialogAction;
 var Cancel = AlertDialogCancel;
 var Title2 = AlertDialogTitle;
 var Description2 = AlertDialogDescription;
+const getDeviceKey = (device) => `${device.ip}:${device.port}`;
+const findHiddenKeyById = (id2, hiddenDevices) => {
+  for (const [key, device] of hiddenDevices) {
+    if (device.id === id2) return key;
+  }
+  return null;
+};
 const useDeviceStore = create((set, get) => ({
   devices: [],
   localDevice: null,
   selectedDevices: /* @__PURE__ */ new Set(),
   filter: { type: "all" },
   offlineDevices: /* @__PURE__ */ new Map(),
+  hiddenDevices: /* @__PURE__ */ new Map(),
+  persistentDevices: /* @__PURE__ */ new Map(),
+  deviceGroups: [],
+  deviceAliases: /* @__PURE__ */ new Map(),
   networkStatus: "就绪",
   networkError: null,
-  setDevices: (devices) => set({ devices }),
+  deviceStatusCheckCount: 0,
+  setDevices: (devices) => set((state) => {
+    const nextHidden = new Map(state.hiddenDevices);
+    const merged = /* @__PURE__ */ new Map();
+    state.persistentDevices.forEach((device, key) => {
+      merged.set(key, device);
+    });
+    devices.forEach((device) => {
+      merged.set(getDeviceKey(device), device);
+    });
+    const visible = [];
+    merged.forEach((device, key) => {
+      if (nextHidden.has(key)) {
+        const existing = nextHidden.get(key);
+        nextHidden.set(key, { ...existing, ...device });
+      } else {
+        visible.push(device);
+      }
+    });
+    return { devices: visible, hiddenDevices: nextHidden };
+  }),
+  setHiddenDevices: (devices) => set({ hiddenDevices: devices }),
+  setPersistentDevices: (devices) => set((state) => {
+    const nextHidden = new Map(state.hiddenDevices);
+    const nextDevices = [...state.devices];
+    devices.forEach((device, key) => {
+      if (nextHidden.has(key)) {
+        const existing = nextHidden.get(key);
+        nextHidden.set(key, { ...existing, ...device });
+      } else if (!nextDevices.find((d) => getDeviceKey(d) === key)) {
+        nextDevices.push(device);
+      }
+    });
+    return { persistentDevices: devices, devices: nextDevices, hiddenDevices: nextHidden };
+  }),
+  addPersistentDevice: (device) => set((state) => {
+    const key = getDeviceKey(device);
+    const nextPersistent = new Map(state.persistentDevices);
+    nextPersistent.set(key, device);
+    if (state.hiddenDevices.has(key)) {
+      const nextHidden = new Map(state.hiddenDevices);
+      const existing = nextHidden.get(key);
+      nextHidden.set(key, { ...existing, ...device });
+      return { persistentDevices: nextPersistent, hiddenDevices: nextHidden };
+    }
+    const exists = state.devices.find((d) => getDeviceKey(d) === key);
+    return {
+      persistentDevices: nextPersistent,
+      devices: exists ? state.devices.map((d) => getDeviceKey(d) === key ? { ...d, ...device } : d) : [...state.devices, device]
+    };
+  }),
+  removePersistentDevice: (key) => set((state) => {
+    if (!state.persistentDevices.has(key)) return state;
+    const nextPersistent = new Map(state.persistentDevices);
+    nextPersistent.delete(key);
+    return { persistentDevices: nextPersistent };
+  }),
+  setDeviceGroups: (groups) => set({ deviceGroups: groups }),
+  addDeviceGroup: (group) => set((state) => ({
+    deviceGroups: [...state.deviceGroups, group]
+  })),
+  updateDeviceGroup: (groupId, updates) => set((state) => ({
+    deviceGroups: state.deviceGroups.map(
+      (group) => group.id === groupId ? { ...group, ...updates } : group
+    )
+  })),
+  deleteDeviceGroup: (groupId) => set((state) => ({
+    deviceGroups: state.deviceGroups.filter((group) => group.id !== groupId)
+  })),
+  addDeviceToGroup: (groupId, key) => set((state) => ({
+    deviceGroups: state.deviceGroups.map(
+      (group) => group.id === groupId && !group.deviceKeys.includes(key) ? { ...group, deviceKeys: [...group.deviceKeys, key] } : group
+    )
+  })),
+  removeDeviceFromGroup: (groupId, key) => set((state) => ({
+    deviceGroups: state.deviceGroups.map(
+      (group) => group.id === groupId ? { ...group, deviceKeys: group.deviceKeys.filter((deviceKey) => deviceKey !== key) } : group
+    )
+  })),
+  setDeviceAliases: (aliases) => set({ deviceAliases: aliases }),
+  setDeviceAlias: (key, alias) => set((state) => {
+    const next = new Map(state.deviceAliases);
+    if (alias.trim()) {
+      next.set(key, alias.trim());
+    } else {
+      next.delete(key);
+    }
+    return { deviceAliases: next };
+  }),
+  removeDeviceAlias: (key) => set((state) => {
+    const next = new Map(state.deviceAliases);
+    next.delete(key);
+    return { deviceAliases: next };
+  }),
   addDevice: (device) => set((state) => {
+    const key = getDeviceKey(device);
+    const nextPersistent = new Map(state.persistentDevices);
+    if (nextPersistent.has(key)) {
+      const existingPersistent = nextPersistent.get(key);
+      nextPersistent.set(key, { ...existingPersistent, ...device });
+    }
+    if (state.hiddenDevices.has(key)) {
+      const nextHidden = new Map(state.hiddenDevices);
+      const existing = nextHidden.get(key);
+      nextHidden.set(key, { ...existing, ...device });
+      return { hiddenDevices: nextHidden, persistentDevices: nextPersistent };
+    }
     const exists = state.devices.find((d) => d.id === device.id);
     if (exists) {
-      return { devices: state.devices.map((d) => d.id === device.id ? device : d) };
+      return {
+        devices: state.devices.map((d) => d.id === device.id ? device : d),
+        persistentDevices: nextPersistent
+      };
     }
-    return { devices: [...state.devices, device] };
+    const sameAddress = state.devices.find((d) => getDeviceKey(d) === key);
+    if (sameAddress) {
+      return {
+        devices: state.devices.map(
+          (d) => getDeviceKey(d) === key ? { ...d, ...device, id: d.id } : d
+        ),
+        persistentDevices: nextPersistent
+      };
+    }
+    return { devices: [...state.devices, device], persistentDevices: nextPersistent };
   }),
-  updateDevice: (device) => set((state) => ({
-    devices: state.devices.map((d) => d.id === device.id ? device : d)
-  })),
+  updateDevice: (device) => set((state) => {
+    const key = getDeviceKey(device);
+    const nextPersistent = new Map(state.persistentDevices);
+    if (nextPersistent.has(key)) {
+      const existingPersistent = nextPersistent.get(key);
+      nextPersistent.set(key, { ...existingPersistent, ...device });
+    }
+    if (state.hiddenDevices.has(key)) {
+      const nextHidden = new Map(state.hiddenDevices);
+      const existing = nextHidden.get(key);
+      nextHidden.set(key, { ...existing, ...device });
+      return { hiddenDevices: nextHidden, persistentDevices: nextPersistent };
+    }
+    return {
+      devices: state.devices.map((d) => {
+        if (d.id === device.id) return device;
+        if (getDeviceKey(d) === key) return { ...d, ...device, id: d.id };
+        return d;
+      }),
+      persistentDevices: nextPersistent
+    };
+  }),
   removeDevice: (id2) => set((state) => {
     const device = state.devices.find((d) => d.id === id2);
     if (device) {
+      const key = getDeviceKey(device);
+      if (state.persistentDevices.has(key)) {
+        return {
+          devices: state.devices.map(
+            (d) => d.id === id2 ? { ...d, status: "offline", lastSeen: Date.now() } : d
+          ),
+          selectedDevices: new Set([...state.selectedDevices].filter((sid) => sid !== id2))
+        };
+      }
       const newOffline = new Map(state.offlineDevices);
       newOffline.set(id2, { ...device, status: "offline", lastSeen: Date.now() });
       return {
@@ -14509,6 +14665,15 @@ const useDeviceStore = create((set, get) => ({
         offlineDevices: newOffline,
         selectedDevices: new Set([...state.selectedDevices].filter((sid) => sid !== id2))
       };
+    }
+    const hiddenKey = findHiddenKeyById(id2, state.hiddenDevices);
+    if (hiddenKey) {
+      const nextHidden = new Map(state.hiddenDevices);
+      const hiddenDevice = nextHidden.get(hiddenKey);
+      if (hiddenDevice) {
+        nextHidden.set(hiddenKey, { ...hiddenDevice, status: "offline", lastSeen: Date.now() });
+      }
+      return { hiddenDevices: nextHidden };
     }
     return state;
   }),
@@ -14542,8 +14707,33 @@ const useDeviceStore = create((set, get) => ({
     newOffline.set(device.id, device);
     return { offlineDevices: newOffline };
   }),
+  hideDevice: (device) => set((state) => {
+    const key = getDeviceKey(device);
+    const nextHidden = new Map(state.hiddenDevices);
+    nextHidden.set(key, device);
+    const nextSelected = new Set(state.selectedDevices);
+    nextSelected.delete(device.id);
+    return {
+      hiddenDevices: nextHidden,
+      devices: state.devices.filter((d) => d.id !== device.id),
+      selectedDevices: nextSelected
+    };
+  }),
+  unhideDevice: (key) => set((state) => {
+    const nextHidden = new Map(state.hiddenDevices);
+    const device = nextHidden.get(key);
+    if (!device) return state;
+    nextHidden.delete(key);
+    const exists = state.devices.find((d) => d.id === device.id);
+    return {
+      hiddenDevices: nextHidden,
+      devices: exists ? state.devices : [...state.devices, device]
+    };
+  }),
   setNetworkStatus: (status) => set({ networkStatus: status }),
   setNetworkError: (error) => set({ networkError: error }),
+  beginDeviceStatusCheck: () => set((state) => ({ deviceStatusCheckCount: state.deviceStatusCheckCount + 1 })),
+  endDeviceStatusCheck: () => set((state) => ({ deviceStatusCheckCount: Math.max(0, state.deviceStatusCheckCount - 1) })),
   getFilteredDevices: () => {
     const { devices, filter } = get();
     return devices.filter((device) => {
@@ -14566,7 +14756,8 @@ const useDeviceStore = create((set, get) => ({
   getSelectedDevicesList: () => {
     const { devices, selectedDevices } = get();
     return devices.filter((d) => selectedDevices.has(d.id));
-  }
+  },
+  getHiddenDevicesList: () => Array.from(get().hiddenDevices.values())
 }));
 function ResourcePanel() {
   const [contentType, setContentType] = reactExports.useState("text");
@@ -14897,7 +15088,7 @@ function ResourcePanel() {
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col h-full bg-secondary/40 rounded-lg border p-4", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-center mb-3", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-medium text-sm", children: "分享记录" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$3, { open: isClearDialogOpen, onOpenChange: setIsClearDialogOpen, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$2, { open: isClearDialogOpen, onOpenChange: setIsClearDialogOpen, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger2, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "text-xs text-muted-foreground hover:text-foreground", children: "清理" }) }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal2, { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay2, { className: "fixed inset-0 bg-black/50 z-50" }),
@@ -15360,7 +15551,7 @@ var RovingFocusGroupImpl = reactExports.forwardRef((props, forwardedRef) => {
     }
   );
 });
-var ITEM_NAME$1 = "RovingFocusGroupItem";
+var ITEM_NAME = "RovingFocusGroupItem";
 var RovingFocusGroupItem = reactExports.forwardRef(
   (props, forwardedRef) => {
     const {
@@ -15373,7 +15564,7 @@ var RovingFocusGroupItem = reactExports.forwardRef(
     } = props;
     const autoId = useId();
     const id2 = tabStopId || autoId;
-    const context = useRovingFocusContext(ITEM_NAME$1, __scopeRovingFocusGroup);
+    const context = useRovingFocusContext(ITEM_NAME, __scopeRovingFocusGroup);
     const isCurrentTabStop = context.currentTabStopId === id2;
     const getItems = useCollection$1(__scopeRovingFocusGroup);
     const { onFocusableItemAdd, onFocusableItemRemove, currentTabStopId } = context;
@@ -15430,7 +15621,7 @@ var RovingFocusGroupItem = reactExports.forwardRef(
     );
   }
 );
-RovingFocusGroupItem.displayName = ITEM_NAME$1;
+RovingFocusGroupItem.displayName = ITEM_NAME;
 var MAP_KEY_TO_FOCUS_INTENT = {
   ArrowLeft: "prev",
   ArrowUp: "prev",
@@ -15468,7 +15659,7 @@ var TABS_NAME = "Tabs";
 var [createTabsContext] = createContextScope(TABS_NAME, [
   createRovingFocusGroupScope
 ]);
-var useRovingFocusGroupScope$1 = createRovingFocusGroupScope();
+var useRovingFocusGroupScope = createRovingFocusGroupScope();
 var [TabsProvider, useTabsContext] = createTabsContext(TABS_NAME);
 var Tabs = reactExports.forwardRef(
   (props, forwardedRef) => {
@@ -15518,7 +15709,7 @@ var TabsList = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeTabs, loop = true, ...listProps } = props;
     const context = useTabsContext(TAB_LIST_NAME, __scopeTabs);
-    const rovingFocusGroupScope = useRovingFocusGroupScope$1(__scopeTabs);
+    const rovingFocusGroupScope = useRovingFocusGroupScope(__scopeTabs);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       Root,
       {
@@ -15546,7 +15737,7 @@ var TabsTrigger = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeTabs, value, disabled = false, ...triggerProps } = props;
     const context = useTabsContext(TRIGGER_NAME$1, __scopeTabs);
-    const rovingFocusGroupScope = useRovingFocusGroupScope$1(__scopeTabs);
+    const rovingFocusGroupScope = useRovingFocusGroupScope(__scopeTabs);
     const triggerId = makeTriggerId(context.baseId, value);
     const contentId = makeContentId(context.baseId, value);
     const isSelected = value === context.value;
@@ -15634,7 +15825,7 @@ function makeTriggerId(baseId, value) {
 function makeContentId(baseId, value) {
   return `${baseId}-content-${value}`;
 }
-var Root2$2 = Tabs;
+var Root2$1 = Tabs;
 var List = TabsList;
 var Trigger = TabsTrigger;
 var Content = TabsContent;
@@ -16242,7 +16433,7 @@ function focusFirst(candidates) {
 }
 var Provider = ToastProvider;
 var Viewport = ToastViewport;
-var Root2$1 = Toast;
+var Root2 = Toast;
 var Title = ToastTitle;
 function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds = [] }) {
   const { softwarePresets, loadPresets, savePreset, updatePreset, deletePreset } = useConfigStore();
@@ -16868,7 +17059,7 @@ function ConfigPanel() {
     }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsx(Provider, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { id: "config-panel", className: "panel h-full", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$2, { value: activeTab, onValueChange: (v2) => setActiveTab(v2), className: "h-full flex flex-col", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$1, { value: activeTab, onValueChange: (v2) => setActiveTab(v2), className: "h-full flex flex-col", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(List, { className: "flex border-b px-4", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           Trigger,
@@ -17028,7 +17219,7 @@ function ConfigPanel() {
       ] })
     ] }) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Root2$1,
+      Root2,
       {
         open: toastOpen,
         onOpenChange: setToastOpen,
@@ -17130,6 +17321,7 @@ function SettingsPanel() {
         await window.electronAPI?.udpInitLocalDevice({
           name: settings.deviceName || hostname || "ShareNet",
           role: settings.deviceRole,
+          tags: settings.deviceTags,
           port: settings.tcpPort
         });
       }
@@ -17197,7 +17389,7 @@ function SettingsPanel() {
     }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { id: "settings-panel", className: "panel h-full", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$2, { defaultValue: "device", className: "h-full flex flex-col", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$1, { defaultValue: "device", className: "h-full flex flex-col", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(List, { className: "flex border-b px-4", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           Trigger,
@@ -17250,7 +17442,7 @@ function SettingsPanel() {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-sm font-medium mb-1", children: "角色" }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            Root2$5,
+            Root2$4,
             {
               value: settings.deviceRole,
               onValueChange: (value) => updateSetting("deviceRole", value),
@@ -17365,7 +17557,7 @@ function SettingsPanel() {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-center mb-3", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-medium text-sm", children: "日志查看" }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$5, { value: settings.logLevel, onValueChange: handleLogLevelChange, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$4, { value: settings.logLevel, onValueChange: handleLogLevelChange, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center gap-1 px-2 py-1 border rounded text-xs bg-background", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
@@ -17692,190 +17884,6 @@ function isIndeterminate(checked) {
 function getState(checked) {
   return isIndeterminate(checked) ? "indeterminate" : checked ? "checked" : "unchecked";
 }
-var NAME = "Toggle";
-var Toggle = reactExports.forwardRef((props, forwardedRef) => {
-  const { pressed: pressedProp, defaultPressed, onPressedChange, ...buttonProps } = props;
-  const [pressed, setPressed] = useControllableState({
-    prop: pressedProp,
-    onChange: onPressedChange,
-    defaultProp: defaultPressed ?? false,
-    caller: NAME
-  });
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive.button,
-    {
-      type: "button",
-      "aria-pressed": pressed,
-      "data-state": pressed ? "on" : "off",
-      "data-disabled": props.disabled ? "" : void 0,
-      ...buttonProps,
-      ref: forwardedRef,
-      onClick: composeEventHandlers(props.onClick, () => {
-        if (!props.disabled) {
-          setPressed(!pressed);
-        }
-      })
-    }
-  );
-});
-Toggle.displayName = NAME;
-var TOGGLE_GROUP_NAME = "ToggleGroup";
-var [createToggleGroupContext] = createContextScope(TOGGLE_GROUP_NAME, [
-  createRovingFocusGroupScope
-]);
-var useRovingFocusGroupScope = createRovingFocusGroupScope();
-var ToggleGroup = React.forwardRef((props, forwardedRef) => {
-  const { type, ...toggleGroupProps } = props;
-  if (type === "single") {
-    const singleProps = toggleGroupProps;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImplSingle, { ...singleProps, ref: forwardedRef });
-  }
-  if (type === "multiple") {
-    const multipleProps = toggleGroupProps;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImplMultiple, { ...multipleProps, ref: forwardedRef });
-  }
-  throw new Error(`Missing prop \`type\` expected on \`${TOGGLE_GROUP_NAME}\``);
-});
-ToggleGroup.displayName = TOGGLE_GROUP_NAME;
-var [ToggleGroupValueProvider, useToggleGroupValueContext] = createToggleGroupContext(TOGGLE_GROUP_NAME);
-var ToggleGroupImplSingle = React.forwardRef((props, forwardedRef) => {
-  const {
-    value: valueProp,
-    defaultValue,
-    onValueChange = () => {
-    },
-    ...toggleGroupSingleProps
-  } = props;
-  const [value, setValue] = useControllableState({
-    prop: valueProp,
-    defaultProp: defaultValue ?? "",
-    onChange: onValueChange,
-    caller: TOGGLE_GROUP_NAME
-  });
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    ToggleGroupValueProvider,
-    {
-      scope: props.__scopeToggleGroup,
-      type: "single",
-      value: React.useMemo(() => value ? [value] : [], [value]),
-      onItemActivate: setValue,
-      onItemDeactivate: React.useCallback(() => setValue(""), [setValue]),
-      children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImpl, { ...toggleGroupSingleProps, ref: forwardedRef })
-    }
-  );
-});
-var ToggleGroupImplMultiple = React.forwardRef((props, forwardedRef) => {
-  const {
-    value: valueProp,
-    defaultValue,
-    onValueChange = () => {
-    },
-    ...toggleGroupMultipleProps
-  } = props;
-  const [value, setValue] = useControllableState({
-    prop: valueProp,
-    defaultProp: defaultValue ?? [],
-    onChange: onValueChange,
-    caller: TOGGLE_GROUP_NAME
-  });
-  const handleButtonActivate = React.useCallback(
-    (itemValue) => setValue((prevValue = []) => [...prevValue, itemValue]),
-    [setValue]
-  );
-  const handleButtonDeactivate = React.useCallback(
-    (itemValue) => setValue((prevValue = []) => prevValue.filter((value2) => value2 !== itemValue)),
-    [setValue]
-  );
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    ToggleGroupValueProvider,
-    {
-      scope: props.__scopeToggleGroup,
-      type: "multiple",
-      value,
-      onItemActivate: handleButtonActivate,
-      onItemDeactivate: handleButtonDeactivate,
-      children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImpl, { ...toggleGroupMultipleProps, ref: forwardedRef })
-    }
-  );
-});
-ToggleGroup.displayName = TOGGLE_GROUP_NAME;
-var [ToggleGroupContext, useToggleGroupContext] = createToggleGroupContext(TOGGLE_GROUP_NAME);
-var ToggleGroupImpl = React.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      __scopeToggleGroup,
-      disabled = false,
-      rovingFocus = true,
-      orientation,
-      dir,
-      loop = true,
-      ...toggleGroupProps
-    } = props;
-    const rovingFocusGroupScope = useRovingFocusGroupScope(__scopeToggleGroup);
-    const direction = useDirection(dir);
-    const commonProps = { role: "group", dir: direction, ...toggleGroupProps };
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupContext, { scope: __scopeToggleGroup, rovingFocus, disabled, children: rovingFocus ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Root,
-      {
-        asChild: true,
-        ...rovingFocusGroupScope,
-        orientation,
-        dir: direction,
-        loop,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...commonProps, ref: forwardedRef })
-      }
-    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...commonProps, ref: forwardedRef }) });
-  }
-);
-var ITEM_NAME = "ToggleGroupItem";
-var ToggleGroupItem = React.forwardRef(
-  (props, forwardedRef) => {
-    const valueContext = useToggleGroupValueContext(ITEM_NAME, props.__scopeToggleGroup);
-    const context = useToggleGroupContext(ITEM_NAME, props.__scopeToggleGroup);
-    const rovingFocusGroupScope = useRovingFocusGroupScope(props.__scopeToggleGroup);
-    const pressed = valueContext.value.includes(props.value);
-    const disabled = context.disabled || props.disabled;
-    const commonProps = { ...props, pressed, disabled };
-    const ref = React.useRef(null);
-    return context.rovingFocus ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Item,
-      {
-        asChild: true,
-        ...rovingFocusGroupScope,
-        focusable: !disabled,
-        active: pressed,
-        ref,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItemImpl, { ...commonProps, ref: forwardedRef })
-      }
-    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItemImpl, { ...commonProps, ref: forwardedRef });
-  }
-);
-ToggleGroupItem.displayName = ITEM_NAME;
-var ToggleGroupItemImpl = React.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeToggleGroup, value, ...itemProps } = props;
-    const valueContext = useToggleGroupValueContext(ITEM_NAME, __scopeToggleGroup);
-    const singleProps = { role: "radio", "aria-checked": props.pressed, "aria-pressed": void 0 };
-    const typeProps = valueContext.type === "single" ? singleProps : void 0;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Toggle,
-      {
-        ...typeProps,
-        ...itemProps,
-        ref: forwardedRef,
-        onPressedChange: (pressed) => {
-          if (pressed) {
-            valueContext.onItemActivate(value);
-          } else {
-            valueContext.onItemDeactivate(value);
-          }
-        }
-      }
-    );
-  }
-);
-var Root2 = ToggleGroup;
-var Item2 = ToggleGroupItem;
 function useDevices() {
   const {
     devices,
@@ -17883,6 +17891,10 @@ function useDevices() {
     selectedDevices,
     filter,
     offlineDevices,
+    hiddenDevices,
+    persistentDevices,
+    deviceGroups,
+    deviceAliases,
     selectDevice,
     deselectDevice,
     setDevices,
@@ -17894,8 +17906,21 @@ function useDevices() {
     selectAll,
     deselectAll,
     setFilter,
+    hideDevice,
+    unhideDevice,
+    addPersistentDevice,
+    removePersistentDevice,
+    setDeviceGroups,
+    addDeviceGroup,
+    updateDeviceGroup,
+    deleteDeviceGroup,
+    addDeviceToGroup,
+    removeDeviceFromGroup,
+    setDeviceAlias,
+    removeDeviceAlias,
     getFilteredDevices,
-    getSelectedDevicesList
+    getSelectedDevicesList,
+    getHiddenDevicesList
   } = useDeviceStore();
   const refreshDevices = reactExports.useCallback(async () => {
     const deviceList = await window.electronAPI?.udpGetDevices();
@@ -17943,7 +17968,7 @@ function useDevices() {
     if (!connectResult?.success) {
       console.warn("Failed to connect to device:", connectResult?.error || "Unknown error");
     }
-    return { ...result, connect: connectResult };
+    return { ...result, connect: connectResult, device };
   }, []);
   const removeDeviceById = reactExports.useCallback(async (id2) => {
     const result = await window.electronAPI?.udpRemoveDevice(id2);
@@ -17961,6 +17986,117 @@ function useDevices() {
   }, [localDevice, setLocalDevice]);
   const filteredDevices = getFilteredDevices();
   const selectedDevicesList = getSelectedDevicesList();
+  const hiddenDevicesList = getHiddenDevicesList();
+  const persistDeviceSettings = reactExports.useCallback(async (updates) => {
+    const settings = await window.electronAPI?.getSettings();
+    const currentDevice = settings?.device || {};
+    const nextHidden = updates.hiddenDevices ?? hiddenDevices;
+    const nextAliases = updates.aliases ?? deviceAliases;
+    const hiddenRecord = {};
+    for (const [key, device] of nextHidden) {
+      hiddenRecord[key] = device;
+    }
+    const aliasRecord = {};
+    for (const [key, alias] of nextAliases) {
+      aliasRecord[key] = alias;
+    }
+    await window.electronAPI?.setSetting("device", {
+      ...currentDevice,
+      hiddenDevices: hiddenRecord,
+      aliases: aliasRecord
+    });
+  }, [deviceAliases, hiddenDevices]);
+  const persistPersistentDevices = reactExports.useCallback(async (devicesMap) => {
+    const settings = await window.electronAPI?.getSettings();
+    const currentDevice = settings?.device || {};
+    const record = {};
+    for (const [key, device] of devicesMap) {
+      record[key] = device;
+    }
+    await window.electronAPI?.setSetting("device", {
+      ...currentDevice,
+      persistentDevices: record
+    });
+  }, []);
+  const persistDeviceGroups = reactExports.useCallback(async (groups) => {
+    const settings = await window.electronAPI?.getSettings();
+    const currentDevice = settings?.device || {};
+    await window.electronAPI?.setSetting("device", {
+      ...currentDevice,
+      deviceGroups: groups
+    });
+  }, []);
+  const hideDeviceWithPersist = reactExports.useCallback(async (device) => {
+    hideDevice(device);
+    const nextHidden = new Map(hiddenDevices);
+    nextHidden.set(`${device.ip}:${device.port}`, device);
+    await persistDeviceSettings({ hiddenDevices: nextHidden });
+  }, [hideDevice, hiddenDevices, persistDeviceSettings]);
+  const unhideDeviceWithPersist = reactExports.useCallback(async (key) => {
+    unhideDevice(key);
+    const nextHidden = new Map(hiddenDevices);
+    nextHidden.delete(key);
+    await persistDeviceSettings({ hiddenDevices: nextHidden });
+  }, [unhideDevice, hiddenDevices, persistDeviceSettings]);
+  const setAliasWithPersist = reactExports.useCallback(async (key, alias) => {
+    if (alias.trim()) {
+      setDeviceAlias(key, alias);
+    } else {
+      removeDeviceAlias(key);
+    }
+    const nextAliases = new Map(deviceAliases);
+    if (alias.trim()) {
+      nextAliases.set(key, alias.trim());
+    } else {
+      nextAliases.delete(key);
+    }
+    await persistDeviceSettings({ aliases: nextAliases });
+  }, [deviceAliases, persistDeviceSettings, removeDeviceAlias, setDeviceAlias]);
+  const addPersistentDeviceWithPersist = reactExports.useCallback(async (device) => {
+    const key = `${device.ip}:${device.port}`;
+    const nextPersistent = new Map(persistentDevices);
+    nextPersistent.set(key, device);
+    addPersistentDevice(device);
+    await persistPersistentDevices(nextPersistent);
+  }, [addPersistentDevice, persistPersistentDevices, persistentDevices]);
+  const removePersistentDeviceWithPersist = reactExports.useCallback(async (key) => {
+    if (!persistentDevices.has(key)) return;
+    const nextPersistent = new Map(persistentDevices);
+    nextPersistent.delete(key);
+    removePersistentDevice(key);
+    await persistPersistentDevices(nextPersistent);
+  }, [persistPersistentDevices, persistentDevices, removePersistentDevice]);
+  const addDeviceGroupWithPersist = reactExports.useCallback(async (group) => {
+    const nextGroups = [...deviceGroups, group];
+    addDeviceGroup(group);
+    await persistDeviceGroups(nextGroups);
+  }, [addDeviceGroup, deviceGroups, persistDeviceGroups]);
+  const updateDeviceGroupWithPersist = reactExports.useCallback(async (groupId, updates) => {
+    const nextGroups = deviceGroups.map(
+      (group) => group.id === groupId ? { ...group, ...updates } : group
+    );
+    updateDeviceGroup(groupId, updates);
+    await persistDeviceGroups(nextGroups);
+  }, [deviceGroups, persistDeviceGroups, updateDeviceGroup]);
+  const deleteDeviceGroupWithPersist = reactExports.useCallback(async (groupId) => {
+    const nextGroups = deviceGroups.filter((group) => group.id !== groupId);
+    deleteDeviceGroup(groupId);
+    await persistDeviceGroups(nextGroups);
+  }, [deleteDeviceGroup, deviceGroups, persistDeviceGroups]);
+  const addDeviceToGroupWithPersist = reactExports.useCallback(async (groupId, key) => {
+    const nextGroups = deviceGroups.map(
+      (group) => group.id === groupId && !group.deviceKeys.includes(key) ? { ...group, deviceKeys: [...group.deviceKeys, key] } : group
+    );
+    addDeviceToGroup(groupId, key);
+    await persistDeviceGroups(nextGroups);
+  }, [addDeviceToGroup, deviceGroups, persistDeviceGroups]);
+  const removeDeviceFromGroupWithPersist = reactExports.useCallback(async (groupId, key) => {
+    const nextGroups = deviceGroups.map(
+      (group) => group.id === groupId ? { ...group, deviceKeys: group.deviceKeys.filter((deviceKey) => deviceKey !== key) } : group
+    );
+    removeDeviceFromGroup(groupId, key);
+    await persistDeviceGroups(nextGroups);
+  }, [deviceGroups, persistDeviceGroups, removeDeviceFromGroup]);
   return {
     // State
     devices,
@@ -17968,13 +18104,28 @@ function useDevices() {
     selectedDevices,
     filter,
     offlineDevices,
+    hiddenDevices,
+    persistentDevices,
+    deviceGroups,
+    deviceAliases,
     filteredDevices,
     selectedDevicesList,
+    hiddenDevicesList,
     // Actions
     refreshDevices,
     addDeviceManually,
     removeDevice: removeDeviceById,
     updateLocalDeviceInfo,
+    hideDevice: hideDeviceWithPersist,
+    unhideDevice: unhideDeviceWithPersist,
+    setAliasForDevice: setAliasWithPersist,
+    addPersistentDevice: addPersistentDeviceWithPersist,
+    removePersistentDevice: removePersistentDeviceWithPersist,
+    addDeviceGroup: addDeviceGroupWithPersist,
+    updateDeviceGroup: updateDeviceGroupWithPersist,
+    deleteDeviceGroup: deleteDeviceGroupWithPersist,
+    addDeviceToGroup: addDeviceToGroupWithPersist,
+    removeDeviceFromGroup: removeDeviceFromGroupWithPersist,
     toggleSelectDevice,
     selectDevice,
     deselectDevice,
@@ -18018,33 +18169,90 @@ function DeviceList() {
     filteredDevices,
     selectedDevices,
     filter,
+    localDevice,
+    hiddenDevicesList,
+    persistentDevices,
+    deviceGroups,
+    deviceAliases,
     toggleSelectDevice,
     selectDevice,
     deselectAll,
     setFilter,
     addDeviceManually,
-    removeDevice,
-    refreshDevices
+    hideDevice,
+    unhideDevice,
+    setAliasForDevice,
+    addPersistentDevice,
+    removePersistentDevice,
+    addDeviceGroup,
+    deleteDeviceGroup,
+    addDeviceToGroup,
+    removeDeviceFromGroup,
+    refreshDevices,
+    removeDevice
   } = useDevices();
   const [showAddDialog, setShowAddDialog] = reactExports.useState(false);
   const [newDeviceIP, setNewDeviceIP] = reactExports.useState("");
-  const [newDeviceName, setNewDeviceName] = reactExports.useState("");
+  const [newDeviceAlias, setNewDeviceAlias] = reactExports.useState("");
   const [searchText, setSearchText] = reactExports.useState("");
   const [statusFilter, setStatusFilter] = reactExports.useState("all");
   const [tagFilter, setTagFilter] = reactExports.useState("all");
+  const [aliasTarget, setAliasTarget] = reactExports.useState(null);
+  const [aliasInput, setAliasInput] = reactExports.useState("");
+  const [searchHitCounts, setSearchHitCounts] = reactExports.useState(/* @__PURE__ */ new Map());
+  const lastSearchText = reactExports.useRef("");
+  const SEARCH_PERSIST_THRESHOLD = 3;
+  const [showGroupDialog, setShowGroupDialog] = reactExports.useState(false);
+  const [groupNameInput, setGroupNameInput] = reactExports.useState("");
+  const [groupNameError, setGroupNameError] = reactExports.useState("");
+  const [editingGroupId, setEditingGroupId] = reactExports.useState(null);
+  const [deleteGroupTarget, setDeleteGroupTarget] = reactExports.useState(null);
+  const groupNameInputRef = reactExports.useRef(null);
+  const [onlineOpen, setOnlineOpen] = reactExports.useState(true);
+  const [offlineOpen, setOfflineOpen] = reactExports.useState(false);
+  const [groupOpen, setGroupOpen] = reactExports.useState({});
   const handleAddDevice = async () => {
     if (!newDeviceIP.trim()) return;
-    await addDeviceManually(newDeviceIP, newDeviceName || void 0);
+    const result = await addDeviceManually(newDeviceIP);
+    if (result?.device) {
+      await addPersistentDevice(result.device);
+    }
+    if (newDeviceAlias.trim()) {
+      const trimmed = newDeviceIP.trim();
+      const parts = trimmed.split(":");
+      const host = parts[0] || trimmed;
+      let port = 0;
+      if (parts.length === 2 && parts[1]) {
+        const parsed = Number(parts[1]);
+        port = Number.isFinite(parsed) ? parsed : 0;
+      }
+      if (!port) {
+        const savedSettings = await window.electronAPI?.getSettings();
+        port = savedSettings?.network?.tcpPort ?? 8889;
+      }
+      await setAliasForDevice(`${host}:${port}`, newDeviceAlias);
+    }
     setNewDeviceIP("");
-    setNewDeviceName("");
+    setNewDeviceAlias("");
     setShowAddDialog(false);
   };
-  const handleRemoveDevice = async (id2, e) => {
+  const handleHideDevice = (device, e) => {
     e.stopPropagation();
-    if (confirm("确定要移除此设备吗？")) {
-      await removeDevice(id2);
-    }
+    hideDevice(device);
   };
+  const handleOpenAlias = (device, e) => {
+    e.stopPropagation();
+    setAliasTarget(device);
+    const key = `${device.ip}:${device.port}`;
+    setAliasInput(deviceAliases.get(key) || "");
+  };
+  const handleSaveAlias = async () => {
+    if (!aliasTarget) return;
+    const key = `${aliasTarget.ip}:${aliasTarget.port}`;
+    await setAliasForDevice(key, aliasInput);
+    setAliasTarget(null);
+  };
+  const getDeviceKey2 = (device) => `${device.ip}:${device.port}`;
   const allTags = Array.from(
     new Set(
       devices.flatMap((device) => device.tags)
@@ -18055,7 +18263,8 @@ function DeviceList() {
     if (tagFilter !== "all" && !device.tags.includes(tagFilter)) return false;
     if (!searchText.trim()) return true;
     const text = searchText.trim().toLowerCase();
-    return device.name.toLowerCase().includes(text) || device.ip.toLowerCase().includes(text) || device.tags.some((tag) => tag.toLowerCase().includes(text));
+    const alias = getAliasName(device).toLowerCase();
+    return alias && alias.includes(text) || device.name.toLowerCase().includes(text) || device.ip.toLowerCase().includes(text) || device.tags.some((tag) => tag.toLowerCase().includes(text));
   }).sort((a, b) => {
     if (a.lastSeen !== b.lastSeen) return b.lastSeen - a.lastSeen;
     const statusOrder = { online: 0, busy: 1, offline: 2 };
@@ -18073,6 +18282,192 @@ function DeviceList() {
     }
     visibleDevices.forEach((device) => selectDevice(device.id));
   };
+  const getDisplayName = (device) => {
+    if (!localDevice) return device.name;
+    const isSameDevice = device.id === localDevice.id || device.ip === localDevice.ip && device.port === localDevice.port;
+    return isSameDevice ? localDevice.name : device.name;
+  };
+  const getAliasName = (device) => deviceAliases.get(getDeviceKey2(device)) || "";
+  const isGroupNameDuplicate = (name) => {
+    const trimmed = name.trim().toLowerCase();
+    if (!trimmed) return false;
+    return deviceGroups.some((group) => group.name.trim().toLowerCase() === trimmed);
+  };
+  const handleCreateGroup = async () => {
+    const trimmed = groupNameInput.trim();
+    if (!trimmed) {
+      setGroupNameError("请输入分组名称");
+      return;
+    }
+    if (isGroupNameDuplicate(trimmed)) {
+      setGroupNameError("分组名称已存在");
+      return;
+    }
+    const group = {
+      id: `group-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: trimmed,
+      deviceKeys: []
+    };
+    await addDeviceGroup(group);
+    setGroupNameInput("");
+    setGroupNameError("");
+    setShowGroupDialog(false);
+  };
+  const handleDeleteGroup = async () => {
+    if (!deleteGroupTarget) return;
+    await deleteDeviceGroup(deleteGroupTarget.id);
+    if (editingGroupId === deleteGroupTarget.id) {
+      setEditingGroupId(null);
+    }
+    setDeleteGroupTarget(null);
+  };
+  reactExports.useEffect(() => {
+    setGroupOpen((prev) => {
+      const next = { ...prev };
+      deviceGroups.forEach((group) => {
+        if (next[group.id] === void 0) next[group.id] = true;
+      });
+      Object.keys(next).forEach((id2) => {
+        if (!deviceGroups.find((group) => group.id === id2)) delete next[id2];
+      });
+      return next;
+    });
+  }, [deviceGroups]);
+  const handleDeleteSelected = async () => {
+    if (selectedDevices.size === 0) return;
+    const targets = devices.filter((device) => selectedDevices.has(device.id));
+    for (const device of targets) {
+      const key = getDeviceKey2(device);
+      if (persistentDevices.has(key)) {
+        await removePersistentDevice(key);
+      }
+      await removeDevice(device.id);
+    }
+  };
+  reactExports.useEffect(() => {
+    const text = searchText.trim().toLowerCase();
+    if (!text) {
+      lastSearchText.current = "";
+      return;
+    }
+    if (text === lastSearchText.current) return;
+    lastSearchText.current = text;
+    const next = new Map(searchHitCounts);
+    visibleDevices.forEach((device) => {
+      const key = getDeviceKey2(device);
+      const nextCount = (next.get(key) ?? 0) + 1;
+      next.set(key, nextCount);
+      if (nextCount >= SEARCH_PERSIST_THRESHOLD && !persistentDevices.has(key)) {
+        addPersistentDevice(device);
+      }
+    });
+    setSearchHitCounts(next);
+  }, [addPersistentDevice, persistentDevices, searchText, searchHitCounts, visibleDevices]);
+  const renderDeviceItem = (device) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      className: `device-item group p-3 border-b cursor-pointer transition-colors ${selectedDevices.has(device.id) ? "bg-primary/10" : "hover:bg-accent"}`,
+      onClick: () => toggleSelectDevice(device.id),
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Checkbox,
+          {
+            checked: selectedDevices.has(device.id),
+            onCheckedChange: () => toggleSelectDevice(device.id),
+            onClick: (e) => e.stopPropagation(),
+            className: "w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(CheckboxIndicator, { children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { className: "w-3 h-3 text-white", fill: "currentColor", viewBox: "0 0 20 20", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { fillRule: "evenodd", d: "M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z", clipRule: "evenodd" }) }) })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+            getAliasName(device) ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-baseline gap-2 min-w-0", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium truncate", children: getAliasName(device) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground truncate", children: getDisplayName(device) })
+            ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium truncate", children: getDisplayName(device) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: device.status }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(RoleBadge, { role: device.role }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: (e) => handleOpenAlias(device, e),
+                className: "text-xs px-2 py-0.5 border rounded text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100",
+                title: "设置别名",
+                children: "别名"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: (e) => handleHideDevice(device, e),
+                className: "ml-auto text-xs px-2 py-0.5 border rounded text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100",
+                title: "隐藏设备",
+                children: "隐藏"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-xs text-muted-foreground mt-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "truncate", children: [
+              device.ip,
+              ":",
+              device.port
+            ] }),
+            device.tags.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap gap-1", children: [
+              device.tags.slice(0, 2).map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "px-1.5 py-0.5 text-xs bg-secondary rounded", children: tag }, tag)),
+              device.tags.length > 2 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
+                "+",
+                device.tags.length - 2
+              ] })
+            ] }),
+            device.tags.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "无标签" })
+          ] })
+        ] })
+      ] })
+    },
+    device.id
+  );
+  const onlineDevices = visibleDevices.filter((device) => device.status !== "offline");
+  const offlineDevices = visibleDevices.filter((device) => device.status === "offline");
+  const groupedKeys = new Set(deviceGroups.flatMap((group) => group.deviceKeys));
+  const ungroupedOnlineDevices = onlineDevices.filter((device) => !groupedKeys.has(getDeviceKey2(device)));
+  const groupsWithDevices = deviceGroups.map((group) => ({
+    group,
+    devices: onlineDevices.filter((device) => group.deviceKeys.includes(getDeviceKey2(device)))
+  }));
+  const editingGroup = deviceGroups.find((group) => group.id === editingGroupId) || null;
+  const editingGroupDevices = editingGroup ? onlineDevices.filter((device) => editingGroup.deviceKeys.includes(getDeviceKey2(device))) : [];
+  const editUngroupedOnline = onlineDevices.filter((device) => {
+    if (!editingGroup) return false;
+    return !editingGroup.deviceKeys.includes(getDeviceKey2(device));
+  });
+  const deviceGroupMap = /* @__PURE__ */ new Map();
+  deviceGroups.forEach((group) => {
+    group.deviceKeys.forEach((key) => deviceGroupMap.set(key, group));
+  });
+  const moveDeviceToGroup = async (device, targetGroupId) => {
+    const key = getDeviceKey2(device);
+    const currentGroup = deviceGroupMap.get(key);
+    if (currentGroup && currentGroup.id !== targetGroupId) {
+      await removeDeviceFromGroup(currentGroup.id, key);
+    }
+    await addDeviceToGroup(targetGroupId, key);
+  };
+  const renderGroupDeviceRow = (device, action, meta) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 p-2 border-b last:border-b-0", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium truncate", children: getDisplayName(device) }),
+        meta,
+        /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: device.status }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(RoleBadge, { role: device.role })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs text-muted-foreground truncate", children: [
+        device.ip,
+        ":",
+        device.port
+      ] })
+    ] }),
+    action
+  ] }, device.id);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "device-list-container flex flex-col h-full", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "device-list-header flex items-center justify-between p-4 border-b", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-lg font-semibold", children: "选择设备" }),
@@ -18107,14 +18502,14 @@ function DeviceList() {
                   )
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-sm font-medium mb-1", children: "设备名称（可选）" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-sm font-medium mb-1", children: "设备别名（可选）" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(
                     "input",
                     {
                       type: "text",
-                      value: newDeviceName,
-                      onChange: (e) => setNewDeviceName(e.target.value),
-                      placeholder: "设备名称",
+                      value: newDeviceAlias,
+                      onChange: (e) => setNewDeviceAlias(e.target.value),
+                      placeholder: "设备别名",
                       className: "w-full px-3 py-2 border rounded-md"
                     }
                   )
@@ -18129,7 +18524,48 @@ function DeviceList() {
         ] })
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "filter-bar p-4 border-b space-y-3", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "filter-bar p-4 border-b", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Root2$4,
+        {
+          value: filter.type,
+          onValueChange: (value) => value && setFilter({ type: value }),
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$2, { className: "p-1", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "all", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "全部分组" }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "controller", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "主控" }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "controlled", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "被控" }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "bidirectional", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "双向" }) })
+            ] }) }) })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$4, { value: statusFilter, onValueChange: (value) => setStatusFilter(value), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$2, { className: "p-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "all", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "全部状态" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "online", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "在线" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "busy", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "忙碌" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "offline", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "离线" }) })
+        ] }) }) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$4, { value: tagFilter, onValueChange: (value) => setTagFilter(value), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$2, { className: "p-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "all", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "全部标签" }) }),
+          allTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: tag, className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: tag }) }, tag))
+        ] }) }) })
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "input",
         {
@@ -18137,84 +18573,10 @@ function DeviceList() {
           value: searchText,
           onChange: (e) => setSearchText(e.target.value),
           placeholder: "搜索设备名称或标签",
-          className: "w-full px-3 py-2 border rounded-md text-sm bg-background"
+          className: "flex-1 min-w-0 px-3 py-2 border rounded-md text-sm bg-background"
         }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-3 flex-wrap items-center", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "分组:" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          Root2,
-          {
-            type: "single",
-            value: filter.type,
-            onValueChange: (value) => value && setFilter({ type: value }),
-            className: "flex gap-1 flex-wrap",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Item2,
-                {
-                  value: "all",
-                  className: `px-3 py-1.5 text-sm rounded ${filter.type === "all" ? "bg-primary text-primary-foreground" : "bg-secondary"}`,
-                  children: "全部"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Item2,
-                {
-                  value: "controller",
-                  className: `px-3 py-1.5 text-sm rounded ${filter.type === "controller" ? "bg-primary text-primary-foreground" : "bg-secondary"}`,
-                  children: "主控"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Item2,
-                {
-                  value: "controlled",
-                  className: `px-3 py-1.5 text-sm rounded ${filter.type === "controlled" ? "bg-primary text-primary-foreground" : "bg-secondary"}`,
-                  children: "被控"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Item2,
-                {
-                  value: "bidirectional",
-                  className: `px-3 py-1.5 text-sm rounded ${filter.type === "bidirectional" ? "bg-primary text-primary-foreground" : "bg-secondary"}`,
-                  children: "双向"
-                }
-              )
-            ]
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2 flex-wrap text-sm", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "select",
-          {
-            value: statusFilter,
-            onChange: (e) => setStatusFilter(e.target.value),
-            className: "px-2 py-1 border rounded text-sm bg-background",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "all", children: "全部状态" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "online", children: "在线" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "busy", children: "忙碌" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "offline", children: "离线" })
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "select",
-          {
-            value: tagFilter,
-            onChange: (e) => setTagFilter(e.target.value),
-            className: "px-2 py-1 border rounded text-sm bg-background",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "all", children: "全部标签" }),
-              allTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: tag, children: tag }, tag))
-            ]
-          }
-        )
-      ] })
-    ] }),
+      )
+    ] }) }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "select-all-bar p-3 border-b flex items-center gap-3", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         Checkbox,
@@ -18227,78 +18589,331 @@ function DeviceList() {
         }
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { htmlFor: "select-all", className: "text-sm text-muted-foreground", children: selectedDevices.size > 0 ? `已选择 ${selectedDevices.size} 个设备` : "全选本页" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: deselectAll,
-          className: "ml-auto text-xs px-2 py-1 border rounded hover:bg-secondary",
-          children: "清空已选"
-        }
-      )
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-auto flex gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: handleDeleteSelected,
+            disabled: selectedDevices.size === 0,
+            className: "text-xs px-2 py-1 border rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+            children: "删除"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: deselectAll,
+            className: "text-xs px-2 py-1 border rounded hover:bg-secondary",
+            children: "清空已选"
+          }
+        )
+      ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(Root$2, { className: "flex-1 overflow-hidden", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Root$2, { className: "h-[50vh] overflow-hidden", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Viewport$1, { className: "h-full w-full", children: visibleDevices.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center justify-center h-48 text-muted-foreground", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { className: "w-12 h-12 mb-2", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, d: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "未发现匹配设备" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs mt-1", children: "请调整筛选或搜索条件" })
-      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "device-list", children: visibleDevices.map((device) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "div",
-        {
-          className: `device-item p-4 border-b cursor-pointer transition-colors ${selectedDevices.has(device.id) ? "bg-primary/10" : "hover:bg-accent"}`,
-          onClick: () => toggleSelectDevice(device.id),
-          children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-3", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              Checkbox,
-              {
-                checked: selectedDevices.has(device.id),
-                onCheckedChange: () => toggleSelectDevice(device.id),
-                onClick: (e) => e.stopPropagation(),
-                className: "w-5 h-5 mt-0.5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary",
-                children: /* @__PURE__ */ jsxRuntimeExports.jsx(CheckboxIndicator, { children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { className: "w-3 h-3 text-white", fill: "currentColor", viewBox: "0 0 20 20", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { fillRule: "evenodd", d: "M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z", clipRule: "evenodd" }) }) })
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium truncate", children: device.name }),
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "device-list", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "group border-b last:border-b-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "group-summary cursor-pointer select-none px-3 py-2 text-sm font-medium text-foreground bg-secondary/40 flex items-center justify-between",
+              onClick: () => setOnlineOpen((prev) => !prev),
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "svg",
+                    {
+                      className: `details-arrow w-3.5 h-3.5 ${onlineOpen ? "is-open" : ""}`,
+                      viewBox: "0 0 20 20",
+                      fill: "currentColor",
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { fillRule: "evenodd", d: "M7.293 4.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414-1.414L11.586 10 7.293 5.707a1 1 0 010-1.414z", clipRule: "evenodd" })
+                    }
+                  ),
+                  "在线设备 (",
+                  onlineDevices.length,
+                  ")"
+                ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
                   "button",
                   {
-                    onClick: (e) => handleRemoveDevice(device.id, e),
-                    className: "text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100",
-                    title: "移除设备",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M6 18L18 6M6 6l12 12" }) })
+                    type: "button",
+                    onClick: (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowGroupDialog(true);
+                      setGroupNameInput("");
+                      setGroupNameError("");
+                      setTimeout(() => groupNameInputRef.current?.focus(), 0);
+                    },
+                    className: "group-actions text-xs px-2 py-0.5 border rounded hover:bg-secondary",
+                    title: "添加分组",
+                    children: "+"
                   }
                 )
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-muted-foreground truncate mt-0.5", children: device.ip }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mt-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: device.status }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(RoleBadge, { role: device.role }),
-                device.tags.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap gap-1", children: [
-                  device.tags.slice(0, 2).map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "px-1.5 py-0.5 text-xs bg-secondary rounded", children: tag }, tag)),
-                  device.tags.length > 2 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
-                    "+",
-                    device.tags.length - 2
-                  ] })
-                ] })
-              ] })
-            ] })
-          ] })
-        },
-        device.id
-      )) }) }),
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `accordion-content ${onlineOpen ? "is-open" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "accordion-content-inner", children: [
+            ungroupedOnlineDevices.map(renderDeviceItem),
+            groupsWithDevices.map(({ group, devices: groupDevices }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "border-t", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "div",
+                {
+                  className: "group-summary cursor-pointer select-none px-3 py-2 pl-8 text-sm font-medium text-foreground bg-background/60 flex items-center justify-between",
+                  onClick: () => setGroupOpen((prev) => ({ ...prev, [group.id]: !prev[group.id] })),
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "svg",
+                        {
+                          className: `details-arrow w-3.5 h-3.5 ${groupOpen[group.id] ? "is-open" : ""}`,
+                          viewBox: "0 0 20 20",
+                          fill: "currentColor",
+                          children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { fillRule: "evenodd", d: "M7.293 4.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414-1.414L11.586 10 7.293 5.707a1 1 0 010-1.414z", clipRule: "evenodd" })
+                        }
+                      ),
+                      group.name,
+                      " (",
+                      groupDevices.length,
+                      ")"
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "group-actions flex items-center gap-1", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setEditingGroupId(group.id);
+                          },
+                          className: "text-xs px-2 py-0.5 border rounded hover:bg-secondary",
+                          children: "编辑"
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDeleteGroupTarget(group);
+                          },
+                          className: "text-xs px-2 py-0.5 border rounded hover:bg-secondary text-destructive",
+                          children: "删除"
+                        }
+                      )
+                    ] })
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `accordion-content ${groupOpen[group.id] ? "is-open" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "accordion-content-inner", children: groupDevices.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-3 text-center text-xs text-muted-foreground", children: "暂无在线设备" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "pl-6", children: groupDevices.map(renderDeviceItem) }) }) })
+            ] }, group.id))
+          ] }) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "border-b last:border-b-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "group-summary cursor-pointer select-none px-3 py-2 text-sm font-medium text-foreground bg-secondary/40 flex items-center gap-2",
+              onClick: () => setOfflineOpen((prev) => !prev),
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "svg",
+                  {
+                    className: `details-arrow w-3.5 h-3.5 ${offlineOpen ? "is-open" : ""}`,
+                    viewBox: "0 0 20 20",
+                    fill: "currentColor",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { fillRule: "evenodd", d: "M7.293 4.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414-1.414L11.586 10 7.293 5.707a1 1 0 010-1.414z", clipRule: "evenodd" })
+                  }
+                ),
+                "离线设备 (",
+                offlineDevices.length,
+                ")"
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `accordion-content ${offlineOpen ? "is-open" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "accordion-content-inner", children: offlineDevices.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-3 text-center text-xs text-muted-foreground", children: "暂无离线设备" }) : offlineDevices.map(renderDeviceItem) }) })
+        ] })
+      ] }) }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(Scrollbar, { orientation: "vertical", className: "w-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Thumb, { className: "bg-border rounded-full" }) })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "device-count p-3 border-t text-sm text-muted-foreground", children: [
-      "共 ",
-      visibleDevices.length,
-      " 个设备",
-      selectedDevices.size > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ml-2 text-primary", children: [
-        "(已选 ",
-        selectedDevices.size,
-        ")"
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "device-count p-3 border-t text-sm text-muted-foreground flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        "共 ",
+        visibleDevices.length,
+        " 个设备",
+        selectedDevices.size > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ml-2 text-primary", children: [
+          "(已选 ",
+          selectedDevices.size,
+          ")"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Root$1, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger$1, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { className: "text-xs px-2 py-1 border rounded hover:bg-secondary text-foreground", children: [
+          "隐藏列表",
+          hiddenDevicesList.length > 0 ? `(${hiddenDevicesList.length})` : ""
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[520px] max-w-[90vw]", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: "隐藏列表" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border rounded", children: hiddenDevicesList.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 text-sm text-muted-foreground text-center", children: "暂无隐藏设备" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "divide-y", children: hiddenDevicesList.map((device) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-3 flex items-center gap-3", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                  getAliasName(device) ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-baseline gap-2 min-w-0", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium truncate", children: getAliasName(device) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground truncate", children: getDisplayName(device) })
+                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium truncate", children: getDisplayName(device) }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: device.status }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(RoleBadge, { role: device.role })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-xs text-muted-foreground mt-1", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "truncate", children: [
+                    device.ip,
+                    ":",
+                    device.port
+                  ] }),
+                  device.tags.length > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap gap-1", children: [
+                    device.tags.slice(0, 2).map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "px-1.5 py-0.5 text-xs bg-secondary rounded", children: tag }, tag)),
+                    device.tags.length > 2 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
+                      "+",
+                      device.tags.length - 2
+                    ] })
+                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "无标签" })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => unhideDevice(`${device.ip}:${device.port}`),
+                  className: "text-xs px-2 py-1 border rounded hover:bg-secondary",
+                  children: "取消隐藏"
+                }
+              )
+            ] }, device.id)) }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mt-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "btn-secondary", children: "关闭" }) }) })
+          ] })
+        ] })
       ] })
-    ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: !!aliasTarget, onOpenChange: (open) => !open && setAliasTarget(null), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: "设置设备别名" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-muted-foreground", children: aliasTarget ? `${aliasTarget.ip}:${aliasTarget.port}` : "" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              type: "text",
+              value: aliasInput,
+              onChange: (e) => setAliasInput(e.target.value),
+              placeholder: "输入别名",
+              className: "w-full px-3 py-2 border rounded-md"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-end gap-2 mt-6", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "btn-secondary", onClick: () => setAliasTarget(null), children: "取消" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleSaveAlias, className: "btn-primary", children: "保存" })
+        ] })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: showGroupDialog, onOpenChange: setShowGroupDialog, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: "添加在线分组" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              type: "text",
+              value: groupNameInput,
+              ref: groupNameInputRef,
+              onChange: (e) => {
+                setGroupNameInput(e.target.value);
+                setGroupNameError("");
+              },
+              placeholder: "输入分组名称",
+              className: "w-full px-3 py-2 border rounded-md"
+            }
+          ),
+          groupNameError && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-destructive", children: groupNameError })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-end gap-2 mt-6", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "btn-secondary", onClick: () => setGroupNameError(""), children: "取消" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleCreateGroup, className: "btn-primary", children: "创建" })
+        ] })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: !!editingGroup, onOpenChange: (open) => !open && setEditingGroupId(null), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[720px] max-w-[95vw] max-h-[90vh] overflow-hidden", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: editingGroup ? `编辑分组：${editingGroup.name}` : "编辑分组" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "border rounded mb-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-3 py-2 text-sm font-medium bg-secondary/40", children: [
+            "可加入的在线设备 (",
+            editUngroupedOnline.length,
+            ")"
+          ] }),
+          editUngroupedOnline.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-3 text-xs text-muted-foreground", children: "暂无可加入设备" }) : editUngroupedOnline.map(
+            (device) => renderGroupDeviceRow(
+              device,
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => editingGroup && moveDeviceToGroup(device, editingGroup.id),
+                  className: "text-xs px-2 py-0.5 border rounded hover:bg-secondary",
+                  title: "加入分组",
+                  children: "+"
+                }
+              ),
+              deviceGroupMap.get(getDeviceKey2(device))?.id ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground", children: deviceGroupMap.get(getDeviceKey2(device))?.name }) : null
+            )
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "border rounded", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-3 py-2 text-sm font-medium bg-secondary/40", children: [
+            "分组内设备 (",
+            editingGroupDevices.length,
+            ")"
+          ] }),
+          editingGroupDevices.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-3 text-xs text-muted-foreground", children: "暂无分组内设备" }) : editingGroupDevices.map(
+            (device) => renderGroupDeviceRow(
+              device,
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => editingGroup && removeDeviceFromGroup(editingGroup.id, getDeviceKey2(device)),
+                  className: "text-xs px-2 py-0.5 border rounded hover:bg-secondary",
+                  title: "移出分组",
+                  children: "-"
+                }
+              )
+            )
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mt-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "btn-secondary", onClick: () => setEditingGroupId(null), children: "关闭" }) }) })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: !!deleteGroupTarget, onOpenChange: (open) => !open && setDeleteGroupTarget(null), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-2", children: "确认删除分组" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-muted-foreground", children: deleteGroupTarget ? `确认删除分组“${deleteGroupTarget.name}”？删除后分组内设备将回到在线列表。` : "" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-end gap-2 mt-6", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "btn-secondary", children: "取消" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleDeleteGroup, className: "btn-primary", children: "确认删除" })
+        ] })
+      ] })
+    ] }) })
   ] });
 }
 function useNetwork() {
@@ -18308,8 +18923,14 @@ function useNetwork() {
     updateDevice,
     removeDevice,
     setLocalDevice,
+    setHiddenDevices,
+    setPersistentDevices,
+    setDeviceGroups,
+    setDeviceAliases,
     setNetworkStatus,
-    setNetworkError
+    setNetworkError,
+    beginDeviceStatusCheck,
+    endDeviceStatusCheck
   } = useDeviceStore();
   reactExports.useEffect(() => {
     const initNetwork = async () => {
@@ -18319,6 +18940,26 @@ function useNetwork() {
         const savedSettings = await window.electronAPI?.getSettings();
         const udpPort = savedSettings?.network?.udpPort ?? 8888;
         const tcpPort = savedSettings?.network?.tcpPort ?? 8889;
+        const hiddenRecord = savedSettings?.device?.hiddenDevices || {};
+        const aliasRecord = savedSettings?.device?.aliases || {};
+        const persistentRecord = savedSettings?.device?.persistentDevices || {};
+        const groupsRecord = savedSettings?.device?.deviceGroups || [];
+        const hiddenMap = /* @__PURE__ */ new Map();
+        Object.entries(hiddenRecord).forEach(([key, device]) => {
+          hiddenMap.set(key, device);
+        });
+        const aliasMap = /* @__PURE__ */ new Map();
+        Object.entries(aliasRecord).forEach(([key, alias]) => {
+          aliasMap.set(key, alias);
+        });
+        const persistentMap = /* @__PURE__ */ new Map();
+        Object.entries(persistentRecord).forEach(([key, device]) => {
+          persistentMap.set(key, device);
+        });
+        setHiddenDevices(hiddenMap);
+        setPersistentDevices(persistentMap);
+        setDeviceGroups(groupsRecord);
+        setDeviceAliases(aliasMap);
         const errors = {};
         const udpResult = await window.electronAPI?.udpStart({ port: udpPort });
         if (!udpResult?.success) {
@@ -18329,8 +18970,9 @@ function useNetwork() {
           window.electronAPI?.udpSubscribe();
           const hostname = await window.electronAPI?.getHostname();
           await window.electronAPI?.udpInitLocalDevice({
-            name: hostname || "ShareNet",
-            role: "bidirectional",
+            name: savedSettings?.device?.name || hostname || "ShareNet",
+            role: savedSettings?.device?.role || "bidirectional",
+            tags: savedSettings?.device?.tags || [],
             port: tcpPort
           });
           window.electronAPI?.onUdpDevicesUpdated((deviceList) => {
@@ -18354,6 +18996,33 @@ function useNetwork() {
           const local = await window.electronAPI?.udpGetLocalDevice();
           if (local) {
             setLocalDevice(local);
+          }
+          const persistedDevices = Array.from(persistentMap.values());
+          if (persistedDevices.length > 0) {
+            const localInfo = local || {
+              id: "local",
+              name: savedSettings?.device?.name || hostname || "ShareNet",
+              ip: await window.electronAPI?.getLocalIP() || "127.0.0.1",
+              port: tcpPort,
+              role: savedSettings?.device?.role || "bidirectional",
+              tags: savedSettings?.device?.tags || [],
+              status: "online",
+              lastSeen: Date.now()
+            };
+            await Promise.all(
+              persistedDevices.map(async (device) => {
+                beginDeviceStatusCheck();
+                try {
+                  const result = await window.electronAPI?.tcpConnect(device.ip, device.port, localInfo);
+                  const nextStatus = result?.success ? "online" : "offline";
+                  updateDevice({ ...device, status: nextStatus, lastSeen: Date.now() });
+                } catch (error) {
+                  updateDevice({ ...device, status: "offline", lastSeen: Date.now() });
+                } finally {
+                  endDeviceStatusCheck();
+                }
+              })
+            );
           }
         }
         const tcpResult = await window.electronAPI?.tcpStart({ port: tcpPort });
@@ -18390,12 +19059,26 @@ function useNetwork() {
       window.electronAPI?.tcpStop();
       window.electronAPI?.removeAllListeners?.("network-error");
     };
-  }, [setDevices, addDevice, updateDevice, removeDevice, setLocalDevice, setNetworkStatus, setNetworkError]);
+  }, [
+    setDevices,
+    addDevice,
+    updateDevice,
+    removeDevice,
+    setLocalDevice,
+    setHiddenDevices,
+    setPersistentDevices,
+    setDeviceGroups,
+    setDeviceAliases,
+    setNetworkStatus,
+    setNetworkError,
+    beginDeviceStatusCheck,
+    endDeviceStatusCheck
+  ]);
 }
 function App() {
   const [activeTab, setActiveTab] = reactExports.useState("resource");
   const [appInfo, setAppInfo] = reactExports.useState({ name: "ShareNet", version: "1.0.0" });
-  const { networkStatus, networkError, devices, selectedDevices } = useDeviceStore();
+  const { networkStatus, networkError, devices, selectedDevices, deviceStatusCheckCount } = useDeviceStore();
   const hasNetworkError = !!(networkError?.udp || networkError?.tcp);
   const statusClass = hasNetworkError ? "offline" : "online";
   devices.length;
@@ -18460,19 +19143,35 @@ function App() {
       activeTab === "settings" && /* @__PURE__ */ jsxRuntimeExports.jsx(SettingsPanel, {})
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("footer", { className: "footer", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "status-info", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Root$1, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger$1, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { id: "selected-count", className: "text-xs text-primary hover:underline", children: [
-          "已选设备: ",
-          selectedCount,
-          "（在线 ",
-          selectedOnlineCount,
-          "）"
-        ] }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border rounded shadow-lg w-[760px] max-w-[95vw] max-h-[90vh] overflow-hidden z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsx(DeviceList, {}) })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "status-info", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Root$1, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger$1, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { id: "selected-count", className: "text-xs text-primary hover:underline", children: [
+            "已选设备: ",
+            selectedCount,
+            "（在线 ",
+            selectedOnlineCount,
+            "）"
+          ] }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border rounded shadow-lg w-[760px] max-w-[95vw] max-h-[90vh] overflow-hidden z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsx(DeviceList, {}) })
+          ] })
+        ] }),
+        deviceStatusCheckCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 inline-flex items-center gap-2 text-xs text-muted-foreground", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "检查设备状态" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { className: "w-3.5 h-3.5 animate-spin", viewBox: "0 0 24 24", fill: "none", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { className: "opacity-25", cx: "12", cy: "12", r: "9", stroke: "currentColor", strokeWidth: "3" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "path",
+              {
+                className: "opacity-75",
+                fill: "currentColor",
+                d: "M12 3a9 9 0 019 9h-2.5a6.5 6.5 0 10-6.5 6.5V21a9 9 0 010-18z"
+              }
+            )
+          ] })
         ] })
-      ] }) }),
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "footer-info", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { id: "app-version", children: [
         "v",
         appInfo.version

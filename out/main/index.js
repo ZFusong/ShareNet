@@ -817,7 +817,9 @@ const defaultSettings = {
     role: "bidirectional",
     tags: [],
     aliases: {},
-    hiddenDevices: {}
+    hiddenDevices: {},
+    persistentDevices: {},
+    deviceGroups: []
   },
   network: {
     udpPort: 8888,
