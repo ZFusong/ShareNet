@@ -3,7 +3,7 @@
  * Establishes secure IPC bridge between main and renderer processes
  */
 
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
 // Expose secure API to renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
   getLocalIP: () => ipcRenderer.invoke('get-local-ip'),
   getHostname: () => ipcRenderer.invoke('get-hostname'),
+  getPathForFile: (file: File) => webUtils.getPathForFile(file),
 
   // Config management
   getConfig: (key: string) => ipcRenderer.invoke('get-config', key),
@@ -65,6 +66,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onNetworkError: (callback: (payload: { service: string; error: string }) => void) => {
     ipcRenderer.on('network-error', (_event, payload) => callback(payload))
   },
+  onImageDownloadProgress: (callback: (payload: unknown) => void) => {
+    ipcRenderer.on('image-download-progress', (_event, payload) => callback(payload))
+  },
+  onImageDownloadComplete: (callback: (payload: unknown) => void) => {
+    ipcRenderer.on('image-download-complete', (_event, payload) => callback(payload))
+  },
+  onImageDownloadError: (callback: (payload: unknown) => void) => {
+    ipcRenderer.on('image-download-error', (_event, payload) => callback(payload))
+  },
 
   // Device management
   getDevices: () => ipcRenderer.invoke('get-devices'),
@@ -77,6 +87,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deletePreset: (type: string, id: string) => ipcRenderer.invoke('delete-preset', type, id),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   setSettings: (settings: unknown) => ipcRenderer.invoke('set-settings', settings),
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  registerSharedImage: (resource: unknown) => ipcRenderer.invoke('register-shared-image', resource),
   getSetting: (key: string) => ipcRenderer.invoke('get-setting', key),
   setSetting: (key: string, value: unknown) => ipcRenderer.invoke('set-setting', key, value),
   exportConfig: (modules: string[]) => ipcRenderer.invoke('export-config', modules),
@@ -92,6 +104,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveReceivedFile: (messageId: string, savePath: string) => ipcRenderer.invoke('save-received-file', messageId, savePath),
   saveReceived: (data: { type: 'text' | 'image' | 'file'; content: string; fileName?: string }) =>
     ipcRenderer.invoke('save-received', data),
+  revealFile: (filePath: string) => ipcRenderer.invoke('reveal-file', filePath),
 
   // Receive events
   onDeviceUpdate: (callback: (data: unknown) => void) => {
@@ -133,6 +146,7 @@ export interface ElectronAPI {
   getUserDataPath: () => Promise<string>
   getLocalIP: () => Promise<string>
   getHostname: () => Promise<string>
+  getPathForFile: (file: File) => string
   getConfig: (key: string) => Promise<unknown>
   setConfig: (key: string, value: unknown) => Promise<void>
   startNetworkServices: () => Promise<void>
@@ -168,6 +182,9 @@ export interface ElectronAPI {
   onUdpDevicesRemoved: (callback: (devices: unknown[]) => void) => void
   onTcpMessage: (callback: (message: unknown, from: unknown) => void) => void
   onNetworkError: (callback: (payload: { service: string; error: string }) => void) => void
+  onImageDownloadProgress: (callback: (payload: unknown) => void) => void
+  onImageDownloadComplete: (callback: (payload: unknown) => void) => void
+  onImageDownloadError: (callback: (payload: unknown) => void) => void
 
   // Device management
   getDevices: () => Promise<unknown[]>
@@ -188,6 +205,7 @@ export interface ElectronAPI {
   sendFile: (targetId: string, filePath: string) => Promise<void>
   saveReceivedFile: (messageId: string, savePath: string) => Promise<void>
   saveReceived: (data: { type: 'text' | 'image' | 'file'; content: string; fileName?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
+  revealFile: (filePath: string) => Promise<{ success: boolean; error?: string }>
 
   // Receive events
   onDeviceUpdate: (callback: (data: unknown) => void) => void
@@ -205,3 +223,7 @@ declare global {
     electronAPI: ElectronAPI
   }
 }
+
+
+
+

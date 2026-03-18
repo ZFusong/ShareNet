@@ -33,6 +33,9 @@ export interface Settings {
     theme: 'light' | 'dark' | 'system'
     logLevel: 'debug' | 'info' | 'warn' | 'error'
   }
+  downloads: {
+    directory: string
+  }
 }
 
 export interface SoftwarePreset {
@@ -110,6 +113,9 @@ const defaultSettings: Settings = {
   ui: {
     theme: 'system',
     logLevel: 'info'
+  },
+  downloads: {
+    directory: ''
   }
 }
 
@@ -140,7 +146,8 @@ export function setSettings(settings: Partial<Settings>): void {
     device: { ...current.device, ...settings.device },
     network: { ...current.network, ...settings.network },
     security: { ...current.security, ...settings.security },
-    ui: { ...current.ui, ...settings.ui }
+    ui: { ...current.ui, ...settings.ui },
+    downloads: { ...current.downloads, ...settings.downloads }
   })
 }
 
@@ -537,3 +544,5 @@ export function checkDependencies(scene: Scene): { valid: boolean; missing: stri
 // ========== Store Instance Export ==========
 
 export { store }
+
+

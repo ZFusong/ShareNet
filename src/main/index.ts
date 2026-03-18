@@ -3,8 +3,8 @@
  * 局域网通讯与控制工具
  */
 
-import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron'
-import { join } from 'path'
+import { app, BrowserWindow, ipcMain, Menu, shell, dialog } from 'electron'
+import { join, basename, parse } from 'path'
 import os from 'os'
 import { getUDPService } from './services/udpService'
 import { getTCPServer } from './services/tcpServer'
@@ -34,6 +34,76 @@ log.info('Electron version:', process.versions.electron)
 log.info('Node version:', process.versions.node)
 
 let mainWindow: BrowserWindow | null = null
+
+interface SharedImageResource {
+  shareId: string
+  filePath: string
+  fileName: string
+  fileSize: number
+  mimeType: string
+  thumbnail: string
+  createdAt: number
+}
+
+interface IncomingImageTransfer {
+  shareId: string
+  fileName: string
+  fileSize: number
+  mimeType: string
+  totalChunks: number
+  receivedCount: number
+  chunks: Array<Buffer | null>
+  fromIp: string
+  fromPort?: number
+}
+
+const sharedImageRegistry = new Map<string, SharedImageResource>()
+const incomingImageTransfers = new Map<string, IncomingImageTransfer>()
+const IMAGE_CHUNK_SIZE = 256 * 1024
+
+const getSharedImageRegistryPath = (): string => join(app.getPath('userData'), 'shared-images.json')
+
+const persistSharedImageRegistry = (): void => {
+  try {
+    writeFileSync(getSharedImageRegistryPath(), JSON.stringify(Array.from(sharedImageRegistry.values()), null, 2), 'utf-8')
+  } catch (error) {
+    log.error('Failed to persist shared image registry:', error)
+  }
+}
+
+const loadSharedImageRegistry = (): void => {
+  try {
+    const registryPath = getSharedImageRegistryPath()
+    if (!existsSync(registryPath)) {
+      return
+    }
+
+    const raw = readFileSync(registryPath, 'utf-8')
+    const entries = JSON.parse(raw) as SharedImageResource[]
+    let pruned = false
+
+    sharedImageRegistry.clear()
+    for (const entry of entries) {
+      if (entry?.shareId && entry.filePath && existsSync(entry.filePath)) {
+        sharedImageRegistry.set(entry.shareId, entry)
+      } else {
+        pruned = true
+      }
+    }
+
+    if (pruned) {
+      persistSharedImageRegistry()
+    }
+  } catch (error) {
+    log.error('Failed to load shared image registry:', error)
+  }
+}
+
+const deleteSharedImage = (shareId: string): void => {
+  if (sharedImageRegistry.delete(shareId)) {
+    persistSharedImageRegistry()
+  }
+}
 
 function createWindow(): void {
   log.info('创建主窗口...')
@@ -140,6 +210,7 @@ function createWindow(): void {
 // App ready
 app.whenReady().then(() => {
   log.info('应用就绪')
+  loadSharedImageRegistry()
   createWindow()
 
   app.on('activate', () => {
@@ -320,13 +391,188 @@ ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
   try {
     tcpServer = getTCPServer(config)
     tcpServer.removeAllListeners('error')
+    tcpServer.removeAllListeners('message')
+    tcpServer.removeAllListeners('binaryMessage')
     tcpServer.on('error', (err) => {
       mainWindow?.webContents.send('network-error', { service: 'tcp', error: String(err) })
     })
 
-    // Register message handler to forward to renderer
-    tcpServer.on('message', (message: NetworkMessage, from: DeviceInfo) => {
+    tcpServer.on('message', async (message: NetworkMessage, from: DeviceInfo) => {
+      if (message?.msg_type === 'IMAGE_DOWNLOAD_REQUEST') {
+        const shareId = message.payload?.shareId
+        const resource = typeof shareId === 'string' ? sharedImageRegistry.get(shareId) : null
+
+        if (!resource || !existsSync(resource.filePath)) {
+          if (typeof shareId === 'string') {
+            deleteSharedImage(shareId)
+          }
+          if (from.ip && from.port) {
+            await tcpServer?.sendMessage(from.ip, {
+              msg_type: 'IMAGE_DOWNLOAD_ERROR',
+              sender: tcpServer ? (udpService?.getLocalDevice() || {
+                id: 'local',
+                name: 'Local',
+                ip: '127.0.0.1',
+                port: 0,
+                role: 'bidirectional',
+                tags: [],
+                status: 'online',
+                lastSeen: Date.now()
+              }) : {
+                id: 'local',
+                name: 'Local',
+                ip: '127.0.0.1',
+                port: 0,
+                role: 'bidirectional',
+                tags: [],
+                status: 'online',
+                lastSeen: Date.now()
+              },
+              payload: { shareId, message: '共享图片不存在或已不可用' },
+              timestamp: Date.now(),
+              request_id: uuidv4()
+            } as NetworkMessage, from.port)
+          }
+          return
+        }
+
+        if (!from.ip || !from.port) {
+          return
+        }
+
+        const fileBuffer = readFileSync(resource.filePath)
+        const totalChunks = Math.ceil(fileBuffer.length / IMAGE_CHUNK_SIZE)
+        let sendFailed = false
+
+        for (let index = 0; index < totalChunks; index++) {
+          const start = index * IMAGE_CHUNK_SIZE
+          const end = Math.min(start + IMAGE_CHUNK_SIZE, fileBuffer.length)
+          const chunk = fileBuffer.subarray(start, end)
+          const ok = await tcpServer?.sendBinaryMessage(
+            from.ip,
+            {
+              msg_type: 'IMAGE_CHUNK',
+              payload: {
+                shareId: resource.shareId,
+                fileName: resource.fileName,
+                fileSize: resource.fileSize,
+                mimeType: resource.mimeType,
+                chunkIndex: index,
+                totalChunks
+              }
+            },
+            chunk,
+            from.port
+          )
+
+          if (!ok) {
+            sendFailed = true
+            break
+          }
+        }
+
+        if (sendFailed) {
+          await tcpServer?.sendMessage(from.ip, {
+            msg_type: 'IMAGE_DOWNLOAD_ERROR',
+            sender: udpService?.getLocalDevice() || {
+              id: 'local',
+              name: 'Local',
+              ip: '127.0.0.1',
+              port: 0,
+              role: 'bidirectional',
+              tags: [],
+              status: 'online',
+              lastSeen: Date.now()
+            },
+            payload: { shareId, message: '图片传输失败' },
+            timestamp: Date.now(),
+            request_id: uuidv4()
+          } as NetworkMessage, from.port)
+        }
+        return
+      }
+
       mainWindow?.webContents.send('tcp-message', message, from)
+    })
+
+    tcpServer.on('binaryMessage', (header: { msg_type?: string; payload?: any }, chunk: Buffer, from: DeviceInfo) => {
+      if (header?.msg_type !== 'IMAGE_CHUNK') {
+        return
+      }
+
+      const payload = header.payload || {}
+      const shareId = payload.shareId
+      const totalChunks = payload.totalChunks
+      const chunkIndex = payload.chunkIndex
+      const fileName = payload.fileName || 'image'
+      const fileSize = payload.fileSize || 0
+      const mimeType = payload.mimeType || 'image/png'
+
+      if (typeof shareId !== 'string' || typeof totalChunks !== 'number' || typeof chunkIndex !== 'number') {
+        return
+      }
+
+      const transferKey = `${from.ip}:${from.port || 0}:${shareId}`
+      let transfer = incomingImageTransfers.get(transferKey)
+      if (!transfer) {
+        transfer = {
+          shareId,
+          fileName,
+          fileSize,
+          mimeType,
+          totalChunks,
+          receivedCount: 0,
+          chunks: new Array(totalChunks).fill(null),
+          fromIp: from.ip,
+          fromPort: from.port
+        }
+        incomingImageTransfers.set(transferKey, transfer)
+      }
+
+      if (!transfer.chunks[chunkIndex]) {
+        transfer.chunks[chunkIndex] = Buffer.from(chunk)
+        transfer.receivedCount += 1
+      }
+
+      mainWindow?.webContents.send('image-download-progress', {
+        shareId,
+        fromIp: from.ip,
+        fromPort: from.port,
+        progress: Math.round((transfer.receivedCount / transfer.totalChunks) * 100),
+        receivedCount: transfer.receivedCount,
+        totalChunks: transfer.totalChunks
+      })
+
+      if (transfer.receivedCount !== transfer.totalChunks) {
+        return
+      }
+
+      try {
+        const downloadDir = getDownloadDir()
+        const filePath = createUniqueFilePath(downloadDir, transfer.fileName)
+        const completeBuffer = Buffer.concat(transfer.chunks.filter(Boolean) as Buffer[])
+        writeFileSync(filePath, completeBuffer)
+
+        mainWindow?.webContents.send('image-download-complete', {
+          shareId,
+          fromIp: from.ip,
+          fromPort: from.port,
+          fileName: transfer.fileName,
+          fileSize: transfer.fileSize,
+          mimeType: transfer.mimeType,
+          path: filePath,
+          dataUrl: 'data:' + transfer.mimeType + ';base64,' + completeBuffer.toString('base64'),
+        })
+      } catch (error) {
+        mainWindow?.webContents.send('image-download-error', {
+          shareId,
+          fromIp: from.ip,
+          fromPort: from.port,
+          error: String(error)
+        })
+      } finally {
+        incomingImageTransfers.delete(transferKey)
+      }
     })
 
     await tcpServer.start()
@@ -342,6 +588,8 @@ ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
 ipcMain.handle('tcp-stop', async () => {
   try {
     if (tcpServer) {
+      tcpServer.removeAllListeners('message')
+      tcpServer.removeAllListeners('binaryMessage')
       await tcpServer.stop()
       tcpServer = null
     }
@@ -594,8 +842,56 @@ ipcMain.handle('set-allow-control', (_event, allow: boolean) => {
 // ========== File Storage IPC Handlers ==========
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync, statSync, copyFileSync } from 'fs'
-import { join, basename } from 'path'
 
+
+const getDownloadDir = (): string => {
+  const configuredDir = getSettings().downloads?.directory?.trim()
+  const downloadDir = configuredDir || join(app.getPath('downloads'), 'ShareNet')
+  if (!existsSync(downloadDir)) {
+    mkdirSync(downloadDir, { recursive: true })
+  }
+  return downloadDir
+}
+
+const createUniqueFilePath = (directory: string, fileName: string): string => {
+  const parsed = parse(fileName)
+  let candidate = join(directory, fileName)
+  let counter = 1
+
+  while (existsSync(candidate)) {
+    const suffix = ` (${counter})`
+    candidate = join(directory, `${parsed.name}${suffix}${parsed.ext}`)
+    counter += 1
+  }
+
+  return candidate
+}
+
+ipcMain.handle('select-directory', async () => {
+  const result = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false }
+  }
+  return { success: true, path: result.filePaths[0] }
+})
+
+ipcMain.handle('register-shared-image', (_event, resource: SharedImageResource) => {
+  try {
+    if (!resource?.shareId || !resource?.filePath || !existsSync(resource.filePath)) {
+      return { success: false, error: '图片原文件不存在' }
+    }
+
+    sharedImageRegistry.set(resource.shareId, {
+      ...resource,
+      createdAt: resource.createdAt || Date.now()
+    })
+    persistSharedImageRegistry()
+
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
 // Get received files directory path
 const getReceivedDir = (): string => {
   const userDataPath = app.getPath('userData')
@@ -714,6 +1010,19 @@ ipcMain.handle('open-received-location', () => {
   return { success: true }
 })
 
+ipcMain.handle('reveal-file', (_event, filePath: string) => {
+  try {
+    if (!filePath || !existsSync(filePath)) {
+      return { success: false, error: 'File not found' }
+    }
+
+    shell.showItemInFolder(filePath)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
 // Get storage usage
 ipcMain.handle('get-storage-usage', () => {
   try {
@@ -775,3 +1084,8 @@ ipcMain.on('subscribe-execution-events', (event) => {
 })
 
 log.info('主进程初始化完成')
+
+
+
+
+

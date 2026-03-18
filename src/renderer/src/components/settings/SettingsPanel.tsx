@@ -21,6 +21,7 @@ interface Settings {
   requireConfirm: boolean
   ipWhitelist: string[]
   logLevel: 'debug' | 'info' | 'warn' | 'error'
+  downloadDirectory: string
 }
 
 interface LogEntry {
@@ -44,15 +45,12 @@ export function SettingsPanel() {
     allowControl: true,
     requireConfirm: false,
     ipWhitelist: [],
-    logLevel: 'info'
+    logLevel: 'info',
+    downloadDirectory: ''
   })
   const [tagsInput, setTagsInput] = useState('')
-
   const [logType, setLogType] = useState<LogType>('all')
   const [logs, setLogs] = useState<LogEntry[]>([])
-  const [isLogViewerOpen, setIsLogViewerOpen] = useState(false)
-  const [storageUsage, setStorageUsage] = useState<{ totalSize: number; fileCount: number; formatted: string } | null>(null)
-
   const logContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -60,10 +58,8 @@ export function SettingsPanel() {
   }, [])
 
   useEffect(() => {
-    if (isLogViewerOpen) {
-      loadLogs()
-    }
-  }, [isLogViewerOpen, logType])
+    loadLogs()
+  }, [logType])
 
   useEffect(() => {
     if (logContainerRef.current) {
@@ -86,7 +82,8 @@ export function SettingsPanel() {
           allowControl: savedSettings.security?.allowControl ?? true,
           requireConfirm: savedSettings.security?.confirmMode || false,
           ipWhitelist: savedSettings.security?.whitelist || [],
-          logLevel: savedSettings.ui?.logLevel || 'info'
+          logLevel: savedSettings.ui?.logLevel || 'info',
+          downloadDirectory: savedSettings.downloads?.directory || ''
         })
         setTagsInput(nextTags.join(', '))
       }
@@ -123,6 +120,9 @@ export function SettingsPanel() {
         ui: {
           theme: 'system',
           logLevel: settings.logLevel
+        },
+        downloads: {
+          directory: settings.downloadDirectory
         }
       })
 
@@ -179,7 +179,7 @@ export function SettingsPanel() {
       { id: '1', timestamp: new Date().toISOString(), level: 'info', message: 'Application started' },
       { id: '2', timestamp: new Date().toISOString(), level: 'info', message: 'UDP service initialized on port 8888' },
       { id: '3', timestamp: new Date().toISOString(), level: 'info', message: 'TCP server started on port 8889' },
-      { id: '4', timestamp: new Date().toISOString(), level: 'debug', message: 'Device discovery started' },
+      { id: '4', timestamp: new Date().toISOString(), level: 'debug', message: `Current log filter: ${logType}` }
     ]
     setLogs(mockLogs)
   }
@@ -204,20 +204,36 @@ export function SettingsPanel() {
     }
   }
 
+  const handleChooseDownloadDirectory = async () => {
+    try {
+      const result = await window.electronAPI?.selectDirectory()
+      if (result?.success && result.path) {
+        setSettings((prev) => ({ ...prev, downloadDirectory: result.path || '' }))
+      }
+    } catch (error) {
+      console.error('Failed to pick download directory:', error)
+      toast.error('选择下载目录失败')
+    }
+  }
+
   const handleClearLogs = () => {
     setLogs([])
   }
 
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
-    setSettings({ ...settings, [key]: value })
+    setSettings((prev) => ({ ...prev, [key]: value }))
   }
 
   const getLogLevelColor = (level: string) => {
     switch (level) {
-      case 'error': return 'text-red-500'
-      case 'warn': return 'text-yellow-500'
-      case 'debug': return 'text-blue-500'
-      default: return 'text-foreground'
+      case 'error':
+        return 'text-red-500'
+      case 'warn':
+        return 'text-yellow-500'
+      case 'debug':
+        return 'text-blue-500'
+      default:
+        return 'text-foreground'
     }
   }
 
@@ -225,28 +241,16 @@ export function SettingsPanel() {
     <section id="settings-panel" className="panel h-full">
       <Tabs.Root defaultValue="device" className="h-full flex flex-col">
         <Tabs.List className="flex border-b px-4">
-          <Tabs.Trigger
-            value="device"
-            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
-          >
+          <Tabs.Trigger value="device" className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary">
             本机信息
           </Tabs.Trigger>
-          <Tabs.Trigger
-            value="network"
-            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
-          >
+          <Tabs.Trigger value="network" className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary">
             网络
           </Tabs.Trigger>
-          <Tabs.Trigger
-            value="security"
-            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
-          >
+          <Tabs.Trigger value="security" className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary">
             安全
           </Tabs.Trigger>
-          <Tabs.Trigger
-            value="logs"
-            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
-          >
+          <Tabs.Trigger value="logs" className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary">
             日志
           </Tabs.Trigger>
         </Tabs.List>
@@ -266,10 +270,7 @@ export function SettingsPanel() {
             </div>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">角色</label>
-              <Select.Root
-                value={settings.deviceRole}
-                onValueChange={(value) => updateSetting('deviceRole', value as Settings['deviceRole'])}
-              >
+              <Select.Root value={settings.deviceRole} onValueChange={(value) => updateSetting('deviceRole', value as Settings['deviceRole'])}>
                 <Select.Trigger className="w-full flex items-center justify-between px-3 py-2 border rounded bg-background">
                   <Select.Value />
                   <Select.Icon />
@@ -313,30 +314,30 @@ export function SettingsPanel() {
             <h3 className="text-lg font-semibold">网络设置</h3>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">UDP 端口</label>
-              <input
-                type="number"
-                className="w-full px-3 py-2 border rounded bg-background"
-                value={settings.udpPort}
-                onChange={(e) => updateSetting('udpPort', parseInt(e.target.value))}
-              />
+              <input type="number" className="w-full px-3 py-2 border rounded bg-background" value={settings.udpPort} onChange={(e) => updateSetting('udpPort', parseInt(e.target.value, 10) || 0)} />
             </div>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">TCP 端口</label>
-              <input
-                type="number"
-                className="w-full px-3 py-2 border rounded bg-background"
-                value={settings.tcpPort}
-                onChange={(e) => updateSetting('tcpPort', parseInt(e.target.value))}
-              />
+              <input type="number" className="w-full px-3 py-2 border rounded bg-background" value={settings.tcpPort} onChange={(e) => updateSetting('tcpPort', parseInt(e.target.value, 10) || 0)} />
             </div>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">广播间隔 (毫秒)</label>
-              <input
-                type="number"
-                className="w-full px-3 py-2 border rounded bg-background"
-                value={settings.broadcastInterval}
-                onChange={(e) => updateSetting('broadcastInterval', parseInt(e.target.value))}
-              />
+              <input type="number" className="w-full px-3 py-2 border rounded bg-background" value={settings.broadcastInterval} onChange={(e) => updateSetting('broadcastInterval', parseInt(e.target.value, 10) || 0)} />
+            </div>
+            <div className="form-group">
+              <label className="block text-sm font-medium mb-1">下载目录</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border rounded bg-background"
+                  placeholder="默认 Downloads/ShareNet"
+                  value={settings.downloadDirectory}
+                  onChange={(e) => updateSetting('downloadDirectory', e.target.value)}
+                />
+                <button type="button" onClick={handleChooseDownloadDirectory} className="px-3 py-2 border rounded hover:bg-secondary text-sm shrink-0">
+                  浏览
+                </button>
+              </div>
             </div>
           </div>
         </Tabs.Content>
@@ -346,23 +347,13 @@ export function SettingsPanel() {
             <h3 className="text-lg font-semibold">安全设置</h3>
             <div className="form-group">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.allowControl}
-                  onChange={(e) => updateSetting('allowControl', e.target.checked)}
-                  className="accent-primary"
-                />
+                <input type="checkbox" checked={settings.allowControl} onChange={(e) => updateSetting('allowControl', e.target.checked)} className="accent-primary" />
                 <span className="text-sm">允许被控制</span>
               </label>
             </div>
             <div className="form-group">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.requireConfirm}
-                  onChange={(e) => updateSetting('requireConfirm', e.target.checked)}
-                  className="accent-primary"
-                />
+                <input type="checkbox" checked={settings.requireConfirm} onChange={(e) => updateSetting('requireConfirm', e.target.checked)} className="accent-primary" />
                 <span className="text-sm">操作确认</span>
               </label>
             </div>
@@ -373,7 +364,7 @@ export function SettingsPanel() {
                 placeholder="每行一个IP地址，留空表示允许所有"
                 rows={4}
                 value={settings.ipWhitelist.join('\n')}
-                onChange={(e) => updateSetting('ipWhitelist', e.target.value.split('\n').map(ip => ip.trim()).filter(Boolean))}
+                onChange={(e) => updateSetting('ipWhitelist', e.target.value.split('\n').map((ip) => ip.trim()).filter(Boolean))}
               />
             </div>
           </div>
@@ -392,35 +383,16 @@ export function SettingsPanel() {
                   <Select.Portal>
                     <Select.Content className="bg-background border rounded shadow-lg z-50">
                       <Select.Viewport className="p-1">
-                        <Select.Item value="debug" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded">
-                          <Select.ItemText>Debug</Select.ItemText>
-                        </Select.Item>
-                        <Select.Item value="info" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded">
-                          <Select.ItemText>Info</Select.ItemText>
-                        </Select.Item>
-                        <Select.Item value="warn" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded">
-                          <Select.ItemText>Warn</Select.ItemText>
-                        </Select.Item>
-                        <Select.Item value="error" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded">
-                          <Select.ItemText>Error</Select.ItemText>
-                        </Select.Item>
+                        <Select.Item value="debug" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded"><Select.ItemText>Debug</Select.ItemText></Select.Item>
+                        <Select.Item value="info" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded"><Select.ItemText>Info</Select.ItemText></Select.Item>
+                        <Select.Item value="warn" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded"><Select.ItemText>Warn</Select.ItemText></Select.Item>
+                        <Select.Item value="error" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded"><Select.ItemText>Error</Select.ItemText></Select.Item>
                       </Select.Viewport>
                     </Select.Content>
                   </Select.Portal>
                 </Select.Root>
-
-                <button
-                  onClick={handleClearLogs}
-                  className="px-2 py-1 text-xs border rounded hover:bg-secondary"
-                >
-                  清空
-                </button>
-                <button
-                  onClick={handleOpenConfigDir}
-                  className="px-2 py-1 text-xs border rounded hover:bg-secondary"
-                >
-                  打开目录
-                </button>
+                <button onClick={handleClearLogs} className="px-2 py-1 text-xs border rounded hover:bg-secondary">清空</button>
+                <button onClick={handleOpenConfigDir} className="px-2 py-1 text-xs border rounded hover:bg-secondary">打开目录</button>
               </div>
             </div>
 
@@ -429,11 +401,7 @@ export function SettingsPanel() {
                 <button
                   key={type}
                   onClick={() => setLogType(type)}
-                  className={`px-3 py-1 text-xs rounded ${
-                    logType === type
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary hover:bg-secondary/80'
-                  }`}
+                  className={`px-3 py-1 text-xs rounded ${logType === type ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'}`}
                 >
                   {type === 'all' ? '全部' : type === 'run' ? '运行日志' : '审计日志'}
                 </button>
@@ -448,37 +416,24 @@ export function SettingsPanel() {
                   ) : (
                     logs.map((log) => (
                       <div key={log.id} className="flex gap-2">
-                        <span className="text-muted-foreground shrink-0">
-                          {new Date(log.timestamp).toLocaleTimeString()}
-                        </span>
-                        <span className={`uppercase shrink-0 w-12 ${getLogLevelColor(log.level)}`}>
-                          [{log.level}]
-                        </span>
+                        <span className="text-muted-foreground shrink-0">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                        <span className={`uppercase shrink-0 w-12 ${getLogLevelColor(log.level)}`}>[{log.level}]</span>
                         <span className={getLogLevelColor(log.level)}>{log.message}</span>
                       </div>
                     ))
                   )}
                 </div>
               </ScrollArea.Viewport>
-              <ScrollArea.Scrollbar
-                className="flex select-none touch-none p-0.5 bg-secondary transition-colors hover:bg-background/50 data-[orientation=vertical]:w-2.5"
-                orientation="vertical"
-              >
-                <ScrollArea.Thumb className="flex-1 bg-border rounded-full relative" />
-              </ScrollArea.Scrollbar>
             </ScrollArea.Root>
           </div>
         </Tabs.Content>
-      </Tabs.Root>
 
-      <div className="p-4 border-t bg-background">
-        <button
-          onClick={handleSave}
-          className="w-full py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 font-medium"
-        >
-          保存设置
-        </button>
-      </div>
+        <div className="border-t px-4 py-3 flex justify-end">
+          <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 text-sm font-medium">
+            保存设置
+          </button>
+        </div>
+      </Tabs.Root>
     </section>
   )
 }

@@ -42,6 +42,7 @@ export interface ElectronAPI {
   getUserDataPath: () => Promise<string>
   getLocalIP: () => Promise<string>
   getHostname: () => Promise<string>
+  getPathForFile: (file: File) => string
   getConfig: (key: string) => Promise<unknown>
   setConfig: (key: string, value: unknown) => Promise<void>
   startNetworkServices: () => Promise<void>
@@ -75,6 +76,9 @@ export interface ElectronAPI {
   onUdpDevicesRemoved: (callback: (devices: DeviceInfo[]) => void) => void
   onTcpMessage: (callback: (message: unknown, from: unknown) => void) => void
   onNetworkError: (callback: (payload: { service: string; error: string }) => void) => void
+  onImageDownloadProgress: (callback: (payload: unknown) => void) => void
+  onImageDownloadComplete: (callback: (payload: unknown) => void) => void
+  onImageDownloadError: (callback: (payload: unknown) => void) => void
 
   getDevices: () => Promise<DeviceInfo[]>
   refreshDevices: () => Promise<void>
@@ -85,6 +89,8 @@ export interface ElectronAPI {
   deletePreset: (type: string, id: string) => Promise<{ success: boolean; error?: string }>
   getSettings: () => Promise<AppSettings>
   setSettings: (settings: AppSettings) => Promise<void>
+  selectDirectory: () => Promise<{ success: boolean; path?: string }>
+  registerSharedImage: (resource: unknown) => Promise<{ success: boolean; error?: string }>
   getSetting: (key: string) => Promise<unknown>
   setSetting: (key: string, value: unknown) => Promise<void>
   exportConfig: (modules: string[], filePath: string) => Promise<{ success: boolean; data?: unknown; error?: string }>
@@ -97,6 +103,7 @@ export interface ElectronAPI {
   sendFile: (targetId: string, filePath: string) => Promise<void>
   saveReceivedFile: (messageId: string, savePath: string) => Promise<void>
   saveReceived: (data: { type: 'text' | 'image' | 'file'; content: string; fileName?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
+  revealFile: (filePath: string) => Promise<{ success: boolean; error?: string }>
 
   onDeviceUpdate: (callback: (data: unknown) => void) => void
   onMessageReceived: (callback: (data: unknown) => void) => void
@@ -115,3 +122,6 @@ declare global {
 }
 
 export {}
+
+
+
