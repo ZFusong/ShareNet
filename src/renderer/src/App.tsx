@@ -7,6 +7,7 @@ import { DeviceList } from './components/console/DeviceList'
 import { useDeviceStore } from './stores/deviceStore'
 import { useNetwork } from './hooks/useNetwork'
 import * as Dialog from '@radix-ui/react-dialog'
+import { Toaster } from "@/components/ui/sonner";
 
 type Tab = 'console' | 'resource' | 'config' | 'settings'
 
@@ -129,6 +130,7 @@ function App() {
           <span id="app-version">v{appInfo.version}</span>
         </div>
       </footer>
+      <Toaster />
     </div>
   )
 }

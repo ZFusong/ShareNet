@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import * as Select from '@radix-ui/react-select'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
-import * as Toast from '@radix-ui/react-toast'
+import { toast } from 'sonner'
 import { useDeviceStore } from '../../stores/deviceStore'
 
 interface Settings {
@@ -52,9 +52,6 @@ export function SettingsPanel() {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [isLogViewerOpen, setIsLogViewerOpen] = useState(false)
   const [storageUsage, setStorageUsage] = useState<{ totalSize: number; fileCount: number; formatted: string } | null>(null)
-  const [toastOpen, setToastOpen] = useState(false)
-  const [toastMessage, setToastMessage] = useState('')
-  const [toastType, setToastType] = useState<'success' | 'error'>('success')
 
   const logContainerRef = useRef<HTMLDivElement>(null)
 
@@ -165,26 +162,19 @@ export function SettingsPanel() {
       if (errors.udp || errors.tcp) {
         setNetworkStatus('异常')
         setNetworkError(errors)
-        setToastMessage(`设置已保存，但网络服务启动失败：${errors.udp || errors.tcp}`)
-        setToastType('error')
-        setToastOpen(true)
+        toast.error(`设置已保存，但网络服务启动失败：${errors.udp || errors.tcp}`)
       } else {
         setNetworkStatus('就绪')
         setNetworkError(null)
-        setToastMessage('设置已保存并应用')
-        setToastType('success')
-        setToastOpen(true)
+        toast.success('设置已保存并应用')
       }
     } catch (error) {
       console.error('Failed to save settings:', error)
-      setToastMessage('保存失败')
-      setToastType('error')
-      setToastOpen(true)
+      toast.error('保存失败')
     }
   }
 
   const loadLogs = async () => {
-    // Simulated log data for demo
     const mockLogs: LogEntry[] = [
       { id: '1', timestamp: new Date().toISOString(), level: 'info', message: 'Application started' },
       { id: '2', timestamp: new Date().toISOString(), level: 'info', message: 'UDP service initialized on port 8888' },
@@ -209,7 +199,6 @@ export function SettingsPanel() {
     try {
       const userDataPath = await window.electronAPI?.getUserDataPath()
       console.log('Config directory:', userDataPath)
-      // Could open in file explorer via shell
     } catch (error) {
       console.error('Failed to open config dir:', error)
     }
@@ -233,9 +222,8 @@ export function SettingsPanel() {
   }
 
   return (
-    <Toast.Provider>
-      <section id="settings-panel" className="panel h-full">
-        <Tabs.Root defaultValue="device" className="h-full flex flex-col">
+    <section id="settings-panel" className="panel h-full">
+      <Tabs.Root defaultValue="device" className="h-full flex flex-col">
         <Tabs.List className="flex border-b px-4">
           <Tabs.Trigger
             value="device"
@@ -263,7 +251,6 @@ export function SettingsPanel() {
           </Tabs.Trigger>
         </Tabs.List>
 
-        {/* Device Info Tab */}
         <Tabs.Content value="device" className="flex-1 p-6 overflow-auto">
           <div className="settings-group space-y-4">
             <h3 className="text-lg font-semibold">本机信息</h3>
@@ -321,7 +308,6 @@ export function SettingsPanel() {
           </div>
         </Tabs.Content>
 
-        {/* Network Tab */}
         <Tabs.Content value="network" className="flex-1 p-6 overflow-auto">
           <div className="settings-group space-y-4">
             <h3 className="text-lg font-semibold">网络设置</h3>
@@ -355,7 +341,6 @@ export function SettingsPanel() {
           </div>
         </Tabs.Content>
 
-        {/* Security Tab */}
         <Tabs.Content value="security" className="flex-1 p-6 overflow-auto">
           <div className="settings-group space-y-4">
             <h3 className="text-lg font-semibold">安全设置</h3>
@@ -394,13 +379,11 @@ export function SettingsPanel() {
           </div>
         </Tabs.Content>
 
-        {/* Logs Tab */}
         <Tabs.Content value="logs" className="flex-1 p-4 overflow-hidden">
           <div className="logs-panel h-full flex flex-col">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-medium text-sm">日志查看</h3>
               <div className="flex items-center gap-2">
-                {/* Log Level Selector */}
                 <Select.Root value={settings.logLevel} onValueChange={handleLogLevelChange}>
                   <Select.Trigger className="flex items-center gap-1 px-2 py-1 border rounded text-xs bg-background">
                     <Select.Value />
@@ -441,7 +424,6 @@ export function SettingsPanel() {
               </div>
             </div>
 
-            {/* Log Type Tabs */}
             <div className="flex gap-2 mb-3">
               {(['all', 'run', 'audit'] as LogType[]).map((type) => (
                 <button
@@ -458,7 +440,6 @@ export function SettingsPanel() {
               ))}
             </div>
 
-            {/* Log List */}
             <ScrollArea.Root className="flex-1 border rounded">
               <ScrollArea.Viewport className="h-full w-full">
                 <div ref={logContainerRef} className="log-content p-2 font-mono text-xs space-y-1">
@@ -488,26 +469,16 @@ export function SettingsPanel() {
             </ScrollArea.Root>
           </div>
         </Tabs.Content>
-        </Tabs.Root>
+      </Tabs.Root>
 
-        {/* Save Button */}
-        <div className="p-4 border-t bg-background">
-          <button
-            onClick={handleSave}
-            className="w-full py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 font-medium"
-          >
-            保存设置
-          </button>
-        </div>
-      </section>
-      <Toast.Root
-        className={`rounded-lg border px-4 py-3 shadow-lg bg-card text-card-foreground ${toastType === 'error' ? 'border-red-300' : 'border-emerald-300'}`}
-        open={toastOpen}
-        onOpenChange={setToastOpen}
-      >
-        <Toast.Title className="text-sm font-medium">{toastMessage}</Toast.Title>
-      </Toast.Root>
-      <Toast.Viewport className="fixed bottom-4 right-4" />
-    </Toast.Provider>
+      <div className="p-4 border-t bg-background">
+        <button
+          onClick={handleSave}
+          className="w-full py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 font-medium"
+        >
+          保存设置
+        </button>
+      </div>
+    </section>
   )
 }

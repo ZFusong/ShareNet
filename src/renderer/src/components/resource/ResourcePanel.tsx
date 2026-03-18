@@ -9,6 +9,7 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import * as Select from '@radix-ui/react-select'
+import { toast } from 'sonner'
 import { useDeviceStore } from '../../stores/deviceStore'
 
 type ContentType = 'text' | 'image' | 'file'
@@ -48,12 +49,13 @@ export function ResourcePanel() {
   const [textContent, setTextContent] = useState('')
   const [imageQuality, setImageQuality] = useState<ImageQuality>('high')
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([])
-  const [sendTarget, setSendTarget] = useState<'broadcast' | 'selected'>('broadcast')
+  const [sendTarget, setSendTarget] = useState<'broadcast' | 'selected' | 'group'>('broadcast')
   const [receivedMessages, setReceivedMessages] = useState<ReceivedMessage[]>([])
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false)
   const [isDevicePickerOpen, setIsDevicePickerOpen] = useState(false)
   const [groupFilter, setGroupFilter] = useState('all')
+  const [groupTargetId, setGroupTargetId] = useState('all')
   const incomingTransfersRef = useRef<Map<string, IncomingTransfer>>(new Map())
 
   const { devices, deviceGroups, selectedDevices, toggleSelectDevice, selectAll, deselectAll, localDevice } = useDeviceStore()
@@ -131,7 +133,7 @@ export function ResourcePanel() {
     return bytes
   }
 
-  const sendMessageToTargets = async (message: any) => {
+  const sendMessageToTargets = async (message: any): Promise<boolean> => {
     const sender = localDevice || {
       id: 'local',
       name: 'Local',
@@ -143,19 +145,49 @@ export function ResourcePanel() {
       lastSeen: Date.now()
     }
 
-    const targets = sendTarget === 'broadcast'
+    let targets = sendTarget === 'broadcast'
       ? devices
       : devices.filter((d) => selectedDevices.has(d.id))
 
-    if (targets.length === 0) {
-      alert('没有可发送的目标设备')
-      return
+    if (sendTarget === 'group') {
+      if (groupTargetId === 'all') {
+        toast.error('请先选择分组')
+        return false
+      }
+      const targetGroup = deviceGroups.find((group) => group.id === groupTargetId)
+      if (!targetGroup) {
+        toast.error('选择的分组不存在')
+        return false
+      }
+      if (targetGroup.deviceKeys.length === 0) {
+        toast.error('所选分组下暂无设备')
+        return false
+      }
+      targets = devices.filter((device) => targetGroup.deviceKeys.includes(getDeviceKey(device)))
     }
 
-    for (const device of targets) {
-      await window.electronAPI?.tcpConnect(device.ip, device.port, sender)
-      await window.electronAPI?.tcpSend(device.ip, device.port, message)
+    if (targets.length === 0) {
+      toast.error('没有可发送的目标设备')
+      return false
     }
+
+    let failedCount = 0
+    for (const device of targets) {
+      const connectResult = await window.electronAPI?.tcpConnect(device.ip, device.port, sender)
+      if (!connectResult?.success) {
+        failedCount += 1
+        continue
+      }
+      const sendResult = await window.electronAPI?.tcpSend(device.ip, device.port, message)
+      if (!sendResult?.success) {
+        failedCount += 1
+      }
+    }
+    if (failedCount > 0) {
+      toast.error(`发送失败：${failedCount} 台设备`)
+      return false
+    }
+    return true
   }
 
   // Subscribe to incoming TCP messages
@@ -275,11 +307,15 @@ export function ResourcePanel() {
     }
   }, [])
 
-  const handleTextSend = useCallback(() => {
+  const handleTextSend = useCallback(async () => {
     if (!textContent.trim()) return
 
     if (sendTarget === 'selected' && selectedCount === 0) {
-      alert('请先选择设备')
+      toast.error('请先选择设备')
+      return
+    }
+    if (sendTarget === 'group' && groupTargetId === 'all') {
+      toast.error('请先选择分组')
       return
     }
 
@@ -290,11 +326,12 @@ export function ResourcePanel() {
       }
     }
 
-    sendMessageToTargets(message)
-
-    setTextContent('')
-    textInputRef.current?.focus()
-  }, [textContent, sendTarget, selectedCount, sendMessageToTargets])
+    const ok = await sendMessageToTargets(message)
+    if (ok) {
+      setTextContent('')
+      textInputRef.current?.focus()
+    }
+  }, [textContent, sendTarget, selectedCount, groupTargetId, sendMessageToTargets])
 
   const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -362,16 +399,21 @@ export function ResourcePanel() {
 
   const handleSend = async () => {
     if (contentType === 'text') {
-      handleTextSend()
+      await handleTextSend()
       return
     }
 
     if (sendTarget === 'selected' && selectedCount === 0) {
-      alert('请先选择设备')
+      toast.error('请先选择设备')
+      return
+    }
+    if (sendTarget === 'group' && groupTargetId === 'all') {
+      toast.error('请先选择分组')
       return
     }
 
     const chunkSize = 256 * 1024
+    let hadFailure = false
     for (const item of selectedFiles) {
       const arrayBuffer = await item.file.arrayBuffer()
       const bytes = new Uint8Array(arrayBuffer)
@@ -397,11 +439,18 @@ export function ResourcePanel() {
           }
         }
 
-        await sendMessageToTargets(message)
+        const ok = await sendMessageToTargets(message)
+        if (!ok) {
+          hadFailure = true
+          break
+        }
       }
+      if (hadFailure) break
     }
 
-    setSelectedFiles([])
+    if (!hadFailure) {
+      setSelectedFiles([])
+    }
   }
 
   const handleClearReceived = () => {
@@ -411,8 +460,7 @@ export function ResourcePanel() {
 
   const handleCopyText = (content: string) => {
     navigator.clipboard.writeText(content)
-    // Show toast notification (would use Radix UI Toast)
-    console.log('Copied to clipboard')
+    toast.success('已复制到剪贴板')
   }
 
   const handleSaveImage = (imageUrl: string, fileName: string) => {
@@ -799,6 +847,17 @@ export function ResourcePanel() {
                   />
                   <span className="text-sm">已选设备</span>
                 </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="send-target"
+                    value="group"
+                    checked={sendTarget === 'group'}
+                    onChange={() => setSendTarget('group')}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">分组设备</span>
+                </label>
                 {sendTarget === 'selected' && (
                   <Dialog.Root open={isDevicePickerOpen} onOpenChange={setIsDevicePickerOpen}>
                     <Dialog.Trigger asChild>
@@ -870,12 +929,43 @@ export function ResourcePanel() {
                     </Dialog.Portal>
                   </Dialog.Root>
                 )}
+                {sendTarget === 'group' && (
+                  <div className="flex items-center gap-2">
+                    <Select.Root value={groupTargetId} onValueChange={(value) => setGroupTargetId(value)}>
+                      <Select.Trigger className="flex items-center justify-between gap-2 px-2 py-1 border rounded text-xs bg-background w-24">
+                        <Select.Value />
+                        <Select.Icon>▼</Select.Icon>
+                      </Select.Trigger>
+                      <Select.Portal>
+                        <Select.Content
+                          className="bg-background border rounded shadow-lg z-50"
+                          position="popper"
+                          side="bottom"
+                          align="start"
+                          sideOffset={4}
+                          avoidCollisions={false}
+                        >
+                          <Select.Viewport className="p-1">
+                            <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                              <Select.ItemText>选择分组</Select.ItemText>
+                            </Select.Item>
+                            {groupsForFilter.map(({ group }) => (
+                              <Select.Item key={group.id} value={group.id} className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                                <Select.ItemText>{group.name}</Select.ItemText>
+                              </Select.Item>
+                            ))}
+                          </Select.Viewport>
+                        </Select.Content>
+                      </Select.Portal>
+                    </Select.Root>
+                  </div>
+                )}
               </div>
 
               {/* Send Button */}
               <button
                 onClick={handleSend}
-                disabled={contentType !== 'text' && selectedFiles.length === 0}
+                disabled={contentType === 'text' ? !textContent.trim() : selectedFiles.length === 0}
                 className="w-full py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 发送
@@ -904,3 +994,8 @@ export function ResourcePanel() {
     </Tooltip.Provider>
   )
 }
+
+
+
+
+

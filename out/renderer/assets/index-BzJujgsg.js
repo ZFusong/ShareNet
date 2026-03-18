@@ -7453,7 +7453,7 @@ function usePointerDownOutside(onPointerDownOutside, ownerDocument = globalThis?
     const handlePointerDown = (event) => {
       if (event.target && !isPointerInsideReactTreeRef.current) {
         let handleAndDispatchPointerDownOutsideEvent2 = function() {
-          handleAndDispatchCustomEvent$1(
+          handleAndDispatchCustomEvent(
             POINTER_DOWN_OUTSIDE,
             handlePointerDownOutside,
             eventDetail,
@@ -7494,7 +7494,7 @@ function useFocusOutside(onFocusOutside, ownerDocument = globalThis?.document) {
     const handleFocus = (event) => {
       if (event.target && !isFocusInsideReactTreeRef.current) {
         const eventDetail = { originalEvent: event };
-        handleAndDispatchCustomEvent$1(FOCUS_OUTSIDE, handleFocusOutside, eventDetail, {
+        handleAndDispatchCustomEvent(FOCUS_OUTSIDE, handleFocusOutside, eventDetail, {
           discrete: false
         });
       }
@@ -7511,7 +7511,7 @@ function dispatchUpdate() {
   const event = new CustomEvent(CONTEXT_UPDATE);
   document.dispatchEvent(event);
 }
-function handleAndDispatchCustomEvent$1(name, handler, detail, { discrete }) {
+function handleAndDispatchCustomEvent(name, handler, detail, { discrete }) {
   const target = detail.originalEvent.target;
   const event = new CustomEvent(name, { bubbles: false, cancelable: true, detail });
   if (handler) target.addEventListener(name, handler, { once: true });
@@ -7521,8 +7521,6 @@ function handleAndDispatchCustomEvent$1(name, handler, detail, { discrete }) {
     target.dispatchEvent(event);
   }
 }
-var Root$5 = DismissableLayer;
-var Branch = DismissableLayerBranch;
 var count$1 = 0;
 function useFocusGuards() {
   reactExports.useEffect(() => {
@@ -7619,7 +7617,7 @@ var FocusScope = reactExports.forwardRef((props, forwardedRef) => {
         container.addEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
         container.dispatchEvent(mountEvent);
         if (!mountEvent.defaultPrevented) {
-          focusFirst$2(removeLinks(getTabbableCandidates$1(container)), { select: true });
+          focusFirst$1(removeLinks(getTabbableCandidates(container)), { select: true });
           if (document.activeElement === previouslyFocusedElement) {
             focus(container);
           }
@@ -7668,7 +7666,7 @@ var FocusScope = reactExports.forwardRef((props, forwardedRef) => {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { tabIndex: -1, ...scopeProps, ref: composedRefs, onKeyDown: handleKeyDown });
 });
 FocusScope.displayName = FOCUS_SCOPE_NAME;
-function focusFirst$2(candidates, { select = false } = {}) {
+function focusFirst$1(candidates, { select = false } = {}) {
   const previouslyFocusedElement = document.activeElement;
   for (const candidate of candidates) {
     focus(candidate, { select });
@@ -7676,12 +7674,12 @@ function focusFirst$2(candidates, { select = false } = {}) {
   }
 }
 function getTabbableEdges(container) {
-  const candidates = getTabbableCandidates$1(container);
+  const candidates = getTabbableCandidates(container);
   const first = findVisible(candidates, container);
   const last = findVisible(candidates.reverse(), container);
   return [first, last];
 }
-function getTabbableCandidates$1(container) {
+function getTabbableCandidates(container) {
   const nodes = [];
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
     acceptNode: (node) => {
@@ -8629,7 +8627,7 @@ function isElement(value) {
   }
   return value instanceof Element || value instanceof getWindow(value).Element;
 }
-function isHTMLElement$1(value) {
+function isHTMLElement(value) {
   if (!hasWindow()) {
     return false;
   }
@@ -8676,7 +8674,7 @@ function isContainingBlock(elementOrCss) {
 }
 function getContainingBlock(element) {
   let currentNode = getParentNode(element);
-  while (isHTMLElement$1(currentNode) && !isLastTraversableNode(currentNode)) {
+  while (isHTMLElement(currentNode) && !isLastTraversableNode(currentNode)) {
     if (isContainingBlock(currentNode)) {
       return currentNode;
     } else if (isTopLayer(currentNode)) {
@@ -8728,7 +8726,7 @@ function getNearestOverflowAncestor(node) {
   if (isLastTraversableNode(parentNode)) {
     return node.ownerDocument ? node.ownerDocument.body : node.body;
   }
-  if (isHTMLElement$1(parentNode) && isOverflowElement(parentNode)) {
+  if (isHTMLElement(parentNode) && isOverflowElement(parentNode)) {
     return parentNode;
   }
   return getNearestOverflowAncestor(parentNode);
@@ -8758,7 +8756,7 @@ function getCssDimensions(element) {
   const css = getComputedStyle$1(element);
   let width = parseFloat(css.width) || 0;
   let height = parseFloat(css.height) || 0;
-  const hasOffset = isHTMLElement$1(element);
+  const hasOffset = isHTMLElement(element);
   const offsetWidth = hasOffset ? element.offsetWidth : width;
   const offsetHeight = hasOffset ? element.offsetHeight : height;
   const shouldFallback = round(width) !== offsetWidth || round(height) !== offsetHeight;
@@ -8777,7 +8775,7 @@ function unwrapElement(element) {
 }
 function getScale(element) {
   const domElement = unwrapElement(element);
-  if (!isHTMLElement$1(domElement)) {
+  if (!isHTMLElement(domElement)) {
     return createCoords(1);
   }
   const rect = domElement.getBoundingClientRect();
@@ -8906,7 +8904,7 @@ function convertOffsetParentRelativeRectToViewportRelativeRect(_ref) {
   };
   let scale = createCoords(1);
   const offsets = createCoords(0);
-  const isOffsetParentAnElement = isHTMLElement$1(offsetParent);
+  const isOffsetParentAnElement = isHTMLElement(offsetParent);
   if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
     if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) {
       scroll = getNodeScroll(offsetParent);
@@ -8989,7 +8987,7 @@ function getInnerBoundingClientRect(element, strategy) {
   const clientRect = getBoundingClientRect(element, true, strategy === "fixed");
   const top = clientRect.top + element.clientTop;
   const left = clientRect.left + element.clientLeft;
-  const scale = isHTMLElement$1(element) ? getScale(element) : createCoords(1);
+  const scale = isHTMLElement(element) ? getScale(element) : createCoords(1);
   const width = element.clientWidth * scale.x;
   const height = element.clientHeight * scale.y;
   const x2 = left * scale.x;
@@ -9092,7 +9090,7 @@ function getDimensions(element) {
   };
 }
 function getRectRelativeToOffsetParent(element, offsetParent, strategy) {
-  const isOffsetParentAnElement = isHTMLElement$1(offsetParent);
+  const isOffsetParentAnElement = isHTMLElement(offsetParent);
   const documentElement = getDocumentElement(offsetParent);
   const isFixed = strategy === "fixed";
   const rect = getBoundingClientRect(element, true, isFixed, offsetParent);
@@ -9133,7 +9131,7 @@ function isStaticPositioned(element) {
   return getComputedStyle$1(element).position === "static";
 }
 function getTrueOffsetParent(element, polyfill) {
-  if (!isHTMLElement$1(element) || getComputedStyle$1(element).position === "fixed") {
+  if (!isHTMLElement(element) || getComputedStyle$1(element).position === "fixed") {
     return null;
   }
   if (polyfill) {
@@ -9150,7 +9148,7 @@ function getOffsetParent(element, polyfill) {
   if (isTopLayer(element)) {
     return win;
   }
-  if (!isHTMLElement$1(element)) {
+  if (!isHTMLElement(element)) {
     let svgOffsetParent = getParentNode(element);
     while (svgOffsetParent && !isLastTraversableNode(svgOffsetParent)) {
       if (isElement(svgOffsetParent) && !isStaticPositioned(svgOffsetParent)) {
@@ -9990,7 +9988,7 @@ function getSideAndAlignFromPlacement(placement) {
   const [side, align = "center"] = placement.split("-");
   return [side, align];
 }
-var Root2$5 = Popper;
+var Root2$4 = Popper;
 var Anchor = PopperAnchor;
 var Content$2 = PopperContent;
 var Arrow = PopperArrow;
@@ -10887,9 +10885,9 @@ ReactRemoveScroll.classNames = RemoveScroll.classNames;
 var OPEN_KEYS = [" ", "Enter", "ArrowUp", "ArrowDown"];
 var SELECTION_KEYS = [" ", "Enter"];
 var SELECT_NAME = "Select";
-var [Collection$2, useCollection$2, createCollectionScope$2] = createCollection(SELECT_NAME);
+var [Collection$1, useCollection$1, createCollectionScope$1] = createCollection(SELECT_NAME);
 var [createSelectContext] = createContextScope(SELECT_NAME, [
-  createCollectionScope$2,
+  createCollectionScope$1,
   createPopperScope
 ]);
 var usePopperScope$2 = createPopperScope();
@@ -10933,7 +10931,7 @@ var Select = (props) => {
   const isFormControl = trigger ? form || !!trigger.closest("form") : true;
   const [nativeOptionsSet, setNativeOptionsSet] = reactExports.useState(/* @__PURE__ */ new Set());
   const nativeSelectKey = Array.from(nativeOptionsSet).map((option) => option.props.value).join(";");
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$5, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$4, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
     SelectProvider,
     {
       required,
@@ -10953,7 +10951,7 @@ var Select = (props) => {
       triggerPointerDownPosRef,
       disabled,
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Collection$2.Provider, { scope: __scopeSelect, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Collection$1.Provider, { scope: __scopeSelect, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
           SelectNativeOptionsProvider,
           {
             scope: props.__scopeSelect,
@@ -11002,7 +11000,7 @@ var SelectTrigger = reactExports.forwardRef(
     const context = useSelectContext(TRIGGER_NAME$6, __scopeSelect);
     const isDisabled = context.disabled || disabled;
     const composedRefs = useComposedRefs(forwardedRef, context.onTriggerChange);
-    const getItems = useCollection$2(__scopeSelect);
+    const getItems = useCollection$1(__scopeSelect);
     const pointerTypeRef = reactExports.useRef("touch");
     const [searchRef, handleTypeaheadSearch, resetTypeahead] = useTypeaheadSearch((search) => {
       const enabledItems = getItems().filter((item) => !item.disabled);
@@ -11119,7 +11117,7 @@ var SelectContent = reactExports.forwardRef(
     if (!context.open) {
       const frag = fragment;
       return frag ? reactDomExports.createPortal(
-        /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContentProvider, { scope: props.__scopeSelect, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Collection$2.Slot, { scope: props.__scopeSelect, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: props.children }) }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContentProvider, { scope: props.__scopeSelect, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Collection$1.Slot, { scope: props.__scopeSelect, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: props.children }) }) }),
         frag
       ) : null;
     }
@@ -11162,7 +11160,7 @@ var SelectContentImpl = reactExports.forwardRef(
     const [selectedItemText, setSelectedItemText] = reactExports.useState(
       null
     );
-    const getItems = useCollection$2(__scopeSelect);
+    const getItems = useCollection$1(__scopeSelect);
     const [isPositioned, setIsPositioned] = reactExports.useState(false);
     const firstValidItemFoundRef = reactExports.useRef(false);
     reactExports.useEffect(() => {
@@ -11372,7 +11370,7 @@ var SelectItemAlignedPosition = reactExports.forwardRef((props, forwardedRef) =>
   const [contentWrapper, setContentWrapper] = reactExports.useState(null);
   const [content, setContent] = reactExports.useState(null);
   const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
-  const getItems = useCollection$2(__scopeSelect);
+  const getItems = useCollection$1(__scopeSelect);
   const shouldExpandOnScrollRef = reactExports.useRef(false);
   const shouldRepositionRef = reactExports.useRef(true);
   const { viewport, selectedItem, selectedItemText, focusSelectedItem } = contentContext;
@@ -11563,12 +11561,12 @@ var SelectPopperPosition = reactExports.forwardRef((props, forwardedRef) => {
 });
 SelectPopperPosition.displayName = POPPER_POSITION_NAME;
 var [SelectViewportProvider, useSelectViewportContext] = createSelectContext(CONTENT_NAME$5, {});
-var VIEWPORT_NAME$2 = "SelectViewport";
+var VIEWPORT_NAME$1 = "SelectViewport";
 var SelectViewport = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, nonce, ...viewportProps } = props;
-    const contentContext = useSelectContentContext(VIEWPORT_NAME$2, __scopeSelect);
-    const viewportContext = useSelectViewportContext(VIEWPORT_NAME$2, __scopeSelect);
+    const contentContext = useSelectContentContext(VIEWPORT_NAME$1, __scopeSelect);
+    const viewportContext = useSelectViewportContext(VIEWPORT_NAME$1, __scopeSelect);
     const composedRefs = useComposedRefs(forwardedRef, contentContext.onViewportChange);
     const prevScrollTopRef = reactExports.useRef(0);
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
@@ -11581,7 +11579,7 @@ var SelectViewport = reactExports.forwardRef(
           nonce
         }
       ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Collection$2.Slot, { scope: __scopeSelect, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Collection$1.Slot, { scope: __scopeSelect, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
         Primitive.div,
         {
           "data-radix-select-viewport": "",
@@ -11630,7 +11628,7 @@ var SelectViewport = reactExports.forwardRef(
     ] });
   }
 );
-SelectViewport.displayName = VIEWPORT_NAME$2;
+SelectViewport.displayName = VIEWPORT_NAME$1;
 var GROUP_NAME$1 = "SelectGroup";
 var [SelectGroupContextProvider, useSelectGroupContext] = createSelectContext(GROUP_NAME$1);
 var SelectGroup = reactExports.forwardRef(
@@ -11695,7 +11693,7 @@ var SelectItem = reactExports.forwardRef(
           setTextValue((prevTextValue) => prevTextValue || (node?.textContent ?? "").trim());
         }, []),
         children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Collection$2.ItemSlot,
+          Collection$1.ItemSlot,
           {
             scope: __scopeSelect,
             value,
@@ -11865,7 +11863,7 @@ var SelectScrollButtonImpl = reactExports.forwardRef((props, forwardedRef) => {
   const { __scopeSelect, onAutoScroll, ...scrollIndicatorProps } = props;
   const contentContext = useSelectContentContext("SelectScrollButton", __scopeSelect);
   const autoScrollTimerRef = reactExports.useRef(null);
-  const getItems = useCollection$2(__scopeSelect);
+  const getItems = useCollection$1(__scopeSelect);
   const clearAutoScrollTimer = reactExports.useCallback(() => {
     if (autoScrollTimerRef.current !== null) {
       window.clearInterval(autoScrollTimerRef.current);
@@ -11998,13 +11996,13 @@ function findNextItem(items, search, currentItem) {
 function wrapArray$1(array, startIndex) {
   return array.map((_, index2) => array[(startIndex + index2) % array.length]);
 }
-var Root2$4 = Select;
+var Root2$3 = Select;
 var Trigger$4 = SelectTrigger;
 var Value = SelectValue;
 var Icon = SelectIcon;
 var Portal$3 = SelectPortal;
 var Content2$3 = SelectContent;
-var Viewport$2 = SelectViewport;
+var Viewport$1 = SelectViewport;
 var Item$1 = SelectItem;
 var ItemText = SelectItemText;
 function useStateMachine$1(initialState, machine) {
@@ -12153,7 +12151,7 @@ var Popover = (props) => {
     onChange: onOpenChange,
     caller: POPOVER_NAME
   });
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$5, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$4, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
     PopoverProvider,
     {
       scope: __scopePopover,
@@ -12374,11 +12372,11 @@ var PopoverContentImpl = reactExports.forwardRef(
     );
   }
 );
-var CLOSE_NAME$2 = "PopoverClose";
+var CLOSE_NAME$1 = "PopoverClose";
 var PopoverClose = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopePopover, ...closeProps } = props;
-    const context = usePopoverContext(CLOSE_NAME$2, __scopePopover);
+    const context = usePopoverContext(CLOSE_NAME$1, __scopePopover);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       Primitive.button,
       {
@@ -12390,7 +12388,7 @@ var PopoverClose = reactExports.forwardRef(
     );
   }
 );
-PopoverClose.displayName = CLOSE_NAME$2;
+PopoverClose.displayName = CLOSE_NAME$1;
 var ARROW_NAME$1 = "PopoverArrow";
 var PopoverArrow = reactExports.forwardRef(
   (props, forwardedRef) => {
@@ -12403,7 +12401,7 @@ PopoverArrow.displayName = ARROW_NAME$1;
 function getState$2(open) {
   return open ? "open" : "closed";
 }
-var Root2$3 = Popover;
+var Root2$2 = Popover;
 var Trigger$3 = PopoverTrigger;
 var Portal$2 = PopoverPortal;
 var Content2$2 = PopoverContent;
@@ -12721,7 +12719,7 @@ function ConsolePanel() {
         )) })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "command-selector", className: "command-selector", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        Root2$4,
+        Root2$3,
         {
           value: commandType === "scene" ? selectedScene : commandType === "software" ? selectedSoftware : selectedInput,
           onValueChange: (value) => {
@@ -12734,7 +12732,7 @@ function ConsolePanel() {
               /* @__PURE__ */ jsxRuntimeExports.jsx(Value, { placeholder: commandType === "scene" ? "选择场景..." : commandType === "software" ? "选择软件..." : "选择键鼠..." }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, {})
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$2, { className: "p-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$1, { className: "p-1", children: [
               commandType === "scene" && scenes.map((scene) => /* @__PURE__ */ jsxRuntimeExports.jsx(
                 Item$1,
                 {
@@ -12766,7 +12764,7 @@ function ConsolePanel() {
           ]
         }
       ) }),
-      commandType === "scene" && selectedScene && /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$3, { open: isAdjustOpen, onOpenChange: setIsAdjustOpen, children: [
+      commandType === "scene" && selectedScene && /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$2, { open: isAdjustOpen, onOpenChange: setIsAdjustOpen, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger$3, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "text-xs text-primary hover:underline", children: "临时调整" }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$2, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Content2$2, { className: "bg-background border rounded shadow-lg p-3 w-64 z-50", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
@@ -12934,11 +12932,11 @@ var ScrollArea = reactExports.forwardRef(
   }
 );
 ScrollArea.displayName = SCROLL_AREA_NAME;
-var VIEWPORT_NAME$1 = "ScrollAreaViewport";
+var VIEWPORT_NAME = "ScrollAreaViewport";
 var ScrollAreaViewport = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeScrollArea, children, nonce, ...viewportProps } = props;
-    const context = useScrollAreaContext(VIEWPORT_NAME$1, __scopeScrollArea);
+    const context = useScrollAreaContext(VIEWPORT_NAME, __scopeScrollArea);
     const ref = reactExports.useRef(null);
     const composedRefs = useComposedRefs(forwardedRef, ref, context.onViewportChange);
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
@@ -12979,7 +12977,7 @@ var ScrollAreaViewport = reactExports.forwardRef(
     ] });
   }
 );
-ScrollAreaViewport.displayName = VIEWPORT_NAME$1;
+ScrollAreaViewport.displayName = VIEWPORT_NAME;
 var SCROLLBAR_NAME = "ScrollAreaScrollbar";
 var ScrollAreaScrollbar = reactExports.forwardRef(
   (props, forwardedRef) => {
@@ -13565,17 +13563,17 @@ function useResizeObserver(element, onResize) {
   }, [element, handleResize]);
 }
 var Root$2 = ScrollArea;
-var Viewport$1 = ScrollAreaViewport;
+var Viewport = ScrollAreaViewport;
 var Scrollbar = ScrollAreaScrollbar;
 var Thumb = ScrollAreaThumb;
 var [createTooltipContext] = createContextScope("Tooltip", [
   createPopperScope
 ]);
 var usePopperScope = createPopperScope();
-var PROVIDER_NAME$1 = "TooltipProvider";
+var PROVIDER_NAME = "TooltipProvider";
 var DEFAULT_DELAY_DURATION = 700;
 var TOOLTIP_OPEN = "tooltip.open";
-var [TooltipProviderContextProvider, useTooltipProviderContext] = createTooltipContext(PROVIDER_NAME$1);
+var [TooltipProviderContextProvider, useTooltipProviderContext] = createTooltipContext(PROVIDER_NAME);
 var TooltipProvider = (props) => {
   const {
     __scopeTooltip,
@@ -13617,7 +13615,7 @@ var TooltipProvider = (props) => {
     }
   );
 };
-TooltipProvider.displayName = PROVIDER_NAME$1;
+TooltipProvider.displayName = PROVIDER_NAME;
 var TOOLTIP_NAME = "Tooltip";
 var [TooltipContextProvider, useTooltipContext] = createTooltipContext(TOOLTIP_NAME);
 var Tooltip = (props) => {
@@ -13682,7 +13680,7 @@ var Tooltip = (props) => {
       }
     };
   }, []);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$5, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$4, { ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
     TooltipContextProvider,
     {
       scope: __scopeTooltip,
@@ -14036,7 +14034,7 @@ function getHullPresorted(points) {
     return upperHull.concat(lowerHull);
   }
 }
-var Provider$1 = TooltipProvider;
+var Provider = TooltipProvider;
 var Root3 = Tooltip;
 var Trigger$2 = TooltipTrigger;
 var Portal$1 = TooltipPortal;
@@ -14263,29 +14261,29 @@ var DialogContentImpl = reactExports.forwardRef(
     ] });
   }
 );
-var TITLE_NAME$2 = "DialogTitle";
+var TITLE_NAME$1 = "DialogTitle";
 var DialogTitle = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDialog, ...titleProps } = props;
-    const context = useDialogContext(TITLE_NAME$2, __scopeDialog);
+    const context = useDialogContext(TITLE_NAME$1, __scopeDialog);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
   }
 );
-DialogTitle.displayName = TITLE_NAME$2;
-var DESCRIPTION_NAME$2 = "DialogDescription";
+DialogTitle.displayName = TITLE_NAME$1;
+var DESCRIPTION_NAME$1 = "DialogDescription";
 var DialogDescription = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDialog, ...descriptionProps } = props;
-    const context = useDialogContext(DESCRIPTION_NAME$2, __scopeDialog);
+    const context = useDialogContext(DESCRIPTION_NAME$1, __scopeDialog);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
   }
 );
-DialogDescription.displayName = DESCRIPTION_NAME$2;
-var CLOSE_NAME$1 = "DialogClose";
+DialogDescription.displayName = DESCRIPTION_NAME$1;
+var CLOSE_NAME = "DialogClose";
 var DialogClose = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDialog, ...closeProps } = props;
-    const context = useDialogContext(CLOSE_NAME$1, __scopeDialog);
+    const context = useDialogContext(CLOSE_NAME, __scopeDialog);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       Primitive.button,
       {
@@ -14297,14 +14295,14 @@ var DialogClose = reactExports.forwardRef(
     );
   }
 );
-DialogClose.displayName = CLOSE_NAME$1;
+DialogClose.displayName = CLOSE_NAME;
 function getState$1(open) {
   return open ? "open" : "closed";
 }
 var TITLE_WARNING_NAME = "DialogTitleWarning";
 var [WarningProvider, useWarningContext] = createContext2(TITLE_WARNING_NAME, {
   contentName: CONTENT_NAME$2,
-  titleName: TITLE_NAME$2,
+  titleName: TITLE_NAME$1,
   docsSlug: "dialog"
 });
 var TitleWarning = ({ titleId }) => {
@@ -14340,7 +14338,7 @@ var Trigger$1 = DialogTrigger;
 var Portal = DialogPortal;
 var Overlay = DialogOverlay;
 var Content$1 = DialogContent;
-var Title$1 = DialogTitle;
+var Title = DialogTitle;
 var Description = DialogDescription;
 var Close = DialogClose;
 var ROOT_NAME = "AlertDialog";
@@ -14393,7 +14391,7 @@ var AlertDialogContent = reactExports.forwardRef(
       WarningProvider,
       {
         contentName: CONTENT_NAME$1,
-        titleName: TITLE_NAME$1,
+        titleName: TITLE_NAME,
         docsSlug: "alert-dialog",
         children: /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogContentProvider, { scope: __scopeAlertDialog, cancelRef, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
           Content$1,
@@ -14419,23 +14417,23 @@ var AlertDialogContent = reactExports.forwardRef(
   }
 );
 AlertDialogContent.displayName = CONTENT_NAME$1;
-var TITLE_NAME$1 = "AlertDialogTitle";
+var TITLE_NAME = "AlertDialogTitle";
 var AlertDialogTitle = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeAlertDialog, ...titleProps } = props;
     const dialogScope = useDialogScope(__scopeAlertDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { ...dialogScope, ...titleProps, ref: forwardedRef });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { ...dialogScope, ...titleProps, ref: forwardedRef });
   }
 );
-AlertDialogTitle.displayName = TITLE_NAME$1;
-var DESCRIPTION_NAME$1 = "AlertDialogDescription";
+AlertDialogTitle.displayName = TITLE_NAME;
+var DESCRIPTION_NAME = "AlertDialogDescription";
 var AlertDialogDescription = reactExports.forwardRef((props, forwardedRef) => {
   const { __scopeAlertDialog, ...descriptionProps } = props;
   const dialogScope = useDialogScope(__scopeAlertDialog);
   return /* @__PURE__ */ jsxRuntimeExports.jsx(Description, { ...dialogScope, ...descriptionProps, ref: forwardedRef });
 });
-AlertDialogDescription.displayName = DESCRIPTION_NAME$1;
-var ACTION_NAME$1 = "AlertDialogAction";
+AlertDialogDescription.displayName = DESCRIPTION_NAME;
+var ACTION_NAME = "AlertDialogAction";
 var AlertDialogAction = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeAlertDialog, ...actionProps } = props;
@@ -14443,7 +14441,7 @@ var AlertDialogAction = reactExports.forwardRef(
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { ...dialogScope, ...actionProps, ref: forwardedRef });
   }
 );
-AlertDialogAction.displayName = ACTION_NAME$1;
+AlertDialogAction.displayName = ACTION_NAME;
 var CANCEL_NAME = "AlertDialogCancel";
 var AlertDialogCancel = reactExports.forwardRef(
   (props, forwardedRef) => {
@@ -14458,7 +14456,7 @@ AlertDialogCancel.displayName = CANCEL_NAME;
 var DescriptionWarning = ({ contentRef }) => {
   const MESSAGE = `\`${CONTENT_NAME$1}\` requires a description for the component to be accessible for screen reader users.
 
-You can add a description to the \`${CONTENT_NAME$1}\` by passing a \`${DESCRIPTION_NAME$1}\` component as a child, which also benefits sighted users by adding visible context to the dialog.
+You can add a description to the \`${CONTENT_NAME$1}\` by passing a \`${DESCRIPTION_NAME}\` component as a child, which also benefits sighted users by adding visible context to the dialog.
 
 Alternatively, you can use your own component as a description by assigning it an \`id\` and passing the same value to the \`aria-describedby\` prop in \`${CONTENT_NAME$1}\`. If the description is confusing or duplicative for sighted users, you can use the \`@radix-ui/react-visually-hidden\` primitive as a wrapper around your description component.
 
@@ -14471,7 +14469,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/alert-
   }, [MESSAGE, contentRef]);
   return null;
 };
-var Root2$2 = AlertDialog;
+var Root2$1 = AlertDialog;
 var Trigger2 = AlertDialogTrigger;
 var Portal2 = AlertDialogPortal;
 var Overlay2 = AlertDialogOverlay;
@@ -14480,6 +14478,1086 @@ var Action = AlertDialogAction;
 var Cancel = AlertDialogCancel;
 var Title2 = AlertDialogTitle;
 var Description2 = AlertDialogDescription;
+function __insertCSS(code) {
+  if (typeof document == "undefined") return;
+  let head = document.head || document.getElementsByTagName("head")[0];
+  let style = document.createElement("style");
+  style.type = "text/css";
+  head.appendChild(style);
+  style.styleSheet ? style.styleSheet.cssText = code : style.appendChild(document.createTextNode(code));
+}
+const getAsset = (type) => {
+  switch (type) {
+    case "success":
+      return SuccessIcon;
+    case "info":
+      return InfoIcon;
+    case "warning":
+      return WarningIcon;
+    case "error":
+      return ErrorIcon;
+    default:
+      return null;
+  }
+};
+const bars = Array(12).fill(0);
+const Loader = ({ visible, className }) => {
+  return /* @__PURE__ */ React.createElement("div", {
+    className: [
+      "sonner-loading-wrapper",
+      className
+    ].filter(Boolean).join(" "),
+    "data-visible": visible
+  }, /* @__PURE__ */ React.createElement("div", {
+    className: "sonner-spinner"
+  }, bars.map((_, i) => /* @__PURE__ */ React.createElement("div", {
+    className: "sonner-loading-bar",
+    key: `spinner-bar-${i}`
+  }))));
+};
+const SuccessIcon = /* @__PURE__ */ React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  viewBox: "0 0 20 20",
+  fill: "currentColor",
+  height: "20",
+  width: "20"
+}, /* @__PURE__ */ React.createElement("path", {
+  fillRule: "evenodd",
+  d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z",
+  clipRule: "evenodd"
+}));
+const WarningIcon = /* @__PURE__ */ React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  viewBox: "0 0 24 24",
+  fill: "currentColor",
+  height: "20",
+  width: "20"
+}, /* @__PURE__ */ React.createElement("path", {
+  fillRule: "evenodd",
+  d: "M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z",
+  clipRule: "evenodd"
+}));
+const InfoIcon = /* @__PURE__ */ React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  viewBox: "0 0 20 20",
+  fill: "currentColor",
+  height: "20",
+  width: "20"
+}, /* @__PURE__ */ React.createElement("path", {
+  fillRule: "evenodd",
+  d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z",
+  clipRule: "evenodd"
+}));
+const ErrorIcon = /* @__PURE__ */ React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  viewBox: "0 0 20 20",
+  fill: "currentColor",
+  height: "20",
+  width: "20"
+}, /* @__PURE__ */ React.createElement("path", {
+  fillRule: "evenodd",
+  d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z",
+  clipRule: "evenodd"
+}));
+const CloseIcon = /* @__PURE__ */ React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "12",
+  height: "12",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "1.5",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}, /* @__PURE__ */ React.createElement("line", {
+  x1: "18",
+  y1: "6",
+  x2: "6",
+  y2: "18"
+}), /* @__PURE__ */ React.createElement("line", {
+  x1: "6",
+  y1: "6",
+  x2: "18",
+  y2: "18"
+}));
+const useIsDocumentHidden = () => {
+  const [isDocumentHidden, setIsDocumentHidden] = React.useState(document.hidden);
+  React.useEffect(() => {
+    const callback = () => {
+      setIsDocumentHidden(document.hidden);
+    };
+    document.addEventListener("visibilitychange", callback);
+    return () => window.removeEventListener("visibilitychange", callback);
+  }, []);
+  return isDocumentHidden;
+};
+let toastsCounter = 1;
+class Observer {
+  constructor() {
+    this.subscribe = (subscriber) => {
+      this.subscribers.push(subscriber);
+      return () => {
+        const index2 = this.subscribers.indexOf(subscriber);
+        this.subscribers.splice(index2, 1);
+      };
+    };
+    this.publish = (data) => {
+      this.subscribers.forEach((subscriber) => subscriber(data));
+    };
+    this.addToast = (data) => {
+      this.publish(data);
+      this.toasts = [
+        ...this.toasts,
+        data
+      ];
+    };
+    this.create = (data) => {
+      var _data_id;
+      const { message, ...rest } = data;
+      const id2 = typeof (data == null ? void 0 : data.id) === "number" || ((_data_id = data.id) == null ? void 0 : _data_id.length) > 0 ? data.id : toastsCounter++;
+      const alreadyExists = this.toasts.find((toast2) => {
+        return toast2.id === id2;
+      });
+      const dismissible = data.dismissible === void 0 ? true : data.dismissible;
+      if (this.dismissedToasts.has(id2)) {
+        this.dismissedToasts.delete(id2);
+      }
+      if (alreadyExists) {
+        this.toasts = this.toasts.map((toast2) => {
+          if (toast2.id === id2) {
+            this.publish({
+              ...toast2,
+              ...data,
+              id: id2,
+              title: message
+            });
+            return {
+              ...toast2,
+              ...data,
+              id: id2,
+              dismissible,
+              title: message
+            };
+          }
+          return toast2;
+        });
+      } else {
+        this.addToast({
+          title: message,
+          ...rest,
+          dismissible,
+          id: id2
+        });
+      }
+      return id2;
+    };
+    this.dismiss = (id2) => {
+      if (id2) {
+        this.dismissedToasts.add(id2);
+        requestAnimationFrame(() => this.subscribers.forEach((subscriber) => subscriber({
+          id: id2,
+          dismiss: true
+        })));
+      } else {
+        this.toasts.forEach((toast2) => {
+          this.subscribers.forEach((subscriber) => subscriber({
+            id: toast2.id,
+            dismiss: true
+          }));
+        });
+      }
+      return id2;
+    };
+    this.message = (message, data) => {
+      return this.create({
+        ...data,
+        message
+      });
+    };
+    this.error = (message, data) => {
+      return this.create({
+        ...data,
+        message,
+        type: "error"
+      });
+    };
+    this.success = (message, data) => {
+      return this.create({
+        ...data,
+        type: "success",
+        message
+      });
+    };
+    this.info = (message, data) => {
+      return this.create({
+        ...data,
+        type: "info",
+        message
+      });
+    };
+    this.warning = (message, data) => {
+      return this.create({
+        ...data,
+        type: "warning",
+        message
+      });
+    };
+    this.loading = (message, data) => {
+      return this.create({
+        ...data,
+        type: "loading",
+        message
+      });
+    };
+    this.promise = (promise, data) => {
+      if (!data) {
+        return;
+      }
+      let id2 = void 0;
+      if (data.loading !== void 0) {
+        id2 = this.create({
+          ...data,
+          promise,
+          type: "loading",
+          message: data.loading,
+          description: typeof data.description !== "function" ? data.description : void 0
+        });
+      }
+      const p2 = Promise.resolve(promise instanceof Function ? promise() : promise);
+      let shouldDismiss = id2 !== void 0;
+      let result;
+      const originalPromise = p2.then(async (response) => {
+        result = [
+          "resolve",
+          response
+        ];
+        const isReactElementResponse = React.isValidElement(response);
+        if (isReactElementResponse) {
+          shouldDismiss = false;
+          this.create({
+            id: id2,
+            type: "default",
+            message: response
+          });
+        } else if (isHttpResponse(response) && !response.ok) {
+          shouldDismiss = false;
+          const promiseData = typeof data.error === "function" ? await data.error(`HTTP error! status: ${response.status}`) : data.error;
+          const description = typeof data.description === "function" ? await data.description(`HTTP error! status: ${response.status}`) : data.description;
+          const isExtendedResult = typeof promiseData === "object" && !React.isValidElement(promiseData);
+          const toastSettings = isExtendedResult ? promiseData : {
+            message: promiseData
+          };
+          this.create({
+            id: id2,
+            type: "error",
+            description,
+            ...toastSettings
+          });
+        } else if (response instanceof Error) {
+          shouldDismiss = false;
+          const promiseData = typeof data.error === "function" ? await data.error(response) : data.error;
+          const description = typeof data.description === "function" ? await data.description(response) : data.description;
+          const isExtendedResult = typeof promiseData === "object" && !React.isValidElement(promiseData);
+          const toastSettings = isExtendedResult ? promiseData : {
+            message: promiseData
+          };
+          this.create({
+            id: id2,
+            type: "error",
+            description,
+            ...toastSettings
+          });
+        } else if (data.success !== void 0) {
+          shouldDismiss = false;
+          const promiseData = typeof data.success === "function" ? await data.success(response) : data.success;
+          const description = typeof data.description === "function" ? await data.description(response) : data.description;
+          const isExtendedResult = typeof promiseData === "object" && !React.isValidElement(promiseData);
+          const toastSettings = isExtendedResult ? promiseData : {
+            message: promiseData
+          };
+          this.create({
+            id: id2,
+            type: "success",
+            description,
+            ...toastSettings
+          });
+        }
+      }).catch(async (error) => {
+        result = [
+          "reject",
+          error
+        ];
+        if (data.error !== void 0) {
+          shouldDismiss = false;
+          const promiseData = typeof data.error === "function" ? await data.error(error) : data.error;
+          const description = typeof data.description === "function" ? await data.description(error) : data.description;
+          const isExtendedResult = typeof promiseData === "object" && !React.isValidElement(promiseData);
+          const toastSettings = isExtendedResult ? promiseData : {
+            message: promiseData
+          };
+          this.create({
+            id: id2,
+            type: "error",
+            description,
+            ...toastSettings
+          });
+        }
+      }).finally(() => {
+        if (shouldDismiss) {
+          this.dismiss(id2);
+          id2 = void 0;
+        }
+        data.finally == null ? void 0 : data.finally.call(data);
+      });
+      const unwrap = () => new Promise((resolve, reject) => originalPromise.then(() => result[0] === "reject" ? reject(result[1]) : resolve(result[1])).catch(reject));
+      if (typeof id2 !== "string" && typeof id2 !== "number") {
+        return {
+          unwrap
+        };
+      } else {
+        return Object.assign(id2, {
+          unwrap
+        });
+      }
+    };
+    this.custom = (jsx, data) => {
+      const id2 = (data == null ? void 0 : data.id) || toastsCounter++;
+      this.create({
+        jsx: jsx(id2),
+        id: id2,
+        ...data
+      });
+      return id2;
+    };
+    this.getActiveToasts = () => {
+      return this.toasts.filter((toast2) => !this.dismissedToasts.has(toast2.id));
+    };
+    this.subscribers = [];
+    this.toasts = [];
+    this.dismissedToasts = /* @__PURE__ */ new Set();
+  }
+}
+const ToastState = new Observer();
+const toastFunction = (message, data) => {
+  const id2 = (data == null ? void 0 : data.id) || toastsCounter++;
+  ToastState.addToast({
+    title: message,
+    ...data,
+    id: id2
+  });
+  return id2;
+};
+const isHttpResponse = (data) => {
+  return data && typeof data === "object" && "ok" in data && typeof data.ok === "boolean" && "status" in data && typeof data.status === "number";
+};
+const basicToast = toastFunction;
+const getHistory = () => ToastState.toasts;
+const getToasts = () => ToastState.getActiveToasts();
+const toast = Object.assign(basicToast, {
+  success: ToastState.success,
+  info: ToastState.info,
+  warning: ToastState.warning,
+  error: ToastState.error,
+  custom: ToastState.custom,
+  message: ToastState.message,
+  promise: ToastState.promise,
+  dismiss: ToastState.dismiss,
+  loading: ToastState.loading
+}, {
+  getHistory,
+  getToasts
+});
+__insertCSS("[data-sonner-toaster][dir=ltr],html[dir=ltr]{--toast-icon-margin-start:-3px;--toast-icon-margin-end:4px;--toast-svg-margin-start:-1px;--toast-svg-margin-end:0px;--toast-button-margin-start:auto;--toast-button-margin-end:0;--toast-close-button-start:0;--toast-close-button-end:unset;--toast-close-button-transform:translate(-35%, -35%)}[data-sonner-toaster][dir=rtl],html[dir=rtl]{--toast-icon-margin-start:4px;--toast-icon-margin-end:-3px;--toast-svg-margin-start:0px;--toast-svg-margin-end:-1px;--toast-button-margin-start:0;--toast-button-margin-end:auto;--toast-close-button-start:unset;--toast-close-button-end:0;--toast-close-button-transform:translate(35%, -35%)}[data-sonner-toaster]{position:fixed;width:var(--width);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;--gray1:hsl(0, 0%, 99%);--gray2:hsl(0, 0%, 97.3%);--gray3:hsl(0, 0%, 95.1%);--gray4:hsl(0, 0%, 93%);--gray5:hsl(0, 0%, 90.9%);--gray6:hsl(0, 0%, 88.7%);--gray7:hsl(0, 0%, 85.8%);--gray8:hsl(0, 0%, 78%);--gray9:hsl(0, 0%, 56.1%);--gray10:hsl(0, 0%, 52.3%);--gray11:hsl(0, 0%, 43.5%);--gray12:hsl(0, 0%, 9%);--border-radius:8px;box-sizing:border-box;padding:0;margin:0;list-style:none;outline:0;z-index:999999999;transition:transform .4s ease}@media (hover:none) and (pointer:coarse){[data-sonner-toaster][data-lifted=true]{transform:none}}[data-sonner-toaster][data-x-position=right]{right:var(--offset-right)}[data-sonner-toaster][data-x-position=left]{left:var(--offset-left)}[data-sonner-toaster][data-x-position=center]{left:50%;transform:translateX(-50%)}[data-sonner-toaster][data-y-position=top]{top:var(--offset-top)}[data-sonner-toaster][data-y-position=bottom]{bottom:var(--offset-bottom)}[data-sonner-toast]{--y:translateY(100%);--lift-amount:calc(var(--lift) * var(--gap));z-index:var(--z-index);position:absolute;opacity:0;transform:var(--y);touch-action:none;transition:transform .4s,opacity .4s,height .4s,box-shadow .2s;box-sizing:border-box;outline:0;overflow-wrap:anywhere}[data-sonner-toast][data-styled=true]{padding:16px;background:var(--normal-bg);border:1px solid var(--normal-border);color:var(--normal-text);border-radius:var(--border-radius);box-shadow:0 4px 12px rgba(0,0,0,.1);width:var(--width);font-size:13px;display:flex;align-items:center;gap:6px}[data-sonner-toast]:focus-visible{box-shadow:0 4px 12px rgba(0,0,0,.1),0 0 0 2px rgba(0,0,0,.2)}[data-sonner-toast][data-y-position=top]{top:0;--y:translateY(-100%);--lift:1;--lift-amount:calc(1 * var(--gap))}[data-sonner-toast][data-y-position=bottom]{bottom:0;--y:translateY(100%);--lift:-1;--lift-amount:calc(var(--lift) * var(--gap))}[data-sonner-toast][data-styled=true] [data-description]{font-weight:400;line-height:1.4;color:#3f3f3f}[data-rich-colors=true][data-sonner-toast][data-styled=true] [data-description]{color:inherit}[data-sonner-toaster][data-sonner-theme=dark] [data-description]{color:#e8e8e8}[data-sonner-toast][data-styled=true] [data-title]{font-weight:500;line-height:1.5;color:inherit}[data-sonner-toast][data-styled=true] [data-icon]{display:flex;height:16px;width:16px;position:relative;justify-content:flex-start;align-items:center;flex-shrink:0;margin-left:var(--toast-icon-margin-start);margin-right:var(--toast-icon-margin-end)}[data-sonner-toast][data-promise=true] [data-icon]>svg{opacity:0;transform:scale(.8);transform-origin:center;animation:sonner-fade-in .3s ease forwards}[data-sonner-toast][data-styled=true] [data-icon]>*{flex-shrink:0}[data-sonner-toast][data-styled=true] [data-icon] svg{margin-left:var(--toast-svg-margin-start);margin-right:var(--toast-svg-margin-end)}[data-sonner-toast][data-styled=true] [data-content]{display:flex;flex-direction:column;gap:2px}[data-sonner-toast][data-styled=true] [data-button]{border-radius:4px;padding-left:8px;padding-right:8px;height:24px;font-size:12px;color:var(--normal-bg);background:var(--normal-text);margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end);border:none;font-weight:500;cursor:pointer;outline:0;display:flex;align-items:center;flex-shrink:0;transition:opacity .4s,box-shadow .2s}[data-sonner-toast][data-styled=true] [data-button]:focus-visible{box-shadow:0 0 0 2px rgba(0,0,0,.4)}[data-sonner-toast][data-styled=true] [data-button]:first-of-type{margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end)}[data-sonner-toast][data-styled=true] [data-cancel]{color:var(--normal-text);background:rgba(0,0,0,.08)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast][data-styled=true] [data-cancel]{background:rgba(255,255,255,.3)}[data-sonner-toast][data-styled=true] [data-close-button]{position:absolute;left:var(--toast-close-button-start);right:var(--toast-close-button-end);top:0;height:20px;width:20px;display:flex;justify-content:center;align-items:center;padding:0;color:var(--gray12);background:var(--normal-bg);border:1px solid var(--gray4);transform:var(--toast-close-button-transform);border-radius:50%;cursor:pointer;z-index:1;transition:opacity .1s,background .2s,border-color .2s}[data-sonner-toast][data-styled=true] [data-close-button]:focus-visible{box-shadow:0 4px 12px rgba(0,0,0,.1),0 0 0 2px rgba(0,0,0,.2)}[data-sonner-toast][data-styled=true] [data-disabled=true]{cursor:not-allowed}[data-sonner-toast][data-styled=true]:hover [data-close-button]:hover{background:var(--gray2);border-color:var(--gray5)}[data-sonner-toast][data-swiping=true]::before{content:'';position:absolute;left:-100%;right:-100%;height:100%;z-index:-1}[data-sonner-toast][data-y-position=top][data-swiping=true]::before{bottom:50%;transform:scaleY(3) translateY(50%)}[data-sonner-toast][data-y-position=bottom][data-swiping=true]::before{top:50%;transform:scaleY(3) translateY(-50%)}[data-sonner-toast][data-swiping=false][data-removed=true]::before{content:'';position:absolute;inset:0;transform:scaleY(2)}[data-sonner-toast][data-expanded=true]::after{content:'';position:absolute;left:0;height:calc(var(--gap) + 1px);bottom:100%;width:100%}[data-sonner-toast][data-mounted=true]{--y:translateY(0);opacity:1}[data-sonner-toast][data-expanded=false][data-front=false]{--scale:var(--toasts-before) * 0.05 + 1;--y:translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(calc(-1 * var(--scale)));height:var(--front-toast-height)}[data-sonner-toast]>*{transition:opacity .4s}[data-sonner-toast][data-x-position=right]{right:0}[data-sonner-toast][data-x-position=left]{left:0}[data-sonner-toast][data-expanded=false][data-front=false][data-styled=true]>*{opacity:0}[data-sonner-toast][data-visible=false]{opacity:0;pointer-events:none}[data-sonner-toast][data-mounted=true][data-expanded=true]{--y:translateY(calc(var(--lift) * var(--offset)));height:var(--initial-height)}[data-sonner-toast][data-removed=true][data-front=true][data-swipe-out=false]{--y:translateY(calc(var(--lift) * -100%));opacity:0}[data-sonner-toast][data-removed=true][data-front=false][data-swipe-out=false][data-expanded=true]{--y:translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%));opacity:0}[data-sonner-toast][data-removed=true][data-front=false][data-swipe-out=false][data-expanded=false]{--y:translateY(40%);opacity:0;transition:transform .5s,opacity .2s}[data-sonner-toast][data-removed=true][data-front=false]::before{height:calc(var(--initial-height) + 20%)}[data-sonner-toast][data-swiping=true]{transform:var(--y) translateY(var(--swipe-amount-y,0)) translateX(var(--swipe-amount-x,0));transition:none}[data-sonner-toast][data-swiped=true]{user-select:none}[data-sonner-toast][data-swipe-out=true][data-y-position=bottom],[data-sonner-toast][data-swipe-out=true][data-y-position=top]{animation-duration:.2s;animation-timing-function:ease-out;animation-fill-mode:forwards}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=left]{animation-name:swipe-out-left}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=right]{animation-name:swipe-out-right}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=up]{animation-name:swipe-out-up}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=down]{animation-name:swipe-out-down}@keyframes swipe-out-left{from{transform:var(--y) translateX(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translateX(calc(var(--swipe-amount-x) - 100%));opacity:0}}@keyframes swipe-out-right{from{transform:var(--y) translateX(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translateX(calc(var(--swipe-amount-x) + 100%));opacity:0}}@keyframes swipe-out-up{from{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) - 100%));opacity:0}}@keyframes swipe-out-down{from{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) + 100%));opacity:0}}@media (max-width:600px){[data-sonner-toaster]{position:fixed;right:var(--mobile-offset-right);left:var(--mobile-offset-left);width:100%}[data-sonner-toaster][dir=rtl]{left:calc(var(--mobile-offset-left) * -1)}[data-sonner-toaster] [data-sonner-toast]{left:0;right:0;width:calc(100% - var(--mobile-offset-left) * 2)}[data-sonner-toaster][data-x-position=left]{left:var(--mobile-offset-left)}[data-sonner-toaster][data-y-position=bottom]{bottom:var(--mobile-offset-bottom)}[data-sonner-toaster][data-y-position=top]{top:var(--mobile-offset-top)}[data-sonner-toaster][data-x-position=center]{left:var(--mobile-offset-left);right:var(--mobile-offset-right);transform:none}}[data-sonner-toaster][data-sonner-theme=light]{--normal-bg:#fff;--normal-border:var(--gray4);--normal-text:var(--gray12);--success-bg:hsl(143, 85%, 96%);--success-border:hsl(145, 92%, 87%);--success-text:hsl(140, 100%, 27%);--info-bg:hsl(208, 100%, 97%);--info-border:hsl(221, 91%, 93%);--info-text:hsl(210, 92%, 45%);--warning-bg:hsl(49, 100%, 97%);--warning-border:hsl(49, 91%, 84%);--warning-text:hsl(31, 92%, 45%);--error-bg:hsl(359, 100%, 97%);--error-border:hsl(359, 100%, 94%);--error-text:hsl(360, 100%, 45%)}[data-sonner-toaster][data-sonner-theme=light] [data-sonner-toast][data-invert=true]{--normal-bg:#000;--normal-border:hsl(0, 0%, 20%);--normal-text:var(--gray1)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast][data-invert=true]{--normal-bg:#fff;--normal-border:var(--gray3);--normal-text:var(--gray12)}[data-sonner-toaster][data-sonner-theme=dark]{--normal-bg:#000;--normal-bg-hover:hsl(0, 0%, 12%);--normal-border:hsl(0, 0%, 20%);--normal-border-hover:hsl(0, 0%, 25%);--normal-text:var(--gray1);--success-bg:hsl(150, 100%, 6%);--success-border:hsl(147, 100%, 12%);--success-text:hsl(150, 86%, 65%);--info-bg:hsl(215, 100%, 6%);--info-border:hsl(223, 43%, 17%);--info-text:hsl(216, 87%, 65%);--warning-bg:hsl(64, 100%, 6%);--warning-border:hsl(60, 100%, 9%);--warning-text:hsl(46, 87%, 65%);--error-bg:hsl(358, 76%, 10%);--error-border:hsl(357, 89%, 16%);--error-text:hsl(358, 100%, 81%)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast] [data-close-button]{background:var(--normal-bg);border-color:var(--normal-border);color:var(--normal-text)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast] [data-close-button]:hover{background:var(--normal-bg-hover);border-color:var(--normal-border-hover)}[data-rich-colors=true][data-sonner-toast][data-type=success]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=success] [data-close-button]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=info]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=info] [data-close-button]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning] [data-close-button]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=error]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}[data-rich-colors=true][data-sonner-toast][data-type=error] [data-close-button]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}.sonner-loading-wrapper{--size:16px;height:var(--size);width:var(--size);position:absolute;inset:0;z-index:10}.sonner-loading-wrapper[data-visible=false]{transform-origin:center;animation:sonner-fade-out .2s ease forwards}.sonner-spinner{position:relative;top:50%;left:50%;height:var(--size);width:var(--size)}.sonner-loading-bar{animation:sonner-spin 1.2s linear infinite;background:var(--gray11);border-radius:6px;height:8%;left:-10%;position:absolute;top:-3.9%;width:24%}.sonner-loading-bar:first-child{animation-delay:-1.2s;transform:rotate(.0001deg) translate(146%)}.sonner-loading-bar:nth-child(2){animation-delay:-1.1s;transform:rotate(30deg) translate(146%)}.sonner-loading-bar:nth-child(3){animation-delay:-1s;transform:rotate(60deg) translate(146%)}.sonner-loading-bar:nth-child(4){animation-delay:-.9s;transform:rotate(90deg) translate(146%)}.sonner-loading-bar:nth-child(5){animation-delay:-.8s;transform:rotate(120deg) translate(146%)}.sonner-loading-bar:nth-child(6){animation-delay:-.7s;transform:rotate(150deg) translate(146%)}.sonner-loading-bar:nth-child(7){animation-delay:-.6s;transform:rotate(180deg) translate(146%)}.sonner-loading-bar:nth-child(8){animation-delay:-.5s;transform:rotate(210deg) translate(146%)}.sonner-loading-bar:nth-child(9){animation-delay:-.4s;transform:rotate(240deg) translate(146%)}.sonner-loading-bar:nth-child(10){animation-delay:-.3s;transform:rotate(270deg) translate(146%)}.sonner-loading-bar:nth-child(11){animation-delay:-.2s;transform:rotate(300deg) translate(146%)}.sonner-loading-bar:nth-child(12){animation-delay:-.1s;transform:rotate(330deg) translate(146%)}@keyframes sonner-fade-in{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}@keyframes sonner-fade-out{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.8)}}@keyframes sonner-spin{0%{opacity:1}100%{opacity:.15}}@media (prefers-reduced-motion){.sonner-loading-bar,[data-sonner-toast],[data-sonner-toast]>*{transition:none!important;animation:none!important}}.sonner-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transform-origin:center;transition:opacity .2s,transform .2s}.sonner-loader[data-visible=false]{opacity:0;transform:scale(.8) translate(-50%,-50%)}");
+function isAction(action) {
+  return action.label !== void 0;
+}
+const VISIBLE_TOASTS_AMOUNT = 3;
+const VIEWPORT_OFFSET = "24px";
+const MOBILE_VIEWPORT_OFFSET = "16px";
+const TOAST_LIFETIME = 4e3;
+const TOAST_WIDTH = 356;
+const GAP = 14;
+const SWIPE_THRESHOLD = 45;
+const TIME_BEFORE_UNMOUNT = 200;
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+function getDefaultSwipeDirections(position) {
+  const [y2, x2] = position.split("-");
+  const directions = [];
+  if (y2) {
+    directions.push(y2);
+  }
+  if (x2) {
+    directions.push(x2);
+  }
+  return directions;
+}
+const Toast = (props) => {
+  var _toast_classNames, _toast_classNames1, _toast_classNames2, _toast_classNames3, _toast_classNames4, _toast_classNames5, _toast_classNames6, _toast_classNames7, _toast_classNames8;
+  const { invert: ToasterInvert, toast: toast2, unstyled, interacting, setHeights, visibleToasts, heights, index: index2, toasts, expanded, removeToast, defaultRichColors, closeButton: closeButtonFromToaster, style, cancelButtonStyle, actionButtonStyle, className = "", descriptionClassName = "", duration: durationFromToaster, position, gap, expandByDefault, classNames, icons, closeButtonAriaLabel = "Close toast" } = props;
+  const [swipeDirection, setSwipeDirection] = React.useState(null);
+  const [swipeOutDirection, setSwipeOutDirection] = React.useState(null);
+  const [mounted, setMounted] = React.useState(false);
+  const [removed, setRemoved] = React.useState(false);
+  const [swiping, setSwiping] = React.useState(false);
+  const [swipeOut, setSwipeOut] = React.useState(false);
+  const [isSwiped, setIsSwiped] = React.useState(false);
+  const [offsetBeforeRemove, setOffsetBeforeRemove] = React.useState(0);
+  const [initialHeight, setInitialHeight] = React.useState(0);
+  const remainingTime = React.useRef(toast2.duration || durationFromToaster || TOAST_LIFETIME);
+  const dragStartTime = React.useRef(null);
+  const toastRef = React.useRef(null);
+  const isFront = index2 === 0;
+  const isVisible = index2 + 1 <= visibleToasts;
+  const toastType = toast2.type;
+  const dismissible = toast2.dismissible !== false;
+  const toastClassname = toast2.className || "";
+  const toastDescriptionClassname = toast2.descriptionClassName || "";
+  const heightIndex = React.useMemo(() => heights.findIndex((height) => height.toastId === toast2.id) || 0, [
+    heights,
+    toast2.id
+  ]);
+  const closeButton = React.useMemo(() => {
+    var _toast_closeButton;
+    return (_toast_closeButton = toast2.closeButton) != null ? _toast_closeButton : closeButtonFromToaster;
+  }, [
+    toast2.closeButton,
+    closeButtonFromToaster
+  ]);
+  const duration = React.useMemo(() => toast2.duration || durationFromToaster || TOAST_LIFETIME, [
+    toast2.duration,
+    durationFromToaster
+  ]);
+  const closeTimerStartTimeRef = React.useRef(0);
+  const offset2 = React.useRef(0);
+  const lastCloseTimerStartTimeRef = React.useRef(0);
+  const pointerStartRef = React.useRef(null);
+  const [y2, x2] = position.split("-");
+  const toastsHeightBefore = React.useMemo(() => {
+    return heights.reduce((prev, curr, reducerIndex) => {
+      if (reducerIndex >= heightIndex) {
+        return prev;
+      }
+      return prev + curr.height;
+    }, 0);
+  }, [
+    heights,
+    heightIndex
+  ]);
+  const isDocumentHidden = useIsDocumentHidden();
+  const invert = toast2.invert || ToasterInvert;
+  const disabled = toastType === "loading";
+  offset2.current = React.useMemo(() => heightIndex * gap + toastsHeightBefore, [
+    heightIndex,
+    toastsHeightBefore
+  ]);
+  React.useEffect(() => {
+    remainingTime.current = duration;
+  }, [
+    duration
+  ]);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+  React.useEffect(() => {
+    const toastNode = toastRef.current;
+    if (toastNode) {
+      const height = toastNode.getBoundingClientRect().height;
+      setInitialHeight(height);
+      setHeights((h) => [
+        {
+          toastId: toast2.id,
+          height,
+          position: toast2.position
+        },
+        ...h
+      ]);
+      return () => setHeights((h) => h.filter((height2) => height2.toastId !== toast2.id));
+    }
+  }, [
+    setHeights,
+    toast2.id
+  ]);
+  React.useLayoutEffect(() => {
+    if (!mounted) return;
+    const toastNode = toastRef.current;
+    const originalHeight = toastNode.style.height;
+    toastNode.style.height = "auto";
+    const newHeight = toastNode.getBoundingClientRect().height;
+    toastNode.style.height = originalHeight;
+    setInitialHeight(newHeight);
+    setHeights((heights2) => {
+      const alreadyExists = heights2.find((height) => height.toastId === toast2.id);
+      if (!alreadyExists) {
+        return [
+          {
+            toastId: toast2.id,
+            height: newHeight,
+            position: toast2.position
+          },
+          ...heights2
+        ];
+      } else {
+        return heights2.map((height) => height.toastId === toast2.id ? {
+          ...height,
+          height: newHeight
+        } : height);
+      }
+    });
+  }, [
+    mounted,
+    toast2.title,
+    toast2.description,
+    setHeights,
+    toast2.id,
+    toast2.jsx,
+    toast2.action,
+    toast2.cancel
+  ]);
+  const deleteToast = React.useCallback(() => {
+    setRemoved(true);
+    setOffsetBeforeRemove(offset2.current);
+    setHeights((h) => h.filter((height) => height.toastId !== toast2.id));
+    setTimeout(() => {
+      removeToast(toast2);
+    }, TIME_BEFORE_UNMOUNT);
+  }, [
+    toast2,
+    removeToast,
+    setHeights,
+    offset2
+  ]);
+  React.useEffect(() => {
+    if (toast2.promise && toastType === "loading" || toast2.duration === Infinity || toast2.type === "loading") return;
+    let timeoutId;
+    const pauseTimer = () => {
+      if (lastCloseTimerStartTimeRef.current < closeTimerStartTimeRef.current) {
+        const elapsedTime = (/* @__PURE__ */ new Date()).getTime() - closeTimerStartTimeRef.current;
+        remainingTime.current = remainingTime.current - elapsedTime;
+      }
+      lastCloseTimerStartTimeRef.current = (/* @__PURE__ */ new Date()).getTime();
+    };
+    const startTimer = () => {
+      if (remainingTime.current === Infinity) return;
+      closeTimerStartTimeRef.current = (/* @__PURE__ */ new Date()).getTime();
+      timeoutId = setTimeout(() => {
+        toast2.onAutoClose == null ? void 0 : toast2.onAutoClose.call(toast2, toast2);
+        deleteToast();
+      }, remainingTime.current);
+    };
+    if (expanded || interacting || isDocumentHidden) {
+      pauseTimer();
+    } else {
+      startTimer();
+    }
+    return () => clearTimeout(timeoutId);
+  }, [
+    expanded,
+    interacting,
+    toast2,
+    toastType,
+    isDocumentHidden,
+    deleteToast
+  ]);
+  React.useEffect(() => {
+    if (toast2.delete) {
+      deleteToast();
+      toast2.onDismiss == null ? void 0 : toast2.onDismiss.call(toast2, toast2);
+    }
+  }, [
+    deleteToast,
+    toast2.delete
+  ]);
+  function getLoadingIcon() {
+    var _toast_classNames9;
+    if (icons == null ? void 0 : icons.loading) {
+      var _toast_classNames12;
+      return /* @__PURE__ */ React.createElement("div", {
+        className: cn(classNames == null ? void 0 : classNames.loader, toast2 == null ? void 0 : (_toast_classNames12 = toast2.classNames) == null ? void 0 : _toast_classNames12.loader, "sonner-loader"),
+        "data-visible": toastType === "loading"
+      }, icons.loading);
+    }
+    return /* @__PURE__ */ React.createElement(Loader, {
+      className: cn(classNames == null ? void 0 : classNames.loader, toast2 == null ? void 0 : (_toast_classNames9 = toast2.classNames) == null ? void 0 : _toast_classNames9.loader),
+      visible: toastType === "loading"
+    });
+  }
+  const icon = toast2.icon || (icons == null ? void 0 : icons[toastType]) || getAsset(toastType);
+  var _toast_richColors, _icons_close;
+  return /* @__PURE__ */ React.createElement("li", {
+    tabIndex: 0,
+    ref: toastRef,
+    className: cn(className, toastClassname, classNames == null ? void 0 : classNames.toast, toast2 == null ? void 0 : (_toast_classNames = toast2.classNames) == null ? void 0 : _toast_classNames.toast, classNames == null ? void 0 : classNames.default, classNames == null ? void 0 : classNames[toastType], toast2 == null ? void 0 : (_toast_classNames1 = toast2.classNames) == null ? void 0 : _toast_classNames1[toastType]),
+    "data-sonner-toast": "",
+    "data-rich-colors": (_toast_richColors = toast2.richColors) != null ? _toast_richColors : defaultRichColors,
+    "data-styled": !Boolean(toast2.jsx || toast2.unstyled || unstyled),
+    "data-mounted": mounted,
+    "data-promise": Boolean(toast2.promise),
+    "data-swiped": isSwiped,
+    "data-removed": removed,
+    "data-visible": isVisible,
+    "data-y-position": y2,
+    "data-x-position": x2,
+    "data-index": index2,
+    "data-front": isFront,
+    "data-swiping": swiping,
+    "data-dismissible": dismissible,
+    "data-type": toastType,
+    "data-invert": invert,
+    "data-swipe-out": swipeOut,
+    "data-swipe-direction": swipeOutDirection,
+    "data-expanded": Boolean(expanded || expandByDefault && mounted),
+    "data-testid": toast2.testId,
+    style: {
+      "--index": index2,
+      "--toasts-before": index2,
+      "--z-index": toasts.length - index2,
+      "--offset": `${removed ? offsetBeforeRemove : offset2.current}px`,
+      "--initial-height": expandByDefault ? "auto" : `${initialHeight}px`,
+      ...style,
+      ...toast2.style
+    },
+    onDragEnd: () => {
+      setSwiping(false);
+      setSwipeDirection(null);
+      pointerStartRef.current = null;
+    },
+    onPointerDown: (event) => {
+      if (event.button === 2) return;
+      if (disabled || !dismissible) return;
+      dragStartTime.current = /* @__PURE__ */ new Date();
+      setOffsetBeforeRemove(offset2.current);
+      event.target.setPointerCapture(event.pointerId);
+      if (event.target.tagName === "BUTTON") return;
+      setSwiping(true);
+      pointerStartRef.current = {
+        x: event.clientX,
+        y: event.clientY
+      };
+    },
+    onPointerUp: () => {
+      var _toastRef_current, _toastRef_current1, _dragStartTime_current;
+      if (swipeOut || !dismissible) return;
+      pointerStartRef.current = null;
+      const swipeAmountX = Number(((_toastRef_current = toastRef.current) == null ? void 0 : _toastRef_current.style.getPropertyValue("--swipe-amount-x").replace("px", "")) || 0);
+      const swipeAmountY = Number(((_toastRef_current1 = toastRef.current) == null ? void 0 : _toastRef_current1.style.getPropertyValue("--swipe-amount-y").replace("px", "")) || 0);
+      const timeTaken = (/* @__PURE__ */ new Date()).getTime() - ((_dragStartTime_current = dragStartTime.current) == null ? void 0 : _dragStartTime_current.getTime());
+      const swipeAmount = swipeDirection === "x" ? swipeAmountX : swipeAmountY;
+      const velocity = Math.abs(swipeAmount) / timeTaken;
+      if (Math.abs(swipeAmount) >= SWIPE_THRESHOLD || velocity > 0.11) {
+        setOffsetBeforeRemove(offset2.current);
+        toast2.onDismiss == null ? void 0 : toast2.onDismiss.call(toast2, toast2);
+        if (swipeDirection === "x") {
+          setSwipeOutDirection(swipeAmountX > 0 ? "right" : "left");
+        } else {
+          setSwipeOutDirection(swipeAmountY > 0 ? "down" : "up");
+        }
+        deleteToast();
+        setSwipeOut(true);
+        return;
+      } else {
+        var _toastRef_current2, _toastRef_current3;
+        (_toastRef_current2 = toastRef.current) == null ? void 0 : _toastRef_current2.style.setProperty("--swipe-amount-x", `0px`);
+        (_toastRef_current3 = toastRef.current) == null ? void 0 : _toastRef_current3.style.setProperty("--swipe-amount-y", `0px`);
+      }
+      setIsSwiped(false);
+      setSwiping(false);
+      setSwipeDirection(null);
+    },
+    onPointerMove: (event) => {
+      var _window_getSelection, _toastRef_current, _toastRef_current1;
+      if (!pointerStartRef.current || !dismissible) return;
+      const isHighlighted = ((_window_getSelection = window.getSelection()) == null ? void 0 : _window_getSelection.toString().length) > 0;
+      if (isHighlighted) return;
+      const yDelta = event.clientY - pointerStartRef.current.y;
+      const xDelta = event.clientX - pointerStartRef.current.x;
+      var _props_swipeDirections;
+      const swipeDirections = (_props_swipeDirections = props.swipeDirections) != null ? _props_swipeDirections : getDefaultSwipeDirections(position);
+      if (!swipeDirection && (Math.abs(xDelta) > 1 || Math.abs(yDelta) > 1)) {
+        setSwipeDirection(Math.abs(xDelta) > Math.abs(yDelta) ? "x" : "y");
+      }
+      let swipeAmount = {
+        x: 0,
+        y: 0
+      };
+      const getDampening = (delta) => {
+        const factor = Math.abs(delta) / 20;
+        return 1 / (1.5 + factor);
+      };
+      if (swipeDirection === "y") {
+        if (swipeDirections.includes("top") || swipeDirections.includes("bottom")) {
+          if (swipeDirections.includes("top") && yDelta < 0 || swipeDirections.includes("bottom") && yDelta > 0) {
+            swipeAmount.y = yDelta;
+          } else {
+            const dampenedDelta = yDelta * getDampening(yDelta);
+            swipeAmount.y = Math.abs(dampenedDelta) < Math.abs(yDelta) ? dampenedDelta : yDelta;
+          }
+        }
+      } else if (swipeDirection === "x") {
+        if (swipeDirections.includes("left") || swipeDirections.includes("right")) {
+          if (swipeDirections.includes("left") && xDelta < 0 || swipeDirections.includes("right") && xDelta > 0) {
+            swipeAmount.x = xDelta;
+          } else {
+            const dampenedDelta = xDelta * getDampening(xDelta);
+            swipeAmount.x = Math.abs(dampenedDelta) < Math.abs(xDelta) ? dampenedDelta : xDelta;
+          }
+        }
+      }
+      if (Math.abs(swipeAmount.x) > 0 || Math.abs(swipeAmount.y) > 0) {
+        setIsSwiped(true);
+      }
+      (_toastRef_current = toastRef.current) == null ? void 0 : _toastRef_current.style.setProperty("--swipe-amount-x", `${swipeAmount.x}px`);
+      (_toastRef_current1 = toastRef.current) == null ? void 0 : _toastRef_current1.style.setProperty("--swipe-amount-y", `${swipeAmount.y}px`);
+    }
+  }, closeButton && !toast2.jsx && toastType !== "loading" ? /* @__PURE__ */ React.createElement("button", {
+    "aria-label": closeButtonAriaLabel,
+    "data-disabled": disabled,
+    "data-close-button": true,
+    onClick: disabled || !dismissible ? () => {
+    } : () => {
+      deleteToast();
+      toast2.onDismiss == null ? void 0 : toast2.onDismiss.call(toast2, toast2);
+    },
+    className: cn(classNames == null ? void 0 : classNames.closeButton, toast2 == null ? void 0 : (_toast_classNames2 = toast2.classNames) == null ? void 0 : _toast_classNames2.closeButton)
+  }, (_icons_close = icons == null ? void 0 : icons.close) != null ? _icons_close : CloseIcon) : null, (toastType || toast2.icon || toast2.promise) && toast2.icon !== null && ((icons == null ? void 0 : icons[toastType]) !== null || toast2.icon) ? /* @__PURE__ */ React.createElement("div", {
+    "data-icon": "",
+    className: cn(classNames == null ? void 0 : classNames.icon, toast2 == null ? void 0 : (_toast_classNames3 = toast2.classNames) == null ? void 0 : _toast_classNames3.icon)
+  }, toast2.promise || toast2.type === "loading" && !toast2.icon ? toast2.icon || getLoadingIcon() : null, toast2.type !== "loading" ? icon : null) : null, /* @__PURE__ */ React.createElement("div", {
+    "data-content": "",
+    className: cn(classNames == null ? void 0 : classNames.content, toast2 == null ? void 0 : (_toast_classNames4 = toast2.classNames) == null ? void 0 : _toast_classNames4.content)
+  }, /* @__PURE__ */ React.createElement("div", {
+    "data-title": "",
+    className: cn(classNames == null ? void 0 : classNames.title, toast2 == null ? void 0 : (_toast_classNames5 = toast2.classNames) == null ? void 0 : _toast_classNames5.title)
+  }, toast2.jsx ? toast2.jsx : typeof toast2.title === "function" ? toast2.title() : toast2.title), toast2.description ? /* @__PURE__ */ React.createElement("div", {
+    "data-description": "",
+    className: cn(descriptionClassName, toastDescriptionClassname, classNames == null ? void 0 : classNames.description, toast2 == null ? void 0 : (_toast_classNames6 = toast2.classNames) == null ? void 0 : _toast_classNames6.description)
+  }, typeof toast2.description === "function" ? toast2.description() : toast2.description) : null), /* @__PURE__ */ React.isValidElement(toast2.cancel) ? toast2.cancel : toast2.cancel && isAction(toast2.cancel) ? /* @__PURE__ */ React.createElement("button", {
+    "data-button": true,
+    "data-cancel": true,
+    style: toast2.cancelButtonStyle || cancelButtonStyle,
+    onClick: (event) => {
+      if (!isAction(toast2.cancel)) return;
+      if (!dismissible) return;
+      toast2.cancel.onClick == null ? void 0 : toast2.cancel.onClick.call(toast2.cancel, event);
+      deleteToast();
+    },
+    className: cn(classNames == null ? void 0 : classNames.cancelButton, toast2 == null ? void 0 : (_toast_classNames7 = toast2.classNames) == null ? void 0 : _toast_classNames7.cancelButton)
+  }, toast2.cancel.label) : null, /* @__PURE__ */ React.isValidElement(toast2.action) ? toast2.action : toast2.action && isAction(toast2.action) ? /* @__PURE__ */ React.createElement("button", {
+    "data-button": true,
+    "data-action": true,
+    style: toast2.actionButtonStyle || actionButtonStyle,
+    onClick: (event) => {
+      if (!isAction(toast2.action)) return;
+      toast2.action.onClick == null ? void 0 : toast2.action.onClick.call(toast2.action, event);
+      if (event.defaultPrevented) return;
+      deleteToast();
+    },
+    className: cn(classNames == null ? void 0 : classNames.actionButton, toast2 == null ? void 0 : (_toast_classNames8 = toast2.classNames) == null ? void 0 : _toast_classNames8.actionButton)
+  }, toast2.action.label) : null);
+};
+function getDocumentDirection() {
+  if (typeof window === "undefined") return "ltr";
+  if (typeof document === "undefined") return "ltr";
+  const dirAttribute = document.documentElement.getAttribute("dir");
+  if (dirAttribute === "auto" || !dirAttribute) {
+    return window.getComputedStyle(document.documentElement).direction;
+  }
+  return dirAttribute;
+}
+function assignOffset(defaultOffset, mobileOffset) {
+  const styles = {};
+  [
+    defaultOffset,
+    mobileOffset
+  ].forEach((offset2, index2) => {
+    const isMobile = index2 === 1;
+    const prefix = isMobile ? "--mobile-offset" : "--offset";
+    const defaultValue = isMobile ? MOBILE_VIEWPORT_OFFSET : VIEWPORT_OFFSET;
+    function assignAll(offset3) {
+      [
+        "top",
+        "right",
+        "bottom",
+        "left"
+      ].forEach((key) => {
+        styles[`${prefix}-${key}`] = typeof offset3 === "number" ? `${offset3}px` : offset3;
+      });
+    }
+    if (typeof offset2 === "number" || typeof offset2 === "string") {
+      assignAll(offset2);
+    } else if (typeof offset2 === "object") {
+      [
+        "top",
+        "right",
+        "bottom",
+        "left"
+      ].forEach((key) => {
+        if (offset2[key] === void 0) {
+          styles[`${prefix}-${key}`] = defaultValue;
+        } else {
+          styles[`${prefix}-${key}`] = typeof offset2[key] === "number" ? `${offset2[key]}px` : offset2[key];
+        }
+      });
+    } else {
+      assignAll(defaultValue);
+    }
+  });
+  return styles;
+}
+const Toaster$1 = /* @__PURE__ */ React.forwardRef(function Toaster(props, ref) {
+  const { id: id2, invert, position = "bottom-right", hotkey = [
+    "altKey",
+    "KeyT"
+  ], expand, closeButton, className, offset: offset2, mobileOffset, theme = "light", richColors, duration, style, visibleToasts = VISIBLE_TOASTS_AMOUNT, toastOptions, dir = getDocumentDirection(), gap = GAP, icons, containerAriaLabel = "Notifications" } = props;
+  const [toasts, setToasts] = React.useState([]);
+  const filteredToasts = React.useMemo(() => {
+    if (id2) {
+      return toasts.filter((toast2) => toast2.toasterId === id2);
+    }
+    return toasts.filter((toast2) => !toast2.toasterId);
+  }, [
+    toasts,
+    id2
+  ]);
+  const possiblePositions = React.useMemo(() => {
+    return Array.from(new Set([
+      position
+    ].concat(filteredToasts.filter((toast2) => toast2.position).map((toast2) => toast2.position))));
+  }, [
+    filteredToasts,
+    position
+  ]);
+  const [heights, setHeights] = React.useState([]);
+  const [expanded, setExpanded] = React.useState(false);
+  const [interacting, setInteracting] = React.useState(false);
+  const [actualTheme, setActualTheme] = React.useState(theme !== "system" ? theme : typeof window !== "undefined" ? window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light" : "light");
+  const listRef = React.useRef(null);
+  const hotkeyLabel = hotkey.join("+").replace(/Key/g, "").replace(/Digit/g, "");
+  const lastFocusedElementRef = React.useRef(null);
+  const isFocusWithinRef = React.useRef(false);
+  const removeToast = React.useCallback((toastToRemove) => {
+    setToasts((toasts2) => {
+      var _toasts_find;
+      if (!((_toasts_find = toasts2.find((toast2) => toast2.id === toastToRemove.id)) == null ? void 0 : _toasts_find.delete)) {
+        ToastState.dismiss(toastToRemove.id);
+      }
+      return toasts2.filter(({ id: id3 }) => id3 !== toastToRemove.id);
+    });
+  }, []);
+  React.useEffect(() => {
+    return ToastState.subscribe((toast2) => {
+      if (toast2.dismiss) {
+        requestAnimationFrame(() => {
+          setToasts((toasts2) => toasts2.map((t2) => t2.id === toast2.id ? {
+            ...t2,
+            delete: true
+          } : t2));
+        });
+        return;
+      }
+      setTimeout(() => {
+        ReactDOM.flushSync(() => {
+          setToasts((toasts2) => {
+            const indexOfExistingToast = toasts2.findIndex((t2) => t2.id === toast2.id);
+            if (indexOfExistingToast !== -1) {
+              return [
+                ...toasts2.slice(0, indexOfExistingToast),
+                {
+                  ...toasts2[indexOfExistingToast],
+                  ...toast2
+                },
+                ...toasts2.slice(indexOfExistingToast + 1)
+              ];
+            }
+            return [
+              toast2,
+              ...toasts2
+            ];
+          });
+        });
+      });
+    });
+  }, [
+    toasts
+  ]);
+  React.useEffect(() => {
+    if (theme !== "system") {
+      setActualTheme(theme);
+      return;
+    }
+    if (theme === "system") {
+      if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        setActualTheme("dark");
+      } else {
+        setActualTheme("light");
+      }
+    }
+    if (typeof window === "undefined") return;
+    const darkMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    try {
+      darkMediaQuery.addEventListener("change", ({ matches }) => {
+        if (matches) {
+          setActualTheme("dark");
+        } else {
+          setActualTheme("light");
+        }
+      });
+    } catch (error) {
+      darkMediaQuery.addListener(({ matches }) => {
+        try {
+          if (matches) {
+            setActualTheme("dark");
+          } else {
+            setActualTheme("light");
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      });
+    }
+  }, [
+    theme
+  ]);
+  React.useEffect(() => {
+    if (toasts.length <= 1) {
+      setExpanded(false);
+    }
+  }, [
+    toasts
+  ]);
+  React.useEffect(() => {
+    const handleKeyDown = (event) => {
+      var _listRef_current;
+      const isHotkeyPressed = hotkey.every((key) => event[key] || event.code === key);
+      if (isHotkeyPressed) {
+        var _listRef_current1;
+        setExpanded(true);
+        (_listRef_current1 = listRef.current) == null ? void 0 : _listRef_current1.focus();
+      }
+      if (event.code === "Escape" && (document.activeElement === listRef.current || ((_listRef_current = listRef.current) == null ? void 0 : _listRef_current.contains(document.activeElement)))) {
+        setExpanded(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [
+    hotkey
+  ]);
+  React.useEffect(() => {
+    if (listRef.current) {
+      return () => {
+        if (lastFocusedElementRef.current) {
+          lastFocusedElementRef.current.focus({
+            preventScroll: true
+          });
+          lastFocusedElementRef.current = null;
+          isFocusWithinRef.current = false;
+        }
+      };
+    }
+  }, [
+    listRef.current
+  ]);
+  return (
+    // Remove item from normal navigation flow, only available via hotkey
+    /* @__PURE__ */ React.createElement("section", {
+      ref,
+      "aria-label": `${containerAriaLabel} ${hotkeyLabel}`,
+      tabIndex: -1,
+      "aria-live": "polite",
+      "aria-relevant": "additions text",
+      "aria-atomic": "false",
+      suppressHydrationWarning: true
+    }, possiblePositions.map((position2, index2) => {
+      var _heights_;
+      const [y2, x2] = position2.split("-");
+      if (!filteredToasts.length) return null;
+      return /* @__PURE__ */ React.createElement("ol", {
+        key: position2,
+        dir: dir === "auto" ? getDocumentDirection() : dir,
+        tabIndex: -1,
+        ref: listRef,
+        className,
+        "data-sonner-toaster": true,
+        "data-sonner-theme": actualTheme,
+        "data-y-position": y2,
+        "data-x-position": x2,
+        style: {
+          "--front-toast-height": `${((_heights_ = heights[0]) == null ? void 0 : _heights_.height) || 0}px`,
+          "--width": `${TOAST_WIDTH}px`,
+          "--gap": `${gap}px`,
+          ...style,
+          ...assignOffset(offset2, mobileOffset)
+        },
+        onBlur: (event) => {
+          if (isFocusWithinRef.current && !event.currentTarget.contains(event.relatedTarget)) {
+            isFocusWithinRef.current = false;
+            if (lastFocusedElementRef.current) {
+              lastFocusedElementRef.current.focus({
+                preventScroll: true
+              });
+              lastFocusedElementRef.current = null;
+            }
+          }
+        },
+        onFocus: (event) => {
+          const isNotDismissible = event.target instanceof HTMLElement && event.target.dataset.dismissible === "false";
+          if (isNotDismissible) return;
+          if (!isFocusWithinRef.current) {
+            isFocusWithinRef.current = true;
+            lastFocusedElementRef.current = event.relatedTarget;
+          }
+        },
+        onMouseEnter: () => setExpanded(true),
+        onMouseMove: () => setExpanded(true),
+        onMouseLeave: () => {
+          if (!interacting) {
+            setExpanded(false);
+          }
+        },
+        onDragEnd: () => setExpanded(false),
+        onPointerDown: (event) => {
+          const isNotDismissible = event.target instanceof HTMLElement && event.target.dataset.dismissible === "false";
+          if (isNotDismissible) return;
+          setInteracting(true);
+        },
+        onPointerUp: () => setInteracting(false)
+      }, filteredToasts.filter((toast2) => !toast2.position && index2 === 0 || toast2.position === position2).map((toast2, index3) => {
+        var _toastOptions_duration, _toastOptions_closeButton;
+        return /* @__PURE__ */ React.createElement(Toast, {
+          key: toast2.id,
+          icons,
+          index: index3,
+          toast: toast2,
+          defaultRichColors: richColors,
+          duration: (_toastOptions_duration = toastOptions == null ? void 0 : toastOptions.duration) != null ? _toastOptions_duration : duration,
+          className: toastOptions == null ? void 0 : toastOptions.className,
+          descriptionClassName: toastOptions == null ? void 0 : toastOptions.descriptionClassName,
+          invert,
+          visibleToasts,
+          closeButton: (_toastOptions_closeButton = toastOptions == null ? void 0 : toastOptions.closeButton) != null ? _toastOptions_closeButton : closeButton,
+          interacting,
+          position: position2,
+          style: toastOptions == null ? void 0 : toastOptions.style,
+          unstyled: toastOptions == null ? void 0 : toastOptions.unstyled,
+          classNames: toastOptions == null ? void 0 : toastOptions.classNames,
+          cancelButtonStyle: toastOptions == null ? void 0 : toastOptions.cancelButtonStyle,
+          actionButtonStyle: toastOptions == null ? void 0 : toastOptions.actionButtonStyle,
+          closeButtonAriaLabel: toastOptions == null ? void 0 : toastOptions.closeButtonAriaLabel,
+          removeToast,
+          toasts: filteredToasts.filter((t2) => t2.position == toast2.position),
+          heights: heights.filter((h) => h.position == toast2.position),
+          setHeights,
+          expandByDefault: expand,
+          gap,
+          expanded,
+          swipeDirections: props.swipeDirections
+        });
+      }));
+    }))
+  );
+});
 const getDeviceKey = (device) => `${device.ip}:${device.port}`;
 const findHiddenKeyById = (id2, hiddenDevices) => {
   for (const [key, device] of hiddenDevices) {
@@ -14769,9 +15847,18 @@ function ResourcePanel() {
   const [previewImage, setPreviewImage] = reactExports.useState(null);
   const [isClearDialogOpen, setIsClearDialogOpen] = reactExports.useState(false);
   const [isDevicePickerOpen, setIsDevicePickerOpen] = reactExports.useState(false);
+  const [groupFilter, setGroupFilter] = reactExports.useState("all");
+  const [groupTargetId, setGroupTargetId] = reactExports.useState("all");
   const incomingTransfersRef = reactExports.useRef(/* @__PURE__ */ new Map());
-  const { devices, selectedDevices, toggleSelectDevice, selectAll, deselectAll, localDevice } = useDeviceStore();
+  const { devices, deviceGroups, selectedDevices, toggleSelectDevice, selectAll, deselectAll, localDevice } = useDeviceStore();
   const selectedCount = selectedDevices.size;
+  const getDeviceKey2 = (device) => `${device.ip}:${device.port}`;
+  const onlineDevices = devices.filter((device) => device.status !== "offline");
+  const groupsForFilter = deviceGroups.map((group) => ({
+    group,
+    devices: onlineDevices.filter((device) => group.deviceKeys.includes(getDeviceKey2(device)))
+  }));
+  const filteredDevices = groupFilter === "all" ? onlineDevices : groupsForFilter.find((entry) => entry.group.id === groupFilter)?.devices || [];
   const textInputRef = reactExports.useRef(null);
   const fileInputRef = reactExports.useRef(null);
   const imageInputRef = reactExports.useRef(null);
@@ -14834,15 +15921,44 @@ function ResourcePanel() {
       status: "online",
       lastSeen: Date.now()
     };
-    const targets = sendTarget === "broadcast" ? devices : devices.filter((d) => selectedDevices.has(d.id));
+    let targets = sendTarget === "broadcast" ? devices : devices.filter((d) => selectedDevices.has(d.id));
+    if (sendTarget === "group") {
+      if (groupTargetId === "all") {
+        toast.error("请先选择分组");
+        return false;
+      }
+      const targetGroup = deviceGroups.find((group) => group.id === groupTargetId);
+      if (!targetGroup) {
+        toast.error("选择的分组不存在");
+        return false;
+      }
+      if (targetGroup.deviceKeys.length === 0) {
+        toast.error("所选分组下暂无设备");
+        return false;
+      }
+      targets = devices.filter((device) => targetGroup.deviceKeys.includes(getDeviceKey2(device)));
+    }
     if (targets.length === 0) {
-      alert("没有可发送的目标设备");
-      return;
+      toast.error("没有可发送的目标设备");
+      return false;
     }
+    let failedCount = 0;
     for (const device of targets) {
-      await window.electronAPI?.tcpConnect(device.ip, device.port, sender);
-      await window.electronAPI?.tcpSend(device.ip, device.port, message);
+      const connectResult = await window.electronAPI?.tcpConnect(device.ip, device.port, sender);
+      if (!connectResult?.success) {
+        failedCount += 1;
+        continue;
+      }
+      const sendResult = await window.electronAPI?.tcpSend(device.ip, device.port, message);
+      if (!sendResult?.success) {
+        failedCount += 1;
+      }
     }
+    if (failedCount > 0) {
+      toast.error(`发送失败：${failedCount} 台设备`);
+      return false;
+    }
+    return true;
   };
   reactExports.useEffect(() => {
     window.electronAPI?.onTcpMessage((message, from) => {
@@ -14949,10 +16065,14 @@ function ResourcePanel() {
       window.electronAPI?.removeAllListeners?.("tcp-message");
     };
   }, []);
-  const handleTextSend = reactExports.useCallback(() => {
+  const handleTextSend = reactExports.useCallback(async () => {
     if (!textContent.trim()) return;
     if (sendTarget === "selected" && selectedCount === 0) {
-      alert("请先选择设备");
+      toast.error("请先选择设备");
+      return;
+    }
+    if (sendTarget === "group" && groupTargetId === "all") {
+      toast.error("请先选择分组");
       return;
     }
     const message = {
@@ -14961,10 +16081,12 @@ function ResourcePanel() {
         content: textContent
       }
     };
-    sendMessageToTargets(message);
-    setTextContent("");
-    textInputRef.current?.focus();
-  }, [textContent, sendTarget, selectedCount, sendMessageToTargets]);
+    const ok2 = await sendMessageToTargets(message);
+    if (ok2) {
+      setTextContent("");
+      textInputRef.current?.focus();
+    }
+  }, [textContent, sendTarget, selectedCount, groupTargetId, sendMessageToTargets]);
   const handleImageSelect = reactExports.useCallback((e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -15020,14 +16142,19 @@ function ResourcePanel() {
   }, []);
   const handleSend = async () => {
     if (contentType === "text") {
-      handleTextSend();
+      await handleTextSend();
       return;
     }
     if (sendTarget === "selected" && selectedCount === 0) {
-      alert("请先选择设备");
+      toast.error("请先选择设备");
+      return;
+    }
+    if (sendTarget === "group" && groupTargetId === "all") {
+      toast.error("请先选择分组");
       return;
     }
     const chunkSize = 256 * 1024;
+    let hadFailure = false;
     for (const item of selectedFiles) {
       const arrayBuffer = await item.file.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
@@ -15050,10 +16177,17 @@ function ResourcePanel() {
             quality: imageQuality
           }
         };
-        await sendMessageToTargets(message);
+        const ok2 = await sendMessageToTargets(message);
+        if (!ok2) {
+          hadFailure = true;
+          break;
+        }
       }
+      if (hadFailure) break;
     }
-    setSelectedFiles([]);
+    if (!hadFailure) {
+      setSelectedFiles([]);
+    }
   };
   const handleClearReceived = () => {
     setReceivedMessages([]);
@@ -15061,7 +16195,7 @@ function ResourcePanel() {
   };
   const handleCopyText = (content) => {
     navigator.clipboard.writeText(content);
-    console.log("Copied to clipboard");
+    toast.success("已复制到剪贴板");
   };
   const handleSaveImage = (imageUrl, fileName) => {
     const link = document.createElement("a");
@@ -15083,12 +16217,12 @@ function ResourcePanel() {
   const removeFile = (index2) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index2));
   };
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Provider$1, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { id: "resource-panel", className: "panel h-full", children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Provider, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { id: "resource-panel", className: "panel h-full", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-full p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "h-full grid grid-cols-1 lg:grid-cols-2 gap-8", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col h-full bg-secondary/40 rounded-lg border p-4", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-center mb-3", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-medium text-sm", children: "分享记录" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$2, { open: isClearDialogOpen, onOpenChange: setIsClearDialogOpen, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$1, { open: isClearDialogOpen, onOpenChange: setIsClearDialogOpen, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger2, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "text-xs text-muted-foreground hover:text-foreground", children: "清理" }) }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal2, { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay2, { className: "fixed inset-0 bg-black/50 z-50" }),
@@ -15118,7 +16252,7 @@ function ResourcePanel() {
           ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(Root$2, { className: "flex-1 min-h-0 border rounded bg-background", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Viewport$1, { className: "h-full w-full relative", children: receivedMessages.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "empty-state absolute inset-0 flex items-center justify-center text-muted-foreground text-sm", children: "暂无分享记录" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2 p-2", children: receivedMessages.map((msg) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Viewport, { className: "h-full w-full relative", children: receivedMessages.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "empty-state absolute inset-0 flex items-center justify-center text-muted-foreground text-sm", children: "暂无分享记录" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2 p-2", children: receivedMessages.map((msg) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
             "div",
             {
               className: "p-3 bg-secondary/30 rounded border",
@@ -15387,6 +16521,20 @@ function ResourcePanel() {
             ),
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm", children: "已选设备" })
           ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "flex items-center gap-2 cursor-pointer", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                type: "radio",
+                name: "send-target",
+                value: "group",
+                checked: sendTarget === "group",
+                onChange: () => setSendTarget("group"),
+                className: "accent-primary"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm", children: "分组设备" })
+          ] }),
           sendTarget === "selected" && /* @__PURE__ */ jsxRuntimeExports.jsxs(Root$1, { open: isDevicePickerOpen, onOpenChange: setIsDevicePickerOpen, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger$1, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { className: "text-xs text-primary hover:underline", children: [
               "已选 ",
@@ -15396,12 +16544,36 @@ function ResourcePanel() {
             /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border rounded shadow-lg p-4 w-[420px] max-w-[90vw] z-50", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-sm font-medium mb-3", children: "选择设备" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-sm font-medium mb-3", children: "选择设备" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2 mb-3", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: selectAll, className: "text-xs px-2 py-1 border rounded hover:bg-secondary", children: "全选" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: deselectAll, className: "text-xs px-2 py-1 border rounded hover:bg-secondary", children: "清空" })
                 ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "max-h-60 overflow-auto border rounded", children: devices.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-3 text-xs text-muted-foreground", children: "暂无在线设备" }) : devices.map((device) => /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "flex items-center gap-2 p-2 border-b last:border-b-0 cursor-pointer", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-3", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "分组" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$3, { value: groupFilter, onValueChange: (value) => setGroupFilter(value), children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center justify-between gap-2 px-2 py-1 border rounded text-xs bg-background w-48", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      Content2$3,
+                      {
+                        className: "bg-background border rounded shadow-lg z-50",
+                        position: "popper",
+                        side: "bottom",
+                        align: "start",
+                        sideOffset: 4,
+                        avoidCollisions: false,
+                        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$1, { className: "p-1", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "all", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "全部在线分组" }) }),
+                          groupsForFilter.map(({ group }) => /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: group.id, className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: group.name }) }, group.id))
+                        ] })
+                      }
+                    ) })
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "max-h-60 overflow-auto border rounded", children: filteredDevices.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-3 text-xs text-muted-foreground", children: "暂无在线设备" }) : filteredDevices.map((device) => /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "flex items-center gap-2 p-2 border-b last:border-b-0 cursor-pointer", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(
                     "input",
                     {
@@ -15420,13 +16592,34 @@ function ResourcePanel() {
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "btn-primary text-sm", children: "完成" }) }) })
               ] })
             ] })
-          ] })
+          ] }),
+          sendTarget === "group" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center gap-2", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$3, { value: groupTargetId, onValueChange: (value) => setGroupTargetId(value), children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center justify-between gap-2 px-2 py-1 border rounded text-xs bg-background w-24", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Content2$3,
+              {
+                className: "bg-background border rounded shadow-lg z-50",
+                position: "popper",
+                side: "bottom",
+                align: "start",
+                sideOffset: 4,
+                avoidCollisions: false,
+                children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$1, { className: "p-1", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "all", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "选择分组" }) }),
+                  groupsForFilter.map(({ group }) => /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: group.id, className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: group.name }) }, group.id))
+                ] })
+              }
+            ) })
+          ] }) })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
             onClick: handleSend,
-            disabled: contentType !== "text" && selectedFiles.length === 0,
+            disabled: contentType === "text" ? !textContent.trim() : selectedFiles.length === 0,
             className: "w-full py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium",
             children: "发送"
           }
@@ -15449,15 +16642,15 @@ function ResourcePanel() {
 var ENTRY_FOCUS = "rovingFocusGroup.onEntryFocus";
 var EVENT_OPTIONS = { bubbles: false, cancelable: true };
 var GROUP_NAME = "RovingFocusGroup";
-var [Collection$1, useCollection$1, createCollectionScope$1] = createCollection(GROUP_NAME);
+var [Collection, useCollection, createCollectionScope] = createCollection(GROUP_NAME);
 var [createRovingFocusGroupContext, createRovingFocusGroupScope] = createContextScope(
   GROUP_NAME,
-  [createCollectionScope$1]
+  [createCollectionScope]
 );
 var [RovingFocusProvider, useRovingFocusContext] = createRovingFocusGroupContext(GROUP_NAME);
 var RovingFocusGroup = reactExports.forwardRef(
   (props, forwardedRef) => {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Collection$1.Provider, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Collection$1.Slot, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(RovingFocusGroupImpl, { ...props, ref: forwardedRef }) }) });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Provider, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Slot, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(RovingFocusGroupImpl, { ...props, ref: forwardedRef }) }) });
   }
 );
 RovingFocusGroup.displayName = GROUP_NAME;
@@ -15485,7 +16678,7 @@ var RovingFocusGroupImpl = reactExports.forwardRef((props, forwardedRef) => {
   });
   const [isTabbingBackOut, setIsTabbingBackOut] = reactExports.useState(false);
   const handleEntryFocus = useCallbackRef$1(onEntryFocus);
-  const getItems = useCollection$1(__scopeRovingFocusGroup);
+  const getItems = useCollection(__scopeRovingFocusGroup);
   const isClickFocusRef = reactExports.useRef(false);
   const [focusableItemsCount, setFocusableItemsCount] = reactExports.useState(0);
   reactExports.useEffect(() => {
@@ -15540,7 +16733,7 @@ var RovingFocusGroupImpl = reactExports.forwardRef((props, forwardedRef) => {
                   Boolean
                 );
                 const candidateNodes = candidateItems.map((item) => item.ref.current);
-                focusFirst$1(candidateNodes, preventScrollOnEntryFocus);
+                focusFirst(candidateNodes, preventScrollOnEntryFocus);
               }
             }
             isClickFocusRef.current = false;
@@ -15566,7 +16759,7 @@ var RovingFocusGroupItem = reactExports.forwardRef(
     const id2 = tabStopId || autoId;
     const context = useRovingFocusContext(ITEM_NAME, __scopeRovingFocusGroup);
     const isCurrentTabStop = context.currentTabStopId === id2;
-    const getItems = useCollection$1(__scopeRovingFocusGroup);
+    const getItems = useCollection(__scopeRovingFocusGroup);
     const { onFocusableItemAdd, onFocusableItemRemove, currentTabStopId } = context;
     reactExports.useEffect(() => {
       if (focusable) {
@@ -15575,7 +16768,7 @@ var RovingFocusGroupItem = reactExports.forwardRef(
       }
     }, [focusable, onFocusableItemAdd, onFocusableItemRemove]);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Collection$1.ItemSlot,
+      Collection.ItemSlot,
       {
         scope: __scopeRovingFocusGroup,
         id: id2,
@@ -15611,7 +16804,7 @@ var RovingFocusGroupItem = reactExports.forwardRef(
                   const currentIndex = candidateNodes.indexOf(event.currentTarget);
                   candidateNodes = context.loop ? wrapArray(candidateNodes, currentIndex + 1) : candidateNodes.slice(currentIndex + 1);
                 }
-                setTimeout(() => focusFirst$1(candidateNodes));
+                setTimeout(() => focusFirst(candidateNodes));
               }
             }),
             children: typeof children === "function" ? children({ isCurrentTabStop, hasTabStop: currentTabStopId != null }) : children
@@ -15642,7 +16835,7 @@ function getFocusIntent(event, orientation, dir) {
   if (orientation === "horizontal" && ["ArrowUp", "ArrowDown"].includes(key)) return void 0;
   return MAP_KEY_TO_FOCUS_INTENT[key];
 }
-function focusFirst$1(candidates, preventScroll = false) {
+function focusFirst(candidates, preventScroll = false) {
   const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
   for (const candidate of candidates) {
     if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
@@ -15825,616 +17018,10 @@ function makeTriggerId(baseId, value) {
 function makeContentId(baseId, value) {
   return `${baseId}-content-${value}`;
 }
-var Root2$1 = Tabs;
+var Root2 = Tabs;
 var List = TabsList;
 var Trigger = TabsTrigger;
 var Content = TabsContent;
-var PROVIDER_NAME = "ToastProvider";
-var [Collection, useCollection, createCollectionScope] = createCollection("Toast");
-var [createToastContext] = createContextScope("Toast", [createCollectionScope]);
-var [ToastProviderProvider, useToastProviderContext] = createToastContext(PROVIDER_NAME);
-var ToastProvider = (props) => {
-  const {
-    __scopeToast,
-    label = "Notification",
-    duration = 5e3,
-    swipeDirection = "right",
-    swipeThreshold = 50,
-    children
-  } = props;
-  const [viewport, setViewport] = reactExports.useState(null);
-  const [toastCount, setToastCount] = reactExports.useState(0);
-  const isFocusedToastEscapeKeyDownRef = reactExports.useRef(false);
-  const isClosePausedRef = reactExports.useRef(false);
-  if (!label.trim()) {
-    console.error(
-      `Invalid prop \`label\` supplied to \`${PROVIDER_NAME}\`. Expected non-empty \`string\`.`
-    );
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Provider, { scope: __scopeToast, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-    ToastProviderProvider,
-    {
-      scope: __scopeToast,
-      label,
-      duration,
-      swipeDirection,
-      swipeThreshold,
-      toastCount,
-      viewport,
-      onViewportChange: setViewport,
-      onToastAdd: reactExports.useCallback(() => setToastCount((prevCount) => prevCount + 1), []),
-      onToastRemove: reactExports.useCallback(() => setToastCount((prevCount) => prevCount - 1), []),
-      isFocusedToastEscapeKeyDownRef,
-      isClosePausedRef,
-      children
-    }
-  ) });
-};
-ToastProvider.displayName = PROVIDER_NAME;
-var VIEWPORT_NAME = "ToastViewport";
-var VIEWPORT_DEFAULT_HOTKEY = ["F8"];
-var VIEWPORT_PAUSE = "toast.viewportPause";
-var VIEWPORT_RESUME = "toast.viewportResume";
-var ToastViewport = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      __scopeToast,
-      hotkey = VIEWPORT_DEFAULT_HOTKEY,
-      label = "Notifications ({hotkey})",
-      ...viewportProps
-    } = props;
-    const context = useToastProviderContext(VIEWPORT_NAME, __scopeToast);
-    const getItems = useCollection(__scopeToast);
-    const wrapperRef = reactExports.useRef(null);
-    const headFocusProxyRef = reactExports.useRef(null);
-    const tailFocusProxyRef = reactExports.useRef(null);
-    const ref = reactExports.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, ref, context.onViewportChange);
-    const hotkeyLabel = hotkey.join("+").replace(/Key/g, "").replace(/Digit/g, "");
-    const hasToasts = context.toastCount > 0;
-    reactExports.useEffect(() => {
-      const handleKeyDown = (event) => {
-        const isHotkeyPressed = hotkey.length !== 0 && hotkey.every((key) => event[key] || event.code === key);
-        if (isHotkeyPressed) ref.current?.focus();
-      };
-      document.addEventListener("keydown", handleKeyDown);
-      return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [hotkey]);
-    reactExports.useEffect(() => {
-      const wrapper = wrapperRef.current;
-      const viewport = ref.current;
-      if (hasToasts && wrapper && viewport) {
-        const handlePause = () => {
-          if (!context.isClosePausedRef.current) {
-            const pauseEvent = new CustomEvent(VIEWPORT_PAUSE);
-            viewport.dispatchEvent(pauseEvent);
-            context.isClosePausedRef.current = true;
-          }
-        };
-        const handleResume = () => {
-          if (context.isClosePausedRef.current) {
-            const resumeEvent = new CustomEvent(VIEWPORT_RESUME);
-            viewport.dispatchEvent(resumeEvent);
-            context.isClosePausedRef.current = false;
-          }
-        };
-        const handleFocusOutResume = (event) => {
-          const isFocusMovingOutside = !wrapper.contains(event.relatedTarget);
-          if (isFocusMovingOutside) handleResume();
-        };
-        const handlePointerLeaveResume = () => {
-          const isFocusInside = wrapper.contains(document.activeElement);
-          if (!isFocusInside) handleResume();
-        };
-        wrapper.addEventListener("focusin", handlePause);
-        wrapper.addEventListener("focusout", handleFocusOutResume);
-        wrapper.addEventListener("pointermove", handlePause);
-        wrapper.addEventListener("pointerleave", handlePointerLeaveResume);
-        window.addEventListener("blur", handlePause);
-        window.addEventListener("focus", handleResume);
-        return () => {
-          wrapper.removeEventListener("focusin", handlePause);
-          wrapper.removeEventListener("focusout", handleFocusOutResume);
-          wrapper.removeEventListener("pointermove", handlePause);
-          wrapper.removeEventListener("pointerleave", handlePointerLeaveResume);
-          window.removeEventListener("blur", handlePause);
-          window.removeEventListener("focus", handleResume);
-        };
-      }
-    }, [hasToasts, context.isClosePausedRef]);
-    const getSortedTabbableCandidates = reactExports.useCallback(
-      ({ tabbingDirection }) => {
-        const toastItems = getItems();
-        const tabbableCandidates = toastItems.map((toastItem) => {
-          const toastNode = toastItem.ref.current;
-          const toastTabbableCandidates = [toastNode, ...getTabbableCandidates(toastNode)];
-          return tabbingDirection === "forwards" ? toastTabbableCandidates : toastTabbableCandidates.reverse();
-        });
-        return (tabbingDirection === "forwards" ? tabbableCandidates.reverse() : tabbableCandidates).flat();
-      },
-      [getItems]
-    );
-    reactExports.useEffect(() => {
-      const viewport = ref.current;
-      if (viewport) {
-        const handleKeyDown = (event) => {
-          const isMetaKey = event.altKey || event.ctrlKey || event.metaKey;
-          const isTabKey = event.key === "Tab" && !isMetaKey;
-          if (isTabKey) {
-            const focusedElement = document.activeElement;
-            const isTabbingBackwards = event.shiftKey;
-            const targetIsViewport = event.target === viewport;
-            if (targetIsViewport && isTabbingBackwards) {
-              headFocusProxyRef.current?.focus();
-              return;
-            }
-            const tabbingDirection = isTabbingBackwards ? "backwards" : "forwards";
-            const sortedCandidates = getSortedTabbableCandidates({ tabbingDirection });
-            const index2 = sortedCandidates.findIndex((candidate) => candidate === focusedElement);
-            if (focusFirst(sortedCandidates.slice(index2 + 1))) {
-              event.preventDefault();
-            } else {
-              isTabbingBackwards ? headFocusProxyRef.current?.focus() : tailFocusProxyRef.current?.focus();
-            }
-          }
-        };
-        viewport.addEventListener("keydown", handleKeyDown);
-        return () => viewport.removeEventListener("keydown", handleKeyDown);
-      }
-    }, [getItems, getSortedTabbableCandidates]);
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      Branch,
-      {
-        ref: wrapperRef,
-        role: "region",
-        "aria-label": label.replace("{hotkey}", hotkeyLabel),
-        tabIndex: -1,
-        style: { pointerEvents: hasToasts ? void 0 : "none" },
-        children: [
-          hasToasts && /* @__PURE__ */ jsxRuntimeExports.jsx(
-            FocusProxy,
-            {
-              ref: headFocusProxyRef,
-              onFocusFromOutsideViewport: () => {
-                const tabbableCandidates = getSortedTabbableCandidates({
-                  tabbingDirection: "forwards"
-                });
-                focusFirst(tabbableCandidates);
-              }
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Slot, { scope: __scopeToast, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.ol, { tabIndex: -1, ...viewportProps, ref: composedRefs }) }),
-          hasToasts && /* @__PURE__ */ jsxRuntimeExports.jsx(
-            FocusProxy,
-            {
-              ref: tailFocusProxyRef,
-              onFocusFromOutsideViewport: () => {
-                const tabbableCandidates = getSortedTabbableCandidates({
-                  tabbingDirection: "backwards"
-                });
-                focusFirst(tabbableCandidates);
-              }
-            }
-          )
-        ]
-      }
-    );
-  }
-);
-ToastViewport.displayName = VIEWPORT_NAME;
-var FOCUS_PROXY_NAME = "ToastFocusProxy";
-var FocusProxy = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeToast, onFocusFromOutsideViewport, ...proxyProps } = props;
-    const context = useToastProviderContext(FOCUS_PROXY_NAME, __scopeToast);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      VisuallyHidden,
-      {
-        tabIndex: 0,
-        ...proxyProps,
-        ref: forwardedRef,
-        style: { position: "fixed" },
-        onFocus: (event) => {
-          const prevFocusedElement = event.relatedTarget;
-          const isFocusFromOutsideViewport = !context.viewport?.contains(prevFocusedElement);
-          if (isFocusFromOutsideViewport) onFocusFromOutsideViewport();
-        }
-      }
-    );
-  }
-);
-FocusProxy.displayName = FOCUS_PROXY_NAME;
-var TOAST_NAME = "Toast";
-var TOAST_SWIPE_START = "toast.swipeStart";
-var TOAST_SWIPE_MOVE = "toast.swipeMove";
-var TOAST_SWIPE_CANCEL = "toast.swipeCancel";
-var TOAST_SWIPE_END = "toast.swipeEnd";
-var Toast = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { forceMount, open: openProp, defaultOpen, onOpenChange, ...toastProps } = props;
-    const [open, setOpen] = useControllableState({
-      prop: openProp,
-      defaultProp: defaultOpen ?? true,
-      onChange: onOpenChange,
-      caller: TOAST_NAME
-    });
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      ToastImpl,
-      {
-        open,
-        ...toastProps,
-        ref: forwardedRef,
-        onClose: () => setOpen(false),
-        onPause: useCallbackRef$1(props.onPause),
-        onResume: useCallbackRef$1(props.onResume),
-        onSwipeStart: composeEventHandlers(props.onSwipeStart, (event) => {
-          event.currentTarget.setAttribute("data-swipe", "start");
-        }),
-        onSwipeMove: composeEventHandlers(props.onSwipeMove, (event) => {
-          const { x: x2, y: y2 } = event.detail.delta;
-          event.currentTarget.setAttribute("data-swipe", "move");
-          event.currentTarget.style.setProperty("--radix-toast-swipe-move-x", `${x2}px`);
-          event.currentTarget.style.setProperty("--radix-toast-swipe-move-y", `${y2}px`);
-        }),
-        onSwipeCancel: composeEventHandlers(props.onSwipeCancel, (event) => {
-          event.currentTarget.setAttribute("data-swipe", "cancel");
-          event.currentTarget.style.removeProperty("--radix-toast-swipe-move-x");
-          event.currentTarget.style.removeProperty("--radix-toast-swipe-move-y");
-          event.currentTarget.style.removeProperty("--radix-toast-swipe-end-x");
-          event.currentTarget.style.removeProperty("--radix-toast-swipe-end-y");
-        }),
-        onSwipeEnd: composeEventHandlers(props.onSwipeEnd, (event) => {
-          const { x: x2, y: y2 } = event.detail.delta;
-          event.currentTarget.setAttribute("data-swipe", "end");
-          event.currentTarget.style.removeProperty("--radix-toast-swipe-move-x");
-          event.currentTarget.style.removeProperty("--radix-toast-swipe-move-y");
-          event.currentTarget.style.setProperty("--radix-toast-swipe-end-x", `${x2}px`);
-          event.currentTarget.style.setProperty("--radix-toast-swipe-end-y", `${y2}px`);
-          setOpen(false);
-        })
-      }
-    ) });
-  }
-);
-Toast.displayName = TOAST_NAME;
-var [ToastInteractiveProvider, useToastInteractiveContext] = createToastContext(TOAST_NAME, {
-  onClose() {
-  }
-});
-var ToastImpl = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      __scopeToast,
-      type = "foreground",
-      duration: durationProp,
-      open,
-      onClose,
-      onEscapeKeyDown,
-      onPause,
-      onResume,
-      onSwipeStart,
-      onSwipeMove,
-      onSwipeCancel,
-      onSwipeEnd,
-      ...toastProps
-    } = props;
-    const context = useToastProviderContext(TOAST_NAME, __scopeToast);
-    const [node, setNode] = reactExports.useState(null);
-    const composedRefs = useComposedRefs(forwardedRef, (node2) => setNode(node2));
-    const pointerStartRef = reactExports.useRef(null);
-    const swipeDeltaRef = reactExports.useRef(null);
-    const duration = durationProp || context.duration;
-    const closeTimerStartTimeRef = reactExports.useRef(0);
-    const closeTimerRemainingTimeRef = reactExports.useRef(duration);
-    const closeTimerRef = reactExports.useRef(0);
-    const { onToastAdd, onToastRemove } = context;
-    const handleClose = useCallbackRef$1(() => {
-      const isFocusInToast = node?.contains(document.activeElement);
-      if (isFocusInToast) context.viewport?.focus();
-      onClose();
-    });
-    const startTimer = reactExports.useCallback(
-      (duration2) => {
-        if (!duration2 || duration2 === Infinity) return;
-        window.clearTimeout(closeTimerRef.current);
-        closeTimerStartTimeRef.current = (/* @__PURE__ */ new Date()).getTime();
-        closeTimerRef.current = window.setTimeout(handleClose, duration2);
-      },
-      [handleClose]
-    );
-    reactExports.useEffect(() => {
-      const viewport = context.viewport;
-      if (viewport) {
-        const handleResume = () => {
-          startTimer(closeTimerRemainingTimeRef.current);
-          onResume?.();
-        };
-        const handlePause = () => {
-          const elapsedTime = (/* @__PURE__ */ new Date()).getTime() - closeTimerStartTimeRef.current;
-          closeTimerRemainingTimeRef.current = closeTimerRemainingTimeRef.current - elapsedTime;
-          window.clearTimeout(closeTimerRef.current);
-          onPause?.();
-        };
-        viewport.addEventListener(VIEWPORT_PAUSE, handlePause);
-        viewport.addEventListener(VIEWPORT_RESUME, handleResume);
-        return () => {
-          viewport.removeEventListener(VIEWPORT_PAUSE, handlePause);
-          viewport.removeEventListener(VIEWPORT_RESUME, handleResume);
-        };
-      }
-    }, [context.viewport, duration, onPause, onResume, startTimer]);
-    reactExports.useEffect(() => {
-      if (open && !context.isClosePausedRef.current) startTimer(duration);
-    }, [open, duration, context.isClosePausedRef, startTimer]);
-    reactExports.useEffect(() => {
-      onToastAdd();
-      return () => onToastRemove();
-    }, [onToastAdd, onToastRemove]);
-    const announceTextContent = reactExports.useMemo(() => {
-      return node ? getAnnounceTextContent(node) : null;
-    }, [node]);
-    if (!context.viewport) return null;
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      announceTextContent && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        ToastAnnounce,
-        {
-          __scopeToast,
-          role: "status",
-          "aria-live": type === "foreground" ? "assertive" : "polite",
-          children: announceTextContent
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(ToastInteractiveProvider, { scope: __scopeToast, onClose: handleClose, children: reactDomExports.createPortal(
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.ItemSlot, { scope: __scopeToast, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Root$5,
-          {
-            asChild: true,
-            onEscapeKeyDown: composeEventHandlers(onEscapeKeyDown, () => {
-              if (!context.isFocusedToastEscapeKeyDownRef.current) handleClose();
-              context.isFocusedToastEscapeKeyDownRef.current = false;
-            }),
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-              Primitive.li,
-              {
-                tabIndex: 0,
-                "data-state": open ? "open" : "closed",
-                "data-swipe-direction": context.swipeDirection,
-                ...toastProps,
-                ref: composedRefs,
-                style: { userSelect: "none", touchAction: "none", ...props.style },
-                onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
-                  if (event.key !== "Escape") return;
-                  onEscapeKeyDown?.(event.nativeEvent);
-                  if (!event.nativeEvent.defaultPrevented) {
-                    context.isFocusedToastEscapeKeyDownRef.current = true;
-                    handleClose();
-                  }
-                }),
-                onPointerDown: composeEventHandlers(props.onPointerDown, (event) => {
-                  if (event.button !== 0) return;
-                  pointerStartRef.current = { x: event.clientX, y: event.clientY };
-                }),
-                onPointerMove: composeEventHandlers(props.onPointerMove, (event) => {
-                  if (!pointerStartRef.current) return;
-                  const x2 = event.clientX - pointerStartRef.current.x;
-                  const y2 = event.clientY - pointerStartRef.current.y;
-                  const hasSwipeMoveStarted = Boolean(swipeDeltaRef.current);
-                  const isHorizontalSwipe = ["left", "right"].includes(context.swipeDirection);
-                  const clamp2 = ["left", "up"].includes(context.swipeDirection) ? Math.min : Math.max;
-                  const clampedX = isHorizontalSwipe ? clamp2(0, x2) : 0;
-                  const clampedY = !isHorizontalSwipe ? clamp2(0, y2) : 0;
-                  const moveStartBuffer = event.pointerType === "touch" ? 10 : 2;
-                  const delta = { x: clampedX, y: clampedY };
-                  const eventDetail = { originalEvent: event, delta };
-                  if (hasSwipeMoveStarted) {
-                    swipeDeltaRef.current = delta;
-                    handleAndDispatchCustomEvent(TOAST_SWIPE_MOVE, onSwipeMove, eventDetail, {
-                      discrete: false
-                    });
-                  } else if (isDeltaInDirection(delta, context.swipeDirection, moveStartBuffer)) {
-                    swipeDeltaRef.current = delta;
-                    handleAndDispatchCustomEvent(TOAST_SWIPE_START, onSwipeStart, eventDetail, {
-                      discrete: false
-                    });
-                    event.target.setPointerCapture(event.pointerId);
-                  } else if (Math.abs(x2) > moveStartBuffer || Math.abs(y2) > moveStartBuffer) {
-                    pointerStartRef.current = null;
-                  }
-                }),
-                onPointerUp: composeEventHandlers(props.onPointerUp, (event) => {
-                  const delta = swipeDeltaRef.current;
-                  const target = event.target;
-                  if (target.hasPointerCapture(event.pointerId)) {
-                    target.releasePointerCapture(event.pointerId);
-                  }
-                  swipeDeltaRef.current = null;
-                  pointerStartRef.current = null;
-                  if (delta) {
-                    const toast = event.currentTarget;
-                    const eventDetail = { originalEvent: event, delta };
-                    if (isDeltaInDirection(delta, context.swipeDirection, context.swipeThreshold)) {
-                      handleAndDispatchCustomEvent(TOAST_SWIPE_END, onSwipeEnd, eventDetail, {
-                        discrete: true
-                      });
-                    } else {
-                      handleAndDispatchCustomEvent(
-                        TOAST_SWIPE_CANCEL,
-                        onSwipeCancel,
-                        eventDetail,
-                        {
-                          discrete: true
-                        }
-                      );
-                    }
-                    toast.addEventListener("click", (event2) => event2.preventDefault(), {
-                      once: true
-                    });
-                  }
-                })
-              }
-            )
-          }
-        ) }),
-        context.viewport
-      ) })
-    ] });
-  }
-);
-var ToastAnnounce = (props) => {
-  const { __scopeToast, children, ...announceProps } = props;
-  const context = useToastProviderContext(TOAST_NAME, __scopeToast);
-  const [renderAnnounceText, setRenderAnnounceText] = reactExports.useState(false);
-  const [isAnnounced, setIsAnnounced] = reactExports.useState(false);
-  useNextFrame(() => setRenderAnnounceText(true));
-  reactExports.useEffect(() => {
-    const timer = window.setTimeout(() => setIsAnnounced(true), 1e3);
-    return () => window.clearTimeout(timer);
-  }, []);
-  return isAnnounced ? null : /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$4, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx(VisuallyHidden, { ...announceProps, children: renderAnnounceText && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    context.label,
-    " ",
-    children
-  ] }) }) });
-};
-var TITLE_NAME = "ToastTitle";
-var ToastTitle = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeToast, ...titleProps } = props;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...titleProps, ref: forwardedRef });
-  }
-);
-ToastTitle.displayName = TITLE_NAME;
-var DESCRIPTION_NAME = "ToastDescription";
-var ToastDescription = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeToast, ...descriptionProps } = props;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...descriptionProps, ref: forwardedRef });
-  }
-);
-ToastDescription.displayName = DESCRIPTION_NAME;
-var ACTION_NAME = "ToastAction";
-var ToastAction = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { altText, ...actionProps } = props;
-    if (!altText.trim()) {
-      console.error(
-        `Invalid prop \`altText\` supplied to \`${ACTION_NAME}\`. Expected non-empty \`string\`.`
-      );
-      return null;
-    }
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToastAnnounceExclude, { altText, asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToastClose, { ...actionProps, ref: forwardedRef }) });
-  }
-);
-ToastAction.displayName = ACTION_NAME;
-var CLOSE_NAME = "ToastClose";
-var ToastClose = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeToast, ...closeProps } = props;
-    const interactiveContext = useToastInteractiveContext(CLOSE_NAME, __scopeToast);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToastAnnounceExclude, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.button,
-      {
-        type: "button",
-        ...closeProps,
-        ref: forwardedRef,
-        onClick: composeEventHandlers(props.onClick, interactiveContext.onClose)
-      }
-    ) });
-  }
-);
-ToastClose.displayName = CLOSE_NAME;
-var ToastAnnounceExclude = reactExports.forwardRef((props, forwardedRef) => {
-  const { __scopeToast, altText, ...announceExcludeProps } = props;
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive.div,
-    {
-      "data-radix-toast-announce-exclude": "",
-      "data-radix-toast-announce-alt": altText || void 0,
-      ...announceExcludeProps,
-      ref: forwardedRef
-    }
-  );
-});
-function getAnnounceTextContent(container) {
-  const textContent = [];
-  const childNodes = Array.from(container.childNodes);
-  childNodes.forEach((node) => {
-    if (node.nodeType === node.TEXT_NODE && node.textContent) textContent.push(node.textContent);
-    if (isHTMLElement(node)) {
-      const isHidden2 = node.ariaHidden || node.hidden || node.style.display === "none";
-      const isExcluded = node.dataset.radixToastAnnounceExclude === "";
-      if (!isHidden2) {
-        if (isExcluded) {
-          const altText = node.dataset.radixToastAnnounceAlt;
-          if (altText) textContent.push(altText);
-        } else {
-          textContent.push(...getAnnounceTextContent(node));
-        }
-      }
-    }
-  });
-  return textContent;
-}
-function handleAndDispatchCustomEvent(name, handler, detail, { discrete }) {
-  const currentTarget = detail.originalEvent.currentTarget;
-  const event = new CustomEvent(name, { bubbles: true, cancelable: true, detail });
-  if (handler) currentTarget.addEventListener(name, handler, { once: true });
-  if (discrete) {
-    dispatchDiscreteCustomEvent(currentTarget, event);
-  } else {
-    currentTarget.dispatchEvent(event);
-  }
-}
-var isDeltaInDirection = (delta, direction, threshold = 0) => {
-  const deltaX = Math.abs(delta.x);
-  const deltaY = Math.abs(delta.y);
-  const isDeltaX = deltaX > deltaY;
-  if (direction === "left" || direction === "right") {
-    return isDeltaX && deltaX > threshold;
-  } else {
-    return !isDeltaX && deltaY > threshold;
-  }
-};
-function useNextFrame(callback = () => {
-}) {
-  const fn = useCallbackRef$1(callback);
-  useLayoutEffect2(() => {
-    let raf1 = 0;
-    let raf2 = 0;
-    raf1 = window.requestAnimationFrame(() => raf2 = window.requestAnimationFrame(fn));
-    return () => {
-      window.cancelAnimationFrame(raf1);
-      window.cancelAnimationFrame(raf2);
-    };
-  }, [fn]);
-}
-function isHTMLElement(node) {
-  return node.nodeType === node.ELEMENT_NODE;
-}
-function getTabbableCandidates(container) {
-  const nodes = [];
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
-    acceptNode: (node) => {
-      const isHiddenInput = node.tagName === "INPUT" && node.type === "hidden";
-      if (node.disabled || node.hidden || isHiddenInput) return NodeFilter.FILTER_SKIP;
-      return node.tabIndex >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-    }
-  });
-  while (walker.nextNode()) nodes.push(walker.currentNode);
-  return nodes;
-}
-function focusFirst(candidates) {
-  const previouslyFocusedElement = document.activeElement;
-  return candidates.some((candidate) => {
-    if (candidate === previouslyFocusedElement) return true;
-    candidate.focus();
-    return document.activeElement !== previouslyFocusedElement;
-  });
-}
-var Provider = ToastProvider;
-var Viewport = ToastViewport;
-var Root2 = Toast;
-var Title = ToastTitle;
 function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds = [] }) {
   const { softwarePresets, loadPresets, savePreset, updatePreset, deletePreset } = useConfigStore();
   const [editingPreset, setEditingPreset] = reactExports.useState(null);
@@ -16536,7 +17123,7 @@ function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds = [] })
     /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: isDialogOpen, onOpenChange: setIsDialogOpen, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[480px] max-h-[80vh] overflow-y-auto", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: editingPreset ? "编辑软件预设" : "新增软件预设" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-4", children: editingPreset ? "编辑软件预设" : "新增软件预设" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-sm font-medium mb-1", children: "名称 *" }),
@@ -16712,7 +17299,7 @@ function InputPresetList({ onSelect, multiSelect = false, selectedIds = [] }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: isDialogOpen, onOpenChange: setIsDialogOpen, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[480px] max-h-[80vh] overflow-y-auto", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: editingPreset ? "编辑键鼠预设" : "新增键鼠预设" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-4", children: editingPreset ? "编辑键鼠预设" : "新增键鼠预设" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-sm font-medium mb-1", children: "名称 *" }),
@@ -16912,7 +17499,7 @@ function SceneList({ onSelect, multiSelect = false, selectedIds = [] }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: isDialogOpen, onOpenChange: setIsDialogOpen, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[520px] max-h-[80vh] overflow-y-auto", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: editingScene ? "编辑场景" : "新增场景" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-4", children: editingScene ? "编辑场景" : "新增场景" }),
         dependencyErrors.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 p-3 bg-destructive/10 border border-destructive rounded text-sm text-destructive", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-medium mb-1", children: "依赖检查失败:" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "list-disc list-inside", children: dependencyErrors.map((err, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: err }, i)) })
@@ -17005,18 +17592,10 @@ function ConfigPanel() {
   });
   const [importMode, setImportMode] = reactExports.useState("append");
   const [importData, setImportData] = reactExports.useState("");
-  const [toastOpen, setToastOpen] = reactExports.useState(false);
-  const [toastMessage, setToastMessage] = reactExports.useState("");
-  const [toastType, setToastType] = reactExports.useState("success");
-  const showToast = (message, type = "success") => {
-    setToastMessage(message);
-    setToastType(type);
-    setToastOpen(true);
-  };
   const handleExport = async () => {
     const modules = Object.entries(exportModules).filter(([_, selected]) => selected).map(([key]) => key);
     if (modules.length === 0) {
-      showToast("请至少选择一个导出项", "error");
+      toast.error("请至少选择一个导出项");
       return;
     }
     const result = await exportConfig(modules);
@@ -17028,15 +17607,15 @@ function ConfigPanel() {
       a.download = `sharenet-config-${Date.now()}.lccfg`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast("配置导出成功");
+      toast.success("配置导出成功");
       setIsExportDialogOpen(false);
     } else {
-      showToast(result.error || "导出失败", "error");
+      toast.error(result.error || "导出失败");
     }
   };
   const handleImport = async () => {
     if (!importData.trim()) {
-      showToast("请输入配置数据", "error");
+      toast.error("请输入配置数据");
       return;
     }
     try {
@@ -17045,21 +17624,21 @@ function ConfigPanel() {
       if (result.success && result.result) {
         const r2 = result.result;
         const imported = Object.entries(r2.imported || {}).map(([key, count2]) => `${key}: ${count2}`).join(", ");
-        showToast(`导入成功: ${imported}`);
+        toast.success(`导入成功: ${imported}`);
         if (r2.conflicts?.length > 0) {
-          showToast(`有 ${r2.conflicts.length} 个冲突项已处理`, "error");
+          toast.error(`有 ${r2.conflicts.length} 个冲突项已处理`);
         }
         setIsImportDialogOpen(false);
         setImportData("");
       } else {
-        showToast(result.error || "导入失败", "error");
+        toast.error(result.error || "导入失败");
       }
     } catch (error) {
-      showToast("配置数据格式无效", "error");
+      toast.error("配置数据格式无效");
     }
   };
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Provider, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { id: "config-panel", className: "panel h-full", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$1, { value: activeTab, onValueChange: (v2) => setActiveTab(v2), className: "h-full flex flex-col", children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { id: "config-panel", className: "panel h-full", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2, { value: activeTab, onValueChange: (v2) => setActiveTab(v2), className: "h-full flex flex-col", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(List, { className: "flex border-b px-4", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           Trigger,
@@ -17111,7 +17690,7 @@ function ConfigPanel() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: isExportDialogOpen, onOpenChange: setIsExportDialogOpen, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: "导出配置" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-4", children: "导出配置" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -17156,7 +17735,7 @@ function ConfigPanel() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: isImportDialogOpen, onOpenChange: setIsImportDialogOpen, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[480px]", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: "导入配置" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-4", children: "导入配置" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-sm font-medium mb-2", children: "导入模式" }),
@@ -17217,18 +17796,8 @@ function ConfigPanel() {
           /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleImport, className: "btn-primary", children: "导入" })
         ] })
       ] })
-    ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Root2,
-      {
-        open: toastOpen,
-        onOpenChange: setToastOpen,
-        className: `p-4 rounded-lg shadow-lg ${toastType === "success" ? "bg-green-600" : "bg-red-600"} text-white`,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { children: toastMessage })
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Viewport, { className: "fixed bottom-4 right-4" })
-  ] }) });
+    ] }) })
+  ] });
 }
 function SettingsPanel() {
   const { setNetworkStatus, setNetworkError } = useDeviceStore();
@@ -17244,6 +17813,7 @@ function SettingsPanel() {
     ipWhitelist: [],
     logLevel: "info"
   });
+  const [tagsInput, setTagsInput] = reactExports.useState("");
   const [logType, setLogType] = reactExports.useState("all");
   const [logs, setLogs] = reactExports.useState([]);
   const [isLogViewerOpen, setIsLogViewerOpen] = reactExports.useState(false);
@@ -17266,10 +17836,11 @@ function SettingsPanel() {
     try {
       const savedSettings = await window.electronAPI?.getSettings();
       if (savedSettings) {
+        const nextTags = savedSettings.device?.tags || [];
         setSettings({
           deviceName: savedSettings.device?.name || "",
           deviceRole: savedSettings.device?.role || "bidirectional",
-          deviceTags: savedSettings.device?.tags || [],
+          deviceTags: nextTags,
           udpPort: savedSettings.network?.udpPort || 8888,
           tcpPort: savedSettings.network?.tcpPort || 8889,
           broadcastInterval: savedSettings.network?.broadcastInterval || 5e3,
@@ -17278,18 +17849,21 @@ function SettingsPanel() {
           ipWhitelist: savedSettings.security?.whitelist || [],
           logLevel: savedSettings.ui?.logLevel || "info"
         });
+        setTagsInput(nextTags.join(", "));
       }
     } catch (error) {
       console.error("Failed to load settings:", error);
     }
   };
+  const parseTagsInput = (value) => value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
   const handleSave = async () => {
     try {
+      const parsedTags = parseTagsInput(tagsInput);
       await window.electronAPI?.setSettings({
         device: {
           name: settings.deviceName,
           role: settings.deviceRole,
-          tags: settings.deviceTags
+          tags: parsedTags
         },
         network: {
           udpPort: settings.udpPort,
@@ -17321,7 +17895,7 @@ function SettingsPanel() {
         await window.electronAPI?.udpInitLocalDevice({
           name: settings.deviceName || hostname || "ShareNet",
           role: settings.deviceRole,
-          tags: settings.deviceTags,
+          tags: parsedTags,
           port: settings.tcpPort
         });
       }
@@ -17333,15 +17907,15 @@ function SettingsPanel() {
       if (errors.udp || errors.tcp) {
         setNetworkStatus("异常");
         setNetworkError(errors);
-        alert(`设置已保存，但网络服务启动失败：${errors.udp || errors.tcp}`);
+        toast.error(`设置已保存，但网络服务启动失败：${errors.udp || errors.tcp}`);
       } else {
         setNetworkStatus("就绪");
         setNetworkError(null);
-        alert("设置已保存并应用");
+        toast.success("设置已保存并应用");
       }
     } catch (error) {
       console.error("Failed to save settings:", error);
-      alert("保存失败");
+      toast.error("保存失败");
     }
   };
   const loadLogs = async () => {
@@ -17389,7 +17963,7 @@ function SettingsPanel() {
     }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { id: "settings-panel", className: "panel h-full", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$1, { defaultValue: "device", className: "h-full flex flex-col", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2, { defaultValue: "device", className: "h-full flex flex-col", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(List, { className: "flex border-b px-4", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           Trigger,
@@ -17442,7 +18016,7 @@ function SettingsPanel() {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-sm font-medium mb-1", children: "角色" }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            Root2$4,
+            Root2$3,
             {
               value: settings.deviceRole,
               onValueChange: (value) => updateSetting("deviceRole", value),
@@ -17451,7 +18025,7 @@ function SettingsPanel() {
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, {})
                 ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$2, { className: "p-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$1, { className: "p-1", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "controller", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "主控" }) }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "controlled", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "被控" }) }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "bidirectional", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "双向" }) })
@@ -17467,9 +18041,13 @@ function SettingsPanel() {
             {
               type: "text",
               className: "w-full px-3 py-2 border rounded bg-background",
-              placeholder: "用逗号分隔多个标签",
-              value: settings.deviceTags.join(", "),
-              onChange: (e) => updateSetting("deviceTags", e.target.value.split(",").map((t2) => t2.trim()).filter(Boolean))
+              placeholder: "用逗号分隔多个标签（支持中英文逗号）",
+              value: tagsInput,
+              onChange: (e) => {
+                const nextValue = e.target.value;
+                setTagsInput(nextValue);
+                updateSetting("deviceTags", parseTagsInput(nextValue));
+              }
             }
           )
         ] })
@@ -17557,12 +18135,12 @@ function SettingsPanel() {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-center mb-3", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-medium text-sm", children: "日志查看" }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$4, { value: settings.logLevel, onValueChange: handleLogLevelChange, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$3, { value: settings.logLevel, onValueChange: handleLogLevelChange, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center gap-1 px-2 py-1 border rounded text-xs bg-background", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$2, { className: "p-1", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$1, { className: "p-1", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "debug", className: "px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "Debug" }) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "info", className: "px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "Info" }) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "warn", className: "px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "Warn" }) }),
@@ -17597,7 +18175,7 @@ function SettingsPanel() {
           type
         )) }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(Root$2, { className: "flex-1 border rounded", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Viewport$1, { className: "h-full w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: logContainerRef, className: "log-content p-2 font-mono text-xs space-y-1", children: logs.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-muted-foreground text-center py-4", children: "暂无日志" }) : logs.map((log) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Viewport, { className: "h-full w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: logContainerRef, className: "log-content p-2 font-mono text-xs space-y-1", children: logs.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-muted-foreground text-center py-4", children: "暂无日志" }) : logs.map((log) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground shrink-0", children: new Date(log.timestamp).toLocaleTimeString() }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: `uppercase shrink-0 w-12 ${getLogLevelColor(log.level)}`, children: [
               "[",
@@ -18166,9 +18744,7 @@ function RoleBadge({ role }) {
 function DeviceList() {
   const {
     devices,
-    filteredDevices,
     selectedDevices,
-    filter,
     localDevice,
     hiddenDevicesList,
     persistentDevices,
@@ -18177,7 +18753,6 @@ function DeviceList() {
     toggleSelectDevice,
     selectDevice,
     deselectAll,
-    setFilter,
     addDeviceManually,
     hideDevice,
     unhideDevice,
@@ -18197,6 +18772,7 @@ function DeviceList() {
   const [searchText, setSearchText] = reactExports.useState("");
   const [statusFilter, setStatusFilter] = reactExports.useState("all");
   const [tagFilter, setTagFilter] = reactExports.useState("all");
+  const [groupFilter, setGroupFilter] = reactExports.useState("all");
   const [aliasTarget, setAliasTarget] = reactExports.useState(null);
   const [aliasInput, setAliasInput] = reactExports.useState("");
   const [searchHitCounts, setSearchHitCounts] = reactExports.useState(/* @__PURE__ */ new Map());
@@ -18258,9 +18834,16 @@ function DeviceList() {
       devices.flatMap((device) => device.tags)
     )
   );
-  const visibleDevices = filteredDevices.filter((device) => {
+  const onlineDevicesAll = devices.filter((device) => device.status !== "offline");
+  const groupsForFilter = deviceGroups.map((group) => ({
+    group,
+    devices: onlineDevicesAll.filter((device) => group.deviceKeys.includes(getDeviceKey2(device)))
+  }));
+  const groupDeviceKeys = groupFilter === "all" ? null : deviceGroups.find((group) => group.id === groupFilter)?.deviceKeys || [];
+  const visibleDevices = devices.filter((device) => {
     if (statusFilter !== "all" && device.status !== statusFilter) return false;
     if (tagFilter !== "all" && !device.tags.includes(tagFilter)) return false;
+    if (groupDeviceKeys && !groupDeviceKeys.includes(getDeviceKey2(device))) return false;
     if (!searchText.trim()) return true;
     const text = searchText.trim().toLowerCase();
     const alias = getAliasName(device).toLowerCase();
@@ -18412,13 +18995,7 @@ function DeviceList() {
               ":",
               device.port
             ] }),
-            device.tags.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap gap-1", children: [
-              device.tags.slice(0, 2).map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "px-1.5 py-0.5 text-xs bg-secondary rounded", children: tag }, tag)),
-              device.tags.length > 2 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
-                "+",
-                device.tags.length - 2
-              ] })
-            ] }),
+            device.tags.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-1", children: device.tags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "px-1.5 py-0.5 text-xs bg-secondary rounded", children: tag }, tag)) }),
             device.tags.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "无标签" })
           ] })
         ] })
@@ -18486,7 +19063,7 @@ function DeviceList() {
           /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: "手动添加设备" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-4", children: "手动添加设备" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-sm font-medium mb-1", children: "IP 地址（可带端口）" }),
@@ -18525,46 +19102,70 @@ function DeviceList() {
       ] })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "filter-bar p-4 border-b", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        Root2$4,
-        {
-          value: filter.type,
-          onValueChange: (value) => value && setFilter({ type: value }),
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$2, { className: "p-1", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$3, { value: groupFilter, onValueChange: (value) => setGroupFilter(value), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Content2$3,
+          {
+            className: "bg-background border rounded shadow-lg z-50",
+            position: "popper",
+            side: "bottom",
+            align: "start",
+            sideOffset: 4,
+            avoidCollisions: false,
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$1, { className: "p-1", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "all", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "全部分组" }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "controller", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "主控" }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "controlled", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "被控" }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "bidirectional", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "双向" }) })
-            ] }) }) })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$4, { value: statusFilter, onValueChange: (value) => setStatusFilter(value), children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$2, { className: "p-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "all", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "全部状态" }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "online", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "在线" }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "busy", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "忙碌" }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "offline", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "离线" }) })
-        ] }) }) })
+              groupsForFilter.map(({ group }) => /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: group.id, className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: group.name }) }, group.id))
+            ] })
+          }
+        ) })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$4, { value: tagFilter, onValueChange: (value) => setTagFilter(value), children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$3, { value: statusFilter, onValueChange: (value) => setStatusFilter(value), children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Content2$3, { className: "bg-background border rounded shadow-lg z-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$2, { className: "p-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "all", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "全部标签" }) }),
-          allTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: tag, className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: tag }) }, tag))
-        ] }) }) })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Content2$3,
+          {
+            className: "bg-background border rounded shadow-lg z-50",
+            position: "popper",
+            side: "bottom",
+            align: "start",
+            sideOffset: 4,
+            avoidCollisions: false,
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$1, { className: "p-1", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "all", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "全部状态" }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "online", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "在线" }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "busy", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "忙碌" }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "offline", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "离线" }) })
+            ] })
+          }
+        ) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Root2$3, { value: tagFilter, onValueChange: (value) => setTagFilter(value), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Trigger$4, { className: "flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Value, {}),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, { children: "▼" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$3, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Content2$3,
+          {
+            className: "bg-background border rounded shadow-lg z-50",
+            position: "popper",
+            side: "bottom",
+            align: "start",
+            sideOffset: 4,
+            avoidCollisions: false,
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Viewport$1, { className: "p-1", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: "all", className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: "全部标签" }) }),
+              allTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx(Item$1, { value: tag, className: "px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ItemText, { children: tag }) }, tag))
+            ] })
+          }
+        ) })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "input",
@@ -18610,7 +19211,7 @@ function DeviceList() {
       ] })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(Root$2, { className: "h-[50vh] overflow-hidden", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Viewport$1, { className: "h-full w-full", children: visibleDevices.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center justify-center h-48 text-muted-foreground", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Viewport, { className: "h-full w-full", children: visibleDevices.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center justify-center h-48 text-muted-foreground", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { className: "w-12 h-12 mb-2", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, d: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "未发现匹配设备" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs mt-1", children: "请调整筛选或搜索条件" })
@@ -18761,7 +19362,7 @@ function DeviceList() {
         /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[520px] max-w-[90vw]", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: "隐藏列表" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-4", children: "隐藏列表" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border rounded", children: hiddenDevicesList.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 text-sm text-muted-foreground text-center", children: "暂无隐藏设备" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "divide-y", children: hiddenDevicesList.map((device) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-3 flex items-center gap-3", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
@@ -18778,13 +19379,7 @@ function DeviceList() {
                     ":",
                     device.port
                   ] }),
-                  device.tags.length > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap gap-1", children: [
-                    device.tags.slice(0, 2).map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "px-1.5 py-0.5 text-xs bg-secondary rounded", children: tag }, tag)),
-                    device.tags.length > 2 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
-                      "+",
-                      device.tags.length - 2
-                    ] })
-                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "无标签" })
+                  device.tags.length > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-1", children: device.tags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "px-1.5 py-0.5 text-xs bg-secondary rounded", children: tag }, tag)) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "无标签" })
                 ] })
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -18804,7 +19399,7 @@ function DeviceList() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: !!aliasTarget, onOpenChange: (open) => !open && setAliasTarget(null), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: "设置设备别名" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-4", children: "设置设备别名" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-muted-foreground", children: aliasTarget ? `${aliasTarget.ip}:${aliasTarget.port}` : "" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -18827,7 +19422,7 @@ function DeviceList() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: showGroupDialog, onOpenChange: setShowGroupDialog, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: "添加在线分组" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-4", children: "添加在线分组" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "input",
@@ -18854,7 +19449,7 @@ function DeviceList() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: !!editingGroup, onOpenChange: (open) => !open && setEditingGroupId(null), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[720px] max-w-[95vw] max-h-[90vh] overflow-hidden", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-4", children: editingGroup ? `编辑分组：${editingGroup.name}` : "编辑分组" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-4", children: editingGroup ? `编辑分组：${editingGroup.name}` : "编辑分组" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "border rounded mb-4", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-3 py-2 text-sm font-medium bg-secondary/40", children: [
             "可加入的在线设备 (",
@@ -18906,7 +19501,7 @@ function DeviceList() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { open: !!deleteGroupTarget, onOpenChange: (open) => !open && setDeleteGroupTarget(null), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Portal, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { className: "fixed inset-0 bg-black/50 z-50" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Content$1, { className: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Title$1, { className: "text-lg font-semibold mb-2", children: "确认删除分组" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { className: "text-lg font-semibold mb-2", children: "确认删除分组" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-muted-foreground", children: deleteGroupTarget ? `确认删除分组“${deleteGroupTarget.name}”？删除后分组内设备将回到在线列表。` : "" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-end gap-2 mt-6", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "btn-secondary", children: "取消" }) }),
@@ -19075,6 +19670,35 @@ function useNetwork() {
     endDeviceStatusCheck
   ]);
 }
+const Toaster2 = ({ ...props }) => {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Toaster$1,
+    {
+      theme: "system",
+      position: "bottom-right",
+      richColors: true,
+      closeButton: true,
+      expand: true,
+      visibleToasts: 4,
+      duration: 3e3,
+      offset: { right: 30, bottom: 66 },
+      className: "toaster group",
+      toastOptions: {
+        classNames: {
+          toast: "group toast border border-border bg-background text-foreground shadow-lg",
+          title: "text-sm font-medium",
+          description: "text-sm text-muted-foreground",
+          actionButton: "bg-primary text-primary-foreground",
+          cancelButton: "bg-muted text-muted-foreground",
+          closeButton: "border border-border bg-background text-foreground",
+          success: "border-emerald-300 bg-success text-foreground",
+          error: "border-red-300 bg-danger text-foreground"
+        }
+      },
+      ...props
+    }
+  );
+};
 function App() {
   const [activeTab, setActiveTab] = reactExports.useState("resource");
   const [appInfo, setAppInfo] = reactExports.useState({ name: "ShareNet", version: "1.0.0" });
@@ -19176,7 +19800,8 @@ function App() {
         "v",
         appInfo.version
       ] }) })
-    ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Toaster2, {})
   ] });
 }
 client.createRoot(document.getElementById("root")).render(
