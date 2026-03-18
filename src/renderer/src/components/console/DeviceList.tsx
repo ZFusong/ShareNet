@@ -57,9 +57,7 @@ function RoleBadge({ role }: { role: Device['role'] }) {
 export function DeviceList() {
   const {
     devices,
-    filteredDevices,
     selectedDevices,
-    filter,
     localDevice,
     hiddenDevicesList,
     persistentDevices,
@@ -68,7 +66,6 @@ export function DeviceList() {
     toggleSelectDevice,
     selectDevice,
     deselectAll,
-    setFilter,
     addDeviceManually,
     hideDevice,
     unhideDevice,
@@ -89,6 +86,7 @@ export function DeviceList() {
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline' | 'busy'>('all')
   const [tagFilter, setTagFilter] = useState<string>('all')
+  const [groupFilter, setGroupFilter] = useState('all')
   const [aliasTarget, setAliasTarget] = useState<Device | null>(null)
   const [aliasInput, setAliasInput] = useState('')
   const [searchHitCounts, setSearchHitCounts] = useState<Map<string, number>>(new Map())
@@ -158,10 +156,21 @@ export function DeviceList() {
     )
   )
 
-  const visibleDevices = filteredDevices
+  const onlineDevicesAll = devices.filter((device) => device.status !== 'offline')
+  const groupsForFilter = deviceGroups
+    .map((group) => ({
+      group,
+      devices: onlineDevicesAll.filter((device) => group.deviceKeys.includes(getDeviceKey(device)))
+    }))
+  const groupDeviceKeys = groupFilter === 'all'
+    ? null
+    : deviceGroups.find((group) => group.id === groupFilter)?.deviceKeys || []
+
+  const visibleDevices = devices
     .filter((device) => {
       if (statusFilter !== 'all' && device.status !== statusFilter) return false
       if (tagFilter !== 'all' && !device.tags.includes(tagFilter)) return false
+      if (groupDeviceKeys && !groupDeviceKeys.includes(getDeviceKey(device))) return false
 
       if (!searchText.trim()) return true
       const text = searchText.trim().toLowerCase()
@@ -338,14 +347,11 @@ export function DeviceList() {
             <span className="truncate">{device.ip}:{device.port}</span>
             {device.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {device.tags.slice(0, 2).map((tag) => (
+                {device.tags.map((tag) => (
                   <span key={tag} className="px-1.5 py-0.5 text-xs bg-secondary rounded">
                     {tag}
                   </span>
                 ))}
-                {device.tags.length > 2 && (
-                  <span className="text-xs text-muted-foreground">+{device.tags.length - 2}</span>
-                )}
               </div>
             )}
             {device.tags.length === 0 && (
@@ -465,29 +471,29 @@ export function DeviceList() {
       {/* Filter bar */}
       <div className="filter-bar p-4 border-b">
         <div className="flex items-center gap-2">
-          <Select.Root
-            value={filter.type}
-            onValueChange={(value) => value && setFilter({ type: value as any })}
-          >
+          <Select.Root value={groupFilter} onValueChange={(value) => setGroupFilter(value)}>
             <Select.Trigger className="flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28">
               <Select.Value />
               <Select.Icon>▼</Select.Icon>
             </Select.Trigger>
             <Select.Portal>
-              <Select.Content className="bg-background border rounded shadow-lg z-50">
+              <Select.Content
+                className="bg-background border rounded shadow-lg z-50"
+                position="popper"
+                side="bottom"
+                align="start"
+                sideOffset={4}
+                avoidCollisions={false}
+              >
                 <Select.Viewport className="p-1">
                   <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
                     <Select.ItemText>全部分组</Select.ItemText>
                   </Select.Item>
-                  <Select.Item value="controller" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
-                    <Select.ItemText>主控</Select.ItemText>
-                  </Select.Item>
-                  <Select.Item value="controlled" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
-                    <Select.ItemText>被控</Select.ItemText>
-                  </Select.Item>
-                  <Select.Item value="bidirectional" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
-                    <Select.ItemText>双向</Select.ItemText>
-                  </Select.Item>
+                  {groupsForFilter.map(({ group }) => (
+                    <Select.Item key={group.id} value={group.id} className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                      <Select.ItemText>{group.name}</Select.ItemText>
+                    </Select.Item>
+                  ))}
                 </Select.Viewport>
               </Select.Content>
             </Select.Portal>
@@ -499,7 +505,14 @@ export function DeviceList() {
               <Select.Icon>▼</Select.Icon>
             </Select.Trigger>
             <Select.Portal>
-              <Select.Content className="bg-background border rounded shadow-lg z-50">
+              <Select.Content
+                className="bg-background border rounded shadow-lg z-50"
+                position="popper"
+                side="bottom"
+                align="start"
+                sideOffset={4}
+                avoidCollisions={false}
+              >
                 <Select.Viewport className="p-1">
                   <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
                     <Select.ItemText>全部状态</Select.ItemText>
@@ -524,7 +537,14 @@ export function DeviceList() {
               <Select.Icon>▼</Select.Icon>
             </Select.Trigger>
             <Select.Portal>
-              <Select.Content className="bg-background border rounded shadow-lg z-50">
+              <Select.Content
+                className="bg-background border rounded shadow-lg z-50"
+                position="popper"
+                side="bottom"
+                align="start"
+                sideOffset={4}
+                avoidCollisions={false}
+              >
                 <Select.Viewport className="p-1">
                   <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
                     <Select.ItemText>全部标签</Select.ItemText>
@@ -767,14 +787,11 @@ export function DeviceList() {
                             <span className="truncate">{device.ip}:{device.port}</span>
                             {device.tags.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
-                                {device.tags.slice(0, 2).map((tag) => (
+                                {device.tags.map((tag) => (
                                   <span key={tag} className="px-1.5 py-0.5 text-xs bg-secondary rounded">
                                     {tag}
                                   </span>
                                 ))}
-                                {device.tags.length > 2 && (
-                                  <span className="text-xs text-muted-foreground">+{device.tags.length - 2}</span>
-                                )}
                               </div>
                             ) : (
                               <span className="text-xs text-muted-foreground">无标签</span>

@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import * as Select from '@radix-ui/react-select'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
+import * as Toast from '@radix-ui/react-toast'
 import { useDeviceStore } from '../../stores/deviceStore'
 
 interface Settings {
@@ -45,11 +46,15 @@ export function SettingsPanel() {
     ipWhitelist: [],
     logLevel: 'info'
   })
+  const [tagsInput, setTagsInput] = useState('')
 
   const [logType, setLogType] = useState<LogType>('all')
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [isLogViewerOpen, setIsLogViewerOpen] = useState(false)
   const [storageUsage, setStorageUsage] = useState<{ totalSize: number; fileCount: number; formatted: string } | null>(null)
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
 
   const logContainerRef = useRef<HTMLDivElement>(null)
 
@@ -73,10 +78,11 @@ export function SettingsPanel() {
     try {
       const savedSettings = await window.electronAPI?.getSettings()
       if (savedSettings) {
+        const nextTags = savedSettings.device?.tags || []
         setSettings({
           deviceName: savedSettings.device?.name || '',
           deviceRole: savedSettings.device?.role || 'bidirectional',
-          deviceTags: savedSettings.device?.tags || [],
+          deviceTags: nextTags,
           udpPort: savedSettings.network?.udpPort || 8888,
           tcpPort: savedSettings.network?.tcpPort || 8889,
           broadcastInterval: savedSettings.network?.broadcastInterval || 5000,
@@ -85,19 +91,27 @@ export function SettingsPanel() {
           ipWhitelist: savedSettings.security?.whitelist || [],
           logLevel: savedSettings.ui?.logLevel || 'info'
         })
+        setTagsInput(nextTags.join(', '))
       }
     } catch (error) {
       console.error('Failed to load settings:', error)
     }
   }
 
+  const parseTagsInput = (value: string) =>
+    value
+      .split(/[,，]/)
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+
   const handleSave = async () => {
     try {
+      const parsedTags = parseTagsInput(tagsInput)
       await window.electronAPI?.setSettings({
         device: {
           name: settings.deviceName,
           role: settings.deviceRole,
-          tags: settings.deviceTags
+          tags: parsedTags
         },
         network: {
           udpPort: settings.udpPort,
@@ -130,15 +144,15 @@ export function SettingsPanel() {
           : `UDP 启动失败: ${message}`
       }
 
-        if (!errors.udp) {
-          const hostname = await window.electronAPI?.getHostname()
-          await window.electronAPI?.udpInitLocalDevice({
-            name: settings.deviceName || hostname || 'ShareNet',
-            role: settings.deviceRole,
-            tags: settings.deviceTags,
-            port: settings.tcpPort
-          })
-        }
+      if (!errors.udp) {
+        const hostname = await window.electronAPI?.getHostname()
+        await window.electronAPI?.udpInitLocalDevice({
+          name: settings.deviceName || hostname || 'ShareNet',
+          role: settings.deviceRole,
+          tags: parsedTags,
+          port: settings.tcpPort
+        })
+      }
 
       const tcpResult = await window.electronAPI?.tcpStart({ port: settings.tcpPort })
       if (!tcpResult?.success) {
@@ -151,15 +165,21 @@ export function SettingsPanel() {
       if (errors.udp || errors.tcp) {
         setNetworkStatus('异常')
         setNetworkError(errors)
-        alert(`设置已保存，但网络服务启动失败：${errors.udp || errors.tcp}`)
+        setToastMessage(`设置已保存，但网络服务启动失败：${errors.udp || errors.tcp}`)
+        setToastType('error')
+        setToastOpen(true)
       } else {
         setNetworkStatus('就绪')
         setNetworkError(null)
-        alert('设置已保存并应用')
+        setToastMessage('设置已保存并应用')
+        setToastType('success')
+        setToastOpen(true)
       }
     } catch (error) {
       console.error('Failed to save settings:', error)
-      alert('保存失败')
+      setToastMessage('保存失败')
+      setToastType('error')
+      setToastOpen(true)
     }
   }
 
@@ -213,8 +233,9 @@ export function SettingsPanel() {
   }
 
   return (
-    <section id="settings-panel" className="panel h-full">
-      <Tabs.Root defaultValue="device" className="h-full flex flex-col">
+    <Toast.Provider>
+      <section id="settings-panel" className="panel h-full">
+        <Tabs.Root defaultValue="device" className="h-full flex flex-col">
         <Tabs.List className="flex border-b px-4">
           <Tabs.Trigger
             value="device"
@@ -288,9 +309,13 @@ export function SettingsPanel() {
               <input
                 type="text"
                 className="w-full px-3 py-2 border rounded bg-background"
-                placeholder="用逗号分隔多个标签"
-                value={settings.deviceTags.join(', ')}
-                onChange={(e) => updateSetting('deviceTags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+                placeholder="用逗号分隔多个标签（支持中英文逗号）"
+                value={tagsInput}
+                onChange={(e) => {
+                  const nextValue = e.target.value
+                  setTagsInput(nextValue)
+                  updateSetting('deviceTags', parseTagsInput(nextValue))
+                }}
               />
             </div>
           </div>
@@ -463,17 +488,26 @@ export function SettingsPanel() {
             </ScrollArea.Root>
           </div>
         </Tabs.Content>
-      </Tabs.Root>
+        </Tabs.Root>
 
-      {/* Save Button */}
-      <div className="p-4 border-t bg-background">
-        <button
-          onClick={handleSave}
-          className="w-full py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 font-medium"
-        >
-          保存设置
-        </button>
-      </div>
-    </section>
+        {/* Save Button */}
+        <div className="p-4 border-t bg-background">
+          <button
+            onClick={handleSave}
+            className="w-full py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 font-medium"
+          >
+            保存设置
+          </button>
+        </div>
+      </section>
+      <Toast.Root
+        className={`rounded-lg border px-4 py-3 shadow-lg bg-card text-card-foreground ${toastType === 'error' ? 'border-red-300' : 'border-emerald-300'}`}
+        open={toastOpen}
+        onOpenChange={setToastOpen}
+      >
+        <Toast.Title className="text-sm font-medium">{toastMessage}</Toast.Title>
+      </Toast.Root>
+      <Toast.Viewport className="fixed bottom-4 right-4" />
+    </Toast.Provider>
   )
 }

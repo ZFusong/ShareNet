@@ -8,6 +8,7 @@ import * as ScrollArea from '@radix-ui/react-scroll-area'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
+import * as Select from '@radix-ui/react-select'
 import { useDeviceStore } from '../../stores/deviceStore'
 
 type ContentType = 'text' | 'image' | 'file'
@@ -52,10 +53,23 @@ export function ResourcePanel() {
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false)
   const [isDevicePickerOpen, setIsDevicePickerOpen] = useState(false)
+  const [groupFilter, setGroupFilter] = useState('all')
   const incomingTransfersRef = useRef<Map<string, IncomingTransfer>>(new Map())
 
-  const { devices, selectedDevices, toggleSelectDevice, selectAll, deselectAll, localDevice } = useDeviceStore()
+  const { devices, deviceGroups, selectedDevices, toggleSelectDevice, selectAll, deselectAll, localDevice } = useDeviceStore()
   const selectedCount = selectedDevices.size
+
+  const getDeviceKey = (device: { ip: string; port: number }) => `${device.ip}:${device.port}`
+  const onlineDevices = devices.filter((device) => device.status !== 'offline')
+  const groupsForFilter = deviceGroups
+    .map((group) => ({
+      group,
+      devices: onlineDevices.filter((device) => group.deviceKeys.includes(getDeviceKey(device)))
+    }))
+  const filteredDevices =
+    groupFilter === 'all'
+      ? onlineDevices
+      : groupsForFilter.find((entry) => entry.group.id === groupFilter)?.devices || []
 
   const textInputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -800,11 +814,41 @@ export function ResourcePanel() {
                           <button onClick={selectAll} className="text-xs px-2 py-1 border rounded hover:bg-secondary">全选</button>
                           <button onClick={deselectAll} className="text-xs px-2 py-1 border rounded hover:bg-secondary">清空</button>
                         </div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xs text-muted-foreground">分组</span>
+                          <Select.Root value={groupFilter} onValueChange={(value) => setGroupFilter(value)}>
+                            <Select.Trigger className="flex items-center justify-between gap-2 px-2 py-1 border rounded text-xs bg-background w-48">
+                              <Select.Value />
+                              <Select.Icon>▼</Select.Icon>
+                            </Select.Trigger>
+                            <Select.Portal>
+                            <Select.Content
+                              className="bg-background border rounded shadow-lg z-50"
+                              position="popper"
+                              side="bottom"
+                              align="start"
+                              sideOffset={4}
+                              avoidCollisions={false}
+                            >
+                              <Select.Viewport className="p-1">
+                                <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                                  <Select.ItemText>全部在线分组</Select.ItemText>
+                                </Select.Item>
+                                {groupsForFilter.map(({ group }) => (
+                                  <Select.Item key={group.id} value={group.id} className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                                    <Select.ItemText>{group.name}</Select.ItemText>
+                                  </Select.Item>
+                                ))}
+                                </Select.Viewport>
+                              </Select.Content>
+                            </Select.Portal>
+                          </Select.Root>
+                        </div>
                         <div className="max-h-60 overflow-auto border rounded">
-                          {devices.length === 0 ? (
+                          {filteredDevices.length === 0 ? (
                             <div className="p-3 text-xs text-muted-foreground">暂无在线设备</div>
                           ) : (
-                            devices.map((device) => (
+                            filteredDevices.map((device) => (
                               <label key={device.id} className="flex items-center gap-2 p-2 border-b last:border-b-0 cursor-pointer">
                                 <input
                                   type="checkbox"

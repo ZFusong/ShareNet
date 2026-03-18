@@ -469,6 +469,8 @@ let tcpServerInstance: TCPServer | null = null
 export function getTCPServer(config?: Partial<TCPServerConfig>): TCPServer {
   if (!tcpServerInstance) {
     tcpServerInstance = new TCPServer(config)
+  } else if (config && Object.keys(config).length > 0) {
+    tcpServerInstance.updateConfig(config)
   }
   return tcpServerInstance
 }

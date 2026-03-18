@@ -478,6 +478,8 @@ let udpServiceInstance: UDPService | null = null
 export function getUDPService(config?: Partial<UDPServiceConfig>): UDPService {
   if (!udpServiceInstance) {
     udpServiceInstance = new UDPService(config)
+  } else if (config && Object.keys(config).length > 0) {
+    udpServiceInstance.updateConfig(config)
   }
   return udpServiceInstance
 }

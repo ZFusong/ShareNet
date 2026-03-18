@@ -436,6 +436,8 @@ let udpServiceInstance = null;
 function getUDPService(config) {
   if (!udpServiceInstance) {
     udpServiceInstance = new UDPService(config);
+  } else if (config && Object.keys(config).length > 0) {
+    udpServiceInstance.updateConfig(config);
   }
   return udpServiceInstance;
 }
@@ -808,6 +810,8 @@ let tcpServerInstance = null;
 function getTCPServer(config) {
   if (!tcpServerInstance) {
     tcpServerInstance = new TCPServer(config);
+  } else if (config && Object.keys(config).length > 0) {
+    tcpServerInstance.updateConfig(config);
   }
   return tcpServerInstance;
 }
