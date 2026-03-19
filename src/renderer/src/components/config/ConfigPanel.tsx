@@ -4,13 +4,17 @@
  */
 
 import { useState } from 'react'
-import * as Tabs from '@radix-ui/react-tabs'
-import * as Dialog from '@radix-ui/react-dialog'
 import { toast } from 'sonner'
 import { SoftwarePresetList } from './SoftwarePresetList'
 import { InputPresetList } from './InputPresetList'
 import { SceneList } from './SceneList'
 import { useConfigStore } from '../../stores/configStore'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Dialog } from '@/components/ui/dialog'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Textarea } from '@/components/ui/textarea'
+import { Tabs } from '@/components/ui/tabs'
 
 export function ConfigPanel() {
   const { exportConfig, importConfig } = useConfigStore()
@@ -117,18 +121,12 @@ export function ConfigPanel() {
       </Tabs.Root>
 
       <div className="flex gap-2 p-4 border-t">
-        <button
-          className="btn-secondary"
-          onClick={() => setIsExportDialogOpen(true)}
-        >
+        <Button type="button" variant="outline" onClick={() => setIsExportDialogOpen(true)}>
           导出配置
-        </button>
-        <button
-          className="btn-secondary"
-          onClick={() => setIsImportDialogOpen(true)}
-        >
+        </Button>
+        <Button type="button" variant="outline" onClick={() => setIsImportDialogOpen(true)}>
           导入配置
-        </button>
+        </Button>
       </div>
 
       <Dialog.Root open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
@@ -138,37 +136,34 @@ export function ConfigPanel() {
             <Dialog.Title className="text-lg font-semibold mb-4">导出配置</Dialog.Title>
             <div className="space-y-2">
               <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={exportModules['software-presets']}
-                  onChange={(e) => setExportModules({ ...exportModules, 'software-presets': e.target.checked })}
+                  onCheckedChange={(checked) => setExportModules({ ...exportModules, 'software-presets': checked === true })}
                 />
                 <span>软件预设</span>
               </label>
               <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={exportModules['input-presets']}
-                  onChange={(e) => setExportModules({ ...exportModules, 'input-presets': e.target.checked })}
+                  onCheckedChange={(checked) => setExportModules({ ...exportModules, 'input-presets': checked === true })}
                 />
                 <span>键鼠预设</span>
               </label>
               <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={exportModules.scenes}
-                  onChange={(e) => setExportModules({ ...exportModules, scenes: e.target.checked })}
+                  onCheckedChange={(checked) => setExportModules({ ...exportModules, scenes: checked === true })}
                 />
                 <span>场景编排</span>
               </label>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Dialog.Close asChild>
-                <button className="btn-secondary">取消</button>
+                <Button type="button" variant="outline">取消</Button>
               </Dialog.Close>
-              <button onClick={handleExport} className="btn-primary">
+              <Button type="button" onClick={handleExport}>
                 导出
-              </button>
+              </Button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
@@ -177,58 +172,43 @@ export function ConfigPanel() {
       <Dialog.Root open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[480px]">
+            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[480px]">
             <Dialog.Title className="text-lg font-semibold mb-4">导入配置</Dialog.Title>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">导入模式</label>
-                <div className="flex gap-4">
+                <RadioGroup value={importMode} onValueChange={(value) => setImportMode(value as typeof importMode)} className="flex gap-4">
                   <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="import-mode"
-                      checked={importMode === 'append'}
-                      onChange={() => setImportMode('append')}
-                    />
+                    <RadioGroupItem value="append" />
                     <span>追加</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="import-mode"
-                      checked={importMode === 'overwrite'}
-                      onChange={() => setImportMode('overwrite')}
-                    />
+                    <RadioGroupItem value="overwrite" />
                     <span>覆盖</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="import-mode"
-                      checked={importMode === 'merge'}
-                      onChange={() => setImportMode('merge')}
-                    />
+                    <RadioGroupItem value="merge" />
                     <span>智能合并</span>
                   </label>
-                </div>
+                </RadioGroup>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">配置数据 (.lccfg JSON)</label>
-                <textarea
+                <Textarea
                   value={importData}
                   onChange={(e) => setImportData(e.target.value)}
                   placeholder="粘贴导出的配置 JSON 数据..."
-                  className="w-full h-40 px-3 py-2 border rounded-md font-mono text-sm"
+                  className="w-full h-40 font-mono text-sm"
                 />
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Dialog.Close asChild>
-                <button className="btn-secondary">取消</button>
+                <Button type="button" variant="outline">取消</Button>
               </Dialog.Close>
-              <button onClick={handleImport} className="btn-primary">
+              <Button type="button" onClick={handleImport}>
                 导入
-              </button>
+              </Button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>

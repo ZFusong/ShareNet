@@ -4,9 +4,13 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import * as Select from '@radix-ui/react-select'
 import * as Popover from '@radix-ui/react-popover'
 import { useConfigStore, type Scene, type SoftwarePreset, type InputPreset } from '../../stores/configStore'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Select } from '@/components/ui/select'
 
 type CommandType = 'scene' | 'software' | 'input'
 
@@ -159,41 +163,20 @@ export function ConsolePanel() {
         <div className="flex-1 p-4 overflow-auto">
           <div className="command-panel space-y-4">
             {/* Command Type Selection */}
-            <div className="command-type flex gap-4">
+            <RadioGroup value={commandType} onValueChange={(value) => setCommandType(value as CommandType)} className="command-type flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="command-type"
-                  value="scene"
-                  checked={commandType === 'scene'}
-                  onChange={(e) => setCommandType(e.target.value as CommandType)}
-                  className="accent-primary"
-                />
+                <RadioGroupItem value="scene" />
                 <span className="text-sm">场景</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="command-type"
-                  value="software"
-                  checked={commandType === 'software'}
-                  onChange={(e) => setCommandType(e.target.value as CommandType)}
-                  className="accent-primary"
-                />
+                <RadioGroupItem value="software" />
                 <span className="text-sm">软件</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="command-type"
-                  value="input"
-                  checked={commandType === 'input'}
-                  onChange={(e) => setCommandType(e.target.value as CommandType)}
-                  className="accent-primary"
-                />
+                <RadioGroupItem value="input" />
                 <span className="text-sm">键鼠</span>
               </label>
-            </div>
+            </RadioGroup>
 
             {/* Quick Actions - Software Presets */}
             {commandType === 'scene' && softwarePresets.length > 0 && (
@@ -201,13 +184,13 @@ export function ConsolePanel() {
                 <span className="text-xs text-muted-foreground mr-2">软件:</span>
                 <div className="inline-flex flex-wrap gap-1">
                   {softwarePresets.slice(0, 5).map((preset) => (
-                    <button
+                    <Button
                       key={preset.id}
                       onClick={() => handleQuickAction('software', preset.id)}
                       className="px-2 py-0.5 text-xs bg-secondary rounded hover:bg-secondary/80 transition-colors"
                     >
                       {preset.name}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -219,13 +202,13 @@ export function ConsolePanel() {
                 <span className="text-xs text-muted-foreground mr-2">键鼠:</span>
                 <div className="inline-flex flex-wrap gap-1">
                   {inputPresets.slice(0, 5).map((preset) => (
-                    <button
+                    <Button
                       key={preset.id}
                       onClick={() => handleQuickAction('input', preset.id)}
                       className="px-2 py-0.5 text-xs bg-secondary rounded hover:bg-secondary/80 transition-colors"
                     >
                       {preset.name}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -289,17 +272,17 @@ export function ConsolePanel() {
             {commandType === 'scene' && selectedScene && (
               <Popover.Root open={isAdjustOpen} onOpenChange={setIsAdjustOpen}>
                 <Popover.Trigger asChild>
-                  <button className="text-xs text-primary hover:underline">
+                  <Button className="text-xs text-primary hover:underline">
                     临时调整
-                  </button>
+                  </Button>
                 </Popover.Trigger>
                 <Popover.Portal>
                   <Popover.Content className="bg-background border rounded shadow-lg p-3 w-64 z-50">
                     <div className="space-y-2">
                       <label className="text-xs text-muted-foreground">延迟调整 (ms)</label>
-                      <input
+                      <Input
                         type="number"
-                        className="w-full px-2 py-1 border rounded text-sm"
+                        className="w-full h-8 px-2 py-1 text-sm"
                         placeholder="全局延迟"
                         value={(tempAdjustments.delay as number) || ''}
                         onChange={(e) => setTempAdjustments({
@@ -337,33 +320,28 @@ export function ConsolePanel() {
             {/* Execution Options */}
             <div className="execution-options flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={executeNow}
-                  onChange={(e) => setExecuteNow(e.target.checked)}
-                  className="accent-primary"
-                />
+                <Checkbox checked={executeNow} onCheckedChange={(checked) => setExecuteNow(checked === true)} />
                 <span className="text-sm">立即执行</span>
               </label>
 
               {!executeNow && (
                 <label className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">定时:</span>
-                  <input
+                  <Input
                     type="time"
                     value={scheduleTime}
                     onChange={(e) => setScheduleTime(e.target.value)}
-                    className="px-2 py-1 border rounded text-sm"
+                    className="h-8 px-2 py-1 text-sm"
                   />
                 </label>
               )}
 
-              <button
+              <Button
                 onClick={handleSend}
                 className="ml-auto px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-sm font-medium"
               >
                 {executeNow ? '发送并执行' : '仅发送'}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -397,3 +375,5 @@ export function ConsolePanel() {
     </section>
   )
 }
+
+

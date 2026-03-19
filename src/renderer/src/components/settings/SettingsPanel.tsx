@@ -4,11 +4,15 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import * as Tabs from '@radix-ui/react-tabs'
-import * as Select from '@radix-ui/react-select'
-import * as ScrollArea from '@radix-ui/react-scroll-area'
 import { toast } from 'sonner'
 import { useDeviceStore } from '../../stores/deviceStore'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Tabs } from '@/components/ui/tabs'
 
 interface Settings {
   deviceName: string
@@ -260,9 +264,9 @@ export function SettingsPanel() {
             <h3 className="text-lg font-semibold">本机信息</h3>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">设备名称</label>
-              <input
+              <Input
                 type="text"
-                className="w-full px-3 py-2 border rounded bg-background"
+                className="w-full"
                 placeholder="设备名称"
                 value={settings.deviceName}
                 onChange={(e) => updateSetting('deviceName', e.target.value)}
@@ -294,9 +298,9 @@ export function SettingsPanel() {
             </div>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">标签</label>
-              <input
+              <Input
                 type="text"
-                className="w-full px-3 py-2 border rounded bg-background"
+                className="w-full"
                 placeholder="用逗号分隔多个标签（支持中英文逗号）"
                 value={tagsInput}
                 onChange={(e) => {
@@ -314,29 +318,29 @@ export function SettingsPanel() {
             <h3 className="text-lg font-semibold">网络设置</h3>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">UDP 端口</label>
-              <input type="number" className="w-full px-3 py-2 border rounded bg-background" value={settings.udpPort} onChange={(e) => updateSetting('udpPort', parseInt(e.target.value, 10) || 0)} />
+              <Input type="number" className="w-full" value={settings.udpPort} onChange={(e) => updateSetting('udpPort', parseInt(e.target.value, 10) || 0)} />
             </div>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">TCP 端口</label>
-              <input type="number" className="w-full px-3 py-2 border rounded bg-background" value={settings.tcpPort} onChange={(e) => updateSetting('tcpPort', parseInt(e.target.value, 10) || 0)} />
+              <Input type="number" className="w-full" value={settings.tcpPort} onChange={(e) => updateSetting('tcpPort', parseInt(e.target.value, 10) || 0)} />
             </div>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">广播间隔 (毫秒)</label>
-              <input type="number" className="w-full px-3 py-2 border rounded bg-background" value={settings.broadcastInterval} onChange={(e) => updateSetting('broadcastInterval', parseInt(e.target.value, 10) || 0)} />
+              <Input type="number" className="w-full" value={settings.broadcastInterval} onChange={(e) => updateSetting('broadcastInterval', parseInt(e.target.value, 10) || 0)} />
             </div>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">下载目录</label>
               <div className="flex gap-2">
-                <input
+                <Input
                   type="text"
-                  className="w-full px-3 py-2 border rounded bg-background"
+                  className="w-full"
                   placeholder="默认 Downloads/ShareNet"
                   value={settings.downloadDirectory}
                   onChange={(e) => updateSetting('downloadDirectory', e.target.value)}
                 />
-                <button type="button" onClick={handleChooseDownloadDirectory} className="px-3 py-2 border rounded hover:bg-secondary text-sm shrink-0">
+                <Button type="button" variant="outline" onClick={handleChooseDownloadDirectory} className="shrink-0">
                   浏览
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -347,20 +351,20 @@ export function SettingsPanel() {
             <h3 className="text-lg font-semibold">安全设置</h3>
             <div className="form-group">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={settings.allowControl} onChange={(e) => updateSetting('allowControl', e.target.checked)} className="accent-primary" />
+                <Checkbox checked={settings.allowControl} onCheckedChange={(checked) => updateSetting('allowControl', checked === true)} />
                 <span className="text-sm">允许被控制</span>
               </label>
             </div>
             <div className="form-group">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={settings.requireConfirm} onChange={(e) => updateSetting('requireConfirm', e.target.checked)} className="accent-primary" />
+                <Checkbox checked={settings.requireConfirm} onCheckedChange={(checked) => updateSetting('requireConfirm', checked === true)} />
                 <span className="text-sm">操作确认</span>
               </label>
             </div>
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">IP 白名单</label>
-              <textarea
-                className="w-full px-3 py-2 border rounded bg-background resize-none"
+              <Textarea
+                className="w-full resize-none"
                 placeholder="每行一个IP地址，留空表示允许所有"
                 rows={4}
                 value={settings.ipWhitelist.join('\n')}
@@ -391,20 +395,27 @@ export function SettingsPanel() {
                     </Select.Content>
                   </Select.Portal>
                 </Select.Root>
-                <button onClick={handleClearLogs} className="px-2 py-1 text-xs border rounded hover:bg-secondary">清空</button>
-                <button onClick={handleOpenConfigDir} className="px-2 py-1 text-xs border rounded hover:bg-secondary">打开目录</button>
+                <Button type="button" variant="outline" size="sm" onClick={handleClearLogs} className="h-8 px-2 text-xs">
+                  清空
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={handleOpenConfigDir} className="h-8 px-2 text-xs">
+                  打开目录
+                </Button>
               </div>
             </div>
 
             <div className="flex gap-2 mb-3">
               {(['all', 'run', 'audit'] as LogType[]).map((type) => (
-                <button
+                <Button
                   key={type}
+                  type="button"
+                  variant={logType === type ? 'secondary' : 'ghost'}
+                  size="sm"
                   onClick={() => setLogType(type)}
-                  className={`px-3 py-1 text-xs rounded ${logType === type ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'}`}
+                  className="h-8 px-3 text-xs"
                 >
                   {type === 'all' ? '全部' : type === 'run' ? '运行日志' : '审计日志'}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -429,9 +440,9 @@ export function SettingsPanel() {
         </Tabs.Content>
 
         <div className="border-t px-4 py-3 flex justify-end">
-          <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 text-sm font-medium">
+          <Button type="button" onClick={handleSave} className="px-4 py-2 text-sm font-medium">
             保存设置
-          </button>
+          </Button>
         </div>
       </Tabs.Root>
     </section>

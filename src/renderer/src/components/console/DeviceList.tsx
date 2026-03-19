@@ -3,13 +3,15 @@
  * 设备列表组件 - 使用 Radix UI
  */
 
-import * as Checkbox from '@radix-ui/react-checkbox'
-import * as Dialog from '@radix-ui/react-dialog'
-import * as ScrollArea from '@radix-ui/react-scroll-area'
-import * as Select from '@radix-ui/react-select'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { type Device, type DeviceGroup } from '../../stores/deviceStore'
 import { useDevices } from '../../hooks/useDevices'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Dialog } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select } from '@/components/ui/select'
 
 // Status indicator component
 function StatusBadge({ status }: { status: Device['status'] }) {
@@ -303,18 +305,13 @@ export function DeviceList() {
       onClick={() => toggleSelectDevice(device.id)}
     >
       <div className="flex items-center gap-3">
-        <Checkbox.Root
+        <Checkbox
           checked={selectedDevices.has(device.id)}
           onCheckedChange={() => toggleSelectDevice(device.id)}
           onClick={(e) => e.stopPropagation()}
           className="w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary"
         >
-          <Checkbox.Indicator>
-            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </Checkbox.Indicator>
-        </Checkbox.Root>
+        </Checkbox>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -328,20 +325,20 @@ export function DeviceList() {
             )}
             <StatusBadge status={device.status} />
             <RoleBadge role={device.role} />
-            <button
+            <Button
               onClick={(e) => handleOpenAlias(device, e)}
               className="text-xs px-2 py-0.5 border rounded text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100"
               title="设置别名"
             >
               别名
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={(e) => handleHideDevice(device, e)}
               className="ml-auto text-xs px-2 py-0.5 border rounded text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100"
               title="隐藏设备"
             >
               隐藏
-            </button>
+            </Button>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
             <span className="truncate">{device.ip}:{device.port}</span>
@@ -413,7 +410,7 @@ export function DeviceList() {
       <div className="device-list-header flex items-center justify-between p-4 border-b">
         <h3 className="text-lg font-semibold">选择设备</h3>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={refreshDevices}
             className="btn-icon"
             title="刷新设备"
@@ -421,12 +418,12 @@ export function DeviceList() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-          </button>
+          </Button>
           <Dialog.Root open={showAddDialog} onOpenChange={setShowAddDialog}>
             <Dialog.Trigger asChild>
-              <button className="btn-primary text-sm px-3 py-1.5" title="手动添加设备">
+              <Button className="btn-primary text-sm px-3 py-1.5" title="手动添加设备">
                 + 添加
-              </button>
+              </Button>
             </Dialog.Trigger>
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
@@ -435,32 +432,32 @@ export function DeviceList() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">IP 地址（可带端口）</label>
-                    <input
+                    <Input
                       type="text"
                       value={newDeviceIP}
                       onChange={(e) => setNewDeviceIP(e.target.value)}
                       placeholder="192.168.1.100:8899"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">设备别名（可选）</label>
-                    <input
+                    <Input
                       type="text"
                       value={newDeviceAlias}
                       onChange={(e) => setNewDeviceAlias(e.target.value)}
                       placeholder="设备别名"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full"
                     />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 mt-6">
                   <Dialog.Close asChild>
-                    <button className="btn-secondary">取消</button>
+                    <Button className="btn-secondary">取消</Button>
                   </Dialog.Close>
-                  <button onClick={handleAddDevice} className="btn-primary">
+                  <Button onClick={handleAddDevice} className="btn-primary">
                     添加
-                  </button>
+                  </Button>
                 </div>
               </Dialog.Content>
             </Dialog.Portal>
@@ -559,49 +556,42 @@ export function DeviceList() {
             </Select.Portal>
           </Select.Root>
 
-          <input
+          <Input
             type="text"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="搜索设备名称或标签"
-            className="flex-1 min-w-0 px-3 py-2 border rounded-md text-sm bg-background"
+            className="flex-1 min-w-0 text-sm bg-background"
           />
         </div>
       </div>
 
       {/* Select all */}
       <div className="select-all-bar p-3 border-b flex items-center gap-3">
-        <Checkbox.Root
+        <Checkbox
           checked={allVisibleSelected}
           onCheckedChange={handleSelectVisible}
           className={`w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary ${someVisibleSelected && !allVisibleSelected ? 'bg-primary/50' : ''}`}
           id="select-all"
         >
-          <Checkbox.Indicator>
-            {allVisibleSelected || (someVisibleSelected && !allVisibleSelected) ? (
-              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            ) : null}
-          </Checkbox.Indicator>
-        </Checkbox.Root>
+        </Checkbox>
         <label htmlFor="select-all" className="text-sm text-muted-foreground">
           {selectedDevices.size > 0 ? `已选择 ${selectedDevices.size} 个设备` : '全选本页'}
         </label>
         <div className="ml-auto flex gap-2">
-          <button
+          <Button
             onClick={handleDeleteSelected}
             disabled={selectedDevices.size === 0}
             className="text-xs px-2 py-1 border rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             删除
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={deselectAll}
             className="text-xs px-2 py-1 border rounded hover:bg-secondary"
           >
             清空已选
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -633,7 +623,7 @@ export function DeviceList() {
                     </svg>
                     在线设备 ({onlineDevices.length})
                   </span>
-                  <button
+                  <Button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault()
@@ -647,7 +637,7 @@ export function DeviceList() {
                     title="添加分组"
                   >
                     +
-                  </button>
+                  </Button>
                 </div>
                 <div className={`accordion-content ${onlineOpen ? 'is-open' : ''}`}>
                   <div className="accordion-content-inner">
@@ -671,7 +661,7 @@ export function DeviceList() {
                             {group.name} ({groupDevices.length})
                           </span>
                           <span className="group-actions flex items-center gap-1">
-                            <button
+                            <Button
                               type="button"
                               onClick={(e) => {
                                 e.preventDefault()
@@ -681,8 +671,8 @@ export function DeviceList() {
                               className="text-xs px-2 py-0.5 border rounded hover:bg-secondary"
                             >
                               编辑
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
                               onClick={(e) => {
                                 e.preventDefault()
@@ -692,7 +682,7 @@ export function DeviceList() {
                               className="text-xs px-2 py-0.5 border rounded hover:bg-secondary text-destructive"
                             >
                               删除
-                            </button>
+                            </Button>
                           </span>
                         </div>
                         <div className={`accordion-content ${groupOpen[group.id] ? 'is-open' : ''}`}>
@@ -755,9 +745,9 @@ export function DeviceList() {
         </div>
         <Dialog.Root>
           <Dialog.Trigger asChild>
-            <button className="text-xs px-2 py-1 border rounded hover:bg-secondary text-foreground">
+            <Button className="text-xs px-2 py-1 border rounded hover:bg-secondary text-foreground">
               隐藏列表{hiddenDevicesList.length > 0 ? `(${hiddenDevicesList.length})` : ''}
-            </button>
+            </Button>
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
@@ -798,12 +788,12 @@ export function DeviceList() {
                             )}
                           </div>
                         </div>
-                        <button
+                        <Button
                           onClick={() => unhideDevice(`${device.ip}:${device.port}`)}
                           className="text-xs px-2 py-1 border rounded hover:bg-secondary"
                         >
                           取消隐藏
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -811,7 +801,7 @@ export function DeviceList() {
               </div>
               <div className="flex justify-end mt-4">
                 <Dialog.Close asChild>
-                  <button className="btn-secondary">关闭</button>
+                  <Button className="btn-secondary">关闭</Button>
                 </Dialog.Close>
               </div>
             </Dialog.Content>
@@ -827,21 +817,21 @@ export function DeviceList() {
               <div className="text-sm text-muted-foreground">
                 {aliasTarget ? `${aliasTarget.ip}:${aliasTarget.port}` : ''}
               </div>
-              <input
+              <Input
                 type="text"
                 value={aliasInput}
                 onChange={(e) => setAliasInput(e.target.value)}
                 placeholder="输入别名"
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full"
               />
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Dialog.Close asChild>
-                <button className="btn-secondary" onClick={() => setAliasTarget(null)}>取消</button>
+                <Button className="btn-secondary" onClick={() => setAliasTarget(null)}>取消</Button>
               </Dialog.Close>
-              <button onClick={handleSaveAlias} className="btn-primary">
+              <Button onClick={handleSaveAlias} className="btn-primary">
                 保存
-              </button>
+              </Button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
@@ -852,7 +842,7 @@ export function DeviceList() {
           <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-96">
             <Dialog.Title className="text-lg font-semibold mb-4">添加在线分组</Dialog.Title>
             <div className="space-y-2">
-              <input
+              <Input
                 type="text"
                 value={groupNameInput}
                 ref={groupNameInputRef}
@@ -861,17 +851,17 @@ export function DeviceList() {
                   setGroupNameError('')
                 }}
                 placeholder="输入分组名称"
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full"
               />
               {groupNameError && <div className="text-xs text-destructive">{groupNameError}</div>}
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Dialog.Close asChild>
-                <button className="btn-secondary" onClick={() => setGroupNameError('')}>取消</button>
+                <Button className="btn-secondary" onClick={() => setGroupNameError('')}>取消</Button>
               </Dialog.Close>
-              <button onClick={handleCreateGroup} className="btn-primary">
+              <Button onClick={handleCreateGroup} className="btn-primary">
                 创建
-              </button>
+              </Button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
@@ -891,14 +881,14 @@ export function DeviceList() {
                 editUngroupedOnline.map((device) =>
                   renderGroupDeviceRow(
                     device,
-                    <button
+                    <Button
                       type="button"
                       onClick={() => editingGroup && moveDeviceToGroup(device, editingGroup.id)}
                       className="text-xs px-2 py-0.5 border rounded hover:bg-secondary"
                       title="加入分组"
                     >
                       +
-                    </button>
+                    </Button>
                     ,
                     deviceGroupMap.get(getDeviceKey(device))?.id
                       ? (
@@ -919,21 +909,21 @@ export function DeviceList() {
                 editingGroupDevices.map((device) =>
                   renderGroupDeviceRow(
                     device,
-                    <button
+                    <Button
                       type="button"
                       onClick={() => editingGroup && removeDeviceFromGroup(editingGroup.id, getDeviceKey(device))}
                       className="text-xs px-2 py-0.5 border rounded hover:bg-secondary"
                       title="移出分组"
                     >
                       -
-                    </button>
+                    </Button>
                   )
                 )
               )}
             </div>
             <div className="flex justify-end mt-4">
               <Dialog.Close asChild>
-                <button className="btn-secondary" onClick={() => setEditingGroupId(null)}>关闭</button>
+                <Button className="btn-secondary" onClick={() => setEditingGroupId(null)}>关闭</Button>
               </Dialog.Close>
             </div>
           </Dialog.Content>
@@ -949,11 +939,11 @@ export function DeviceList() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Dialog.Close asChild>
-                <button className="btn-secondary">取消</button>
+                <Button className="btn-secondary">取消</Button>
               </Dialog.Close>
-              <button onClick={handleDeleteGroup} className="btn-primary">
+              <Button onClick={handleDeleteGroup} className="btn-primary">
                 确认删除
-              </button>
+              </Button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
@@ -961,3 +951,4 @@ export function DeviceList() {
     </div>
   )
 }
+

@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
-import * as Dialog from '@radix-ui/react-dialog'
-import * as Select from '@radix-ui/react-select'
 import { toast } from 'sonner'
 import { useDeviceStore } from '../../stores/deviceStore'
 import textIconPng from '@/assets/text-icon.png'
 import imageIconPng from '@/assets/image-icon.png'
 import fileIconPng from '@/assets/file-icon.png'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Dialog } from '@/components/ui/dialog'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
 type ContentType = 'text' | 'image' | 'file'
 type ImageStatus = 'offered' | 'downloading' | 'downloaded'
@@ -741,7 +745,7 @@ export function ResourcePanel() {
               <h3 className="text-sm font-medium">分享记录</h3>
               <AlertDialog.Root open={clearOpen} onOpenChange={setClearOpen}>
                 <AlertDialog.Trigger asChild>
-                  <button className="text-xs text-muted-foreground hover:text-foreground">清理</button>
+                  <Button className="text-xs text-muted-foreground hover:text-foreground">清理</Button>
                 </AlertDialog.Trigger>
                 <AlertDialog.Portal>
                   <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
@@ -789,10 +793,10 @@ export function ResourcePanel() {
 
                       return (
                         <article key={group.key} className="rounded-xl border bg-background shadow-sm">
-                          <button
+                          <Button
                             type="button"
                             onClick={() => toggleGroup(group.key)}
-                            className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-background/40"
+                            className="h-auto flex w-full items-start justify-between gap-3 px-4 py-3 text-left bg-background hover:bg-inherit"
                           >
                             <div className="flex min-w-0 items-start gap-3">
                               {/* Large Type Icon */}
@@ -828,7 +832,7 @@ export function ResourcePanel() {
                             <span className="shrink-0 text-xs text-muted-foreground">
                               {isExpanded ? '收起 ▲' : '展开 ▼'}
                             </span>
-                          </button>
+                          </Button>
 
                           <div className="px-4 pb-4">
                             <div
@@ -836,11 +840,21 @@ export function ResourcePanel() {
                               style={{ maxHeight: isExpanded ? `${historyCardBodyMaxHeight}px` : `${collapsedHeight}px` }}
                             >
                               <div
-                                className={`${isExpanded ? ' overflow-y-auto pr-1' : 'overflow-hidden'} space-y-3`}
+                                className={`${isExpanded ? ' overflow-y-auto' : 'overflow-hidden'} space-y-3`}
                                 style={{ maxHeight: isExpanded ? `${historyCardBodyMaxHeight - 24}px` : `${collapsedHeight - 24}px` }}
                               >
                                 {first.type === 'text' && (
                                   <div>
+                                    <Button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(first.content)
+                                        toast.success('已复制到剪贴板')
+                                      }}
+                                      size={"xs"}
+                                      className="text-xs text-primary"
+                                    >
+                                      复制
+                                    </Button>
                                     <p
                                       className="break-words whitespace-pre-wrap text-sm"
                                       style={
@@ -856,20 +870,30 @@ export function ResourcePanel() {
                                     >
                                       {first.content}
                                     </p>
-                                    <button
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(first.content)
-                                        toast.success('已复制到剪贴板')
-                                      }}
-                                      className="mt-2 text-xs text-primary hover:underline"
-                                    >
-                                      复制
-                                    </button>
                                   </div>
                                 )}
 
                                 {first.type === 'image' && (
                                   <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      {group.items.filter((item) => item.type === 'image' && item.imageStatus === 'offered' && !item.isSelf).length > 1 && (
+                                        <Button
+                                          onClick={() => {
+                                            for (const item of group.items) {
+                                              if (item.type === 'image' && item.imageStatus === 'offered' && !item.isSelf) {
+                                                void handleDownloadImage(item)
+                                              }
+                                            }
+                                          }}
+                                          size={"xs"}
+                                          className="text-xs text-primary"
+                                        >
+                                          下载全部
+                                        </Button>
+                                      )}
+
+                                      {isBatch && <div className="text-xs text-muted-foreground">本次共 {group.items.length} 张图片</div>}
+                                    </div>
                                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                       {group.items
                                         .slice(0, isExpanded ? group.items.length : COLLAPSED_MEDIA_PREVIEW_COUNT)
@@ -887,57 +911,59 @@ export function ResourcePanel() {
                                             <div className="text-xs text-muted-foreground">{formatSize(msg.fileSize || 0)}</div>
                                             <div className="flex flex-wrap items-center gap-2">
                                               {msg.imageStatus === 'offered' && !msg.isSelf && (
-                                                <button
+                                                <Button
                                                   onClick={() => handleDownloadImage(msg)}
-                                                  className="text-xs text-primary hover:underline"
+                                                  className="text-xs text-primary"
+                                                  size={"xs"}
                                                 >
                                                   下载原图
-                                                </button>
+                                                </Button>
                                               )}
                                               {msg.imageStatus === 'downloading' && (
                                                 <span className="text-xs text-muted-foreground">下载中 {msg.progress || 0}%</span>
                                               )}
                                               {msg.imageStatus === 'downloaded' && (
-                                                <button
+                                                <Button
                                                   onClick={() => handleSaveImage(msg.content, msg.fileName || 'image')}
-                                                  className="text-xs text-primary hover:underline"
+                                                  className="text-xs text-primary"
+                                                  size={"xs"}
                                                 >
                                                   另存为
-                                                </button>
+                                                </Button>
                                               )}
                                               {msg.imageStatus === 'downloaded' && msg.downloadPath && (
-                                                <button
+                                                <Button
                                                   onClick={() => handleRevealFile(msg.downloadPath)}
-                                                  className="text-xs text-primary hover:underline"
+                                                  className="text-xs text-primary"
+                                                  size={"xs"}
                                                 >
                                                   打开所在位置
-                                                </button>
+                                                </Button>
                                               )}
                                             </div>
                                           </div>
                                         ))}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2"> 
-                                      {isBatch && <div className="text-xs text-muted-foreground">本次共 {group.items.length} 张图片</div>}
-                                      {!isExpanded && hiddenCount > 0 && (
-                                        <div className="text-xs text-muted-foreground">已折叠另外 {hiddenCount} 张图片</div>
-                                      )}
                                     </div>
                                   </div>
                                 )}
 
                                 {first.type === 'file' && (
                                   <div className="space-y-2">
-                                    {offeredFiles.length > 1 && (
-                                      <button
-                                        onClick={() => {
-                                          for (const item of offeredFiles) void handleDownloadFile(item)
-                                        }}
-                                        className="text-xs text-primary hover:underline"
-                                      >
-                                        下载全部
-                                      </button>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                      {offeredFiles.length > 1 && (
+                                        <Button
+                                          onClick={() => {
+                                            for (const item of offeredFiles) void handleDownloadFile(item)
+                                          }}
+                                          size={"xs"}
+                                          className="text-xs text-primary"
+                                        >
+                                          下载全部
+                                        </Button>
+                                      )}
+
+                                      {isBatch && <div className="text-xs text-muted-foreground">本次共 {group.items.length} 个文件</div>}
+                                    </div>
 
                                     {group.items
                                       .slice(0, isExpanded ? group.items.length : COLLAPSED_MEDIA_PREVIEW_COUNT)
@@ -957,32 +983,29 @@ export function ResourcePanel() {
                                           </div>
                                           <div className="flex shrink-0 flex-wrap items-center gap-2">
                                             {msg.fileStatus === 'offered' && !msg.isSelf && (
-                                              <button
+                                              <Button
                                                 onClick={() => handleDownloadFile(msg)}
-                                                className="text-xs text-primary hover:underline"
+                                                className="text-xs text-primary"
+                                                size={"xs"}
                                               >
                                                 下载
-                                              </button>
+                                              </Button>
                                             )}
                                             {msg.fileStatus === 'downloading' && (
                                               <span className="text-xs text-muted-foreground">下载中 {msg.progress || 0}%</span>
                                             )}
                                             {msg.fileStatus === 'downloaded' && msg.downloadPath && (
-                                              <button
+                                              <Button
                                                 onClick={() => handleRevealFile(msg.downloadPath)}
-                                                className="text-xs text-primary hover:underline"
+                                                className="text-xs text-primary"
+                                                size={"xs"}
                                               >
                                                 打开所在位置
-                                              </button>
+                                              </Button>
                                             )}
                                           </div>
                                         </div>
                                       ))}
-
-                                    {!isExpanded && hiddenCount > 0 && (
-                                      <div className="text-xs text-muted-foreground">已折叠另外 {hiddenCount} 个文件</div>
-                                    )}
-                                    {isBatch && <div className="text-xs text-muted-foreground">本次共 {group.items.length} 个文件</div>}
                                   </div>
                                 )}
                               </div>
@@ -1002,7 +1025,7 @@ export function ResourcePanel() {
               <div className="space-y-4">
                 <div className="flex gap-2">
                   {(['text', 'image', 'file'] as ContentType[]).map((type) => (
-                    <button
+                    <Button
                       key={type}
                       className={`rounded px-4 py-2 text-sm ${
                         contentType === type ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'
@@ -1013,13 +1036,13 @@ export function ResourcePanel() {
                       }}
                     >
                       {type === 'text' ? '文字' : type === 'image' ? '图片' : '文件'}
-                    </button>
+                    </Button>
                   ))}
                 </div>
 
                 {contentType === 'text' && (
                   <div>
-                    <textarea
+                    <Textarea
                       ref={textInputRef}
                       className="h-40 w-full resize-none rounded border bg-background p-3 text-sm"
                       placeholder="输入文字内容... (支持 Ctrl+V 粘贴)"
@@ -1067,12 +1090,12 @@ export function ResourcePanel() {
                             {selectedFiles.map((file, index) => (
                               <div key={`${file.name}-${index}`} className="group relative">
                                 <img src={file.path} alt={file.name} className="h-20 w-full rounded border object-cover" />
-                                <button
+                                <Button
                                   onClick={() => setSelectedFiles((prev) => prev.filter((_, i) => i !== index))}
                                   className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-red-500 text-xs text-white opacity-0 group-hover:opacity-100"
                                 >
                                   ×
-                                </button>
+                                </Button>
                                 <div className="truncate text-xs">{file.name}</div>
                               </div>
                             ))}
@@ -1119,12 +1142,12 @@ export function ResourcePanel() {
                                   <div className="truncate text-sm">{file.name}</div>
                                   <div className="text-xs text-muted-foreground">{formatSize(file.size)}</div>
                                 </div>
-                                <button
+                                <Button
                                   onClick={() => setSelectedFiles((prev) => prev.filter((_, i) => i !== index))}
                                   className="text-red-500"
                                 >
                                   ×
-                                </button>
+                                </Button>
                               </div>
                             ))}
                           </div>
@@ -1134,36 +1157,40 @@ export function ResourcePanel() {
                   </div>
                 )}
 
-                <div className="flex h-6 items-center gap-4">
+                <RadioGroup
+                  value={sendTarget}
+                  onValueChange={(value) => setSendTarget(value as typeof sendTarget)}
+                  className="flex h-6 items-center gap-4"
+                >
                   <label className="flex cursor-pointer items-center gap-2">
-                    <input type="radio" checked={sendTarget === 'broadcast'} onChange={() => setSendTarget('broadcast')} />
+                    <RadioGroupItem value="broadcast" />
                     <span className="text-sm">广播</span>
                   </label>
                   <label className="flex cursor-pointer items-center gap-2">
-                    <input type="radio" checked={sendTarget === 'selected'} onChange={() => setSendTarget('selected')} />
+                    <RadioGroupItem value="selected" />
                     <span className="text-sm">已选设备</span>
                   </label>
                   <label className="flex cursor-pointer items-center gap-2">
-                    <input type="radio" checked={sendTarget === 'group'} onChange={() => setSendTarget('group')} />
+                    <RadioGroupItem value="group" />
                     <span className="text-sm">分组设备</span>
                   </label>
 
                   {sendTarget === 'selected' && (
                     <Dialog.Root open={pickerOpen} onOpenChange={setPickerOpen}>
                       <Dialog.Trigger asChild>
-                        <button className="text-xs text-primary hover:underline">已选 {selectedCount} 个设备</button>
+                        <Button className="text-xs text-primary">已选 {selectedCount} 个设备</Button>
                       </Dialog.Trigger>
                       <Dialog.Portal>
                         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
                         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[420px] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded border bg-background p-4 shadow-lg">
                           <Dialog.Title className="mb-3 text-sm font-medium">选择设备</Dialog.Title>
                           <div className="mb-3 flex gap-2">
-                            <button onClick={selectAll} className="rounded border px-2 py-1 text-xs hover:bg-secondary">
+                            <Button onClick={selectAll} className="rounded border px-2 py-1 text-xs hover:bg-secondary">
                               全选
-                            </button>
-                            <button onClick={deselectAll} className="rounded border px-2 py-1 text-xs hover:bg-secondary">
+                            </Button>
+                            <Button onClick={deselectAll} className="rounded border px-2 py-1 text-xs hover:bg-secondary">
                               清空
-                            </button>
+                            </Button>
                           </div>
                           <div className="mb-3 flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">分组</span>
@@ -1208,10 +1235,9 @@ export function ResourcePanel() {
                                   key={device.id}
                                   className="flex cursor-pointer items-center gap-2 border-b p-2 last:border-b-0"
                                 >
-                                  <input
-                                    type="checkbox"
+                                  <Checkbox
                                     checked={selectedDevices.has(device.id)}
-                                    onChange={() => toggleSelectDevice(device.id)}
+                                    onCheckedChange={() => toggleSelectDevice(device.id)}
                                   />
                                   <span className="text-sm">{device.name}</span>
                                   <span className="text-xs text-muted-foreground">
@@ -1223,7 +1249,7 @@ export function ResourcePanel() {
                           </div>
                           <div className="mt-3 flex justify-end">
                             <Dialog.Close asChild>
-                              <button className="rounded bg-primary px-3 py-1 text-sm text-primary-foreground">完成</button>
+                              <Button className="rounded bg-primary px-3 py-1 text-sm text-primary-foreground">完成</Button>
                             </Dialog.Close>
                           </div>
                         </Dialog.Content>
@@ -1264,15 +1290,15 @@ export function ResourcePanel() {
                       </Select.Portal>
                     </Select.Root>
                   )}
-                </div>
+                </RadioGroup>
 
-                <button
+                <Button
                   onClick={() => void handleSend()}
                   disabled={contentType === 'text' ? !textContent.trim() : selectedFiles.length === 0}
                   className="w-full rounded bg-primary py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   发送
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1297,3 +1323,6 @@ function handleSaveImage(imageUrl: string, fileName: string) {
   link.download = fileName
   link.click()
 }
+
+
+

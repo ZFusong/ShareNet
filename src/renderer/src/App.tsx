@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react'
+import { Toaster } from '@/components/ui/sonner'
+import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
 import { ConsolePanel } from './components/console/ConsolePanel'
 import { ResourcePanel } from './components/resource/ResourcePanel'
 import { ConfigPanel } from './components/config/ConfigPanel'
@@ -6,9 +9,7 @@ import { SettingsPanel } from './components/settings/SettingsPanel'
 import { DeviceList } from './components/console/DeviceList'
 import { useDeviceStore } from './stores/deviceStore'
 import { useNetwork } from './hooks/useNetwork'
-import * as Dialog from '@radix-ui/react-dialog'
-import { Toaster } from "@/components/ui/sonner";
-import icoPng from '@/assets/ico.png';
+import icoPng from '@/assets/ico.png'
 
 type Tab = 'console' | 'resource' | 'config' | 'settings'
 
@@ -18,19 +19,16 @@ function App() {
   const { networkStatus, networkError, devices, selectedDevices, deviceStatusCheckCount } = useDeviceStore()
   const hasNetworkError = !!(networkError?.udp || networkError?.tcp)
   const statusClass = hasNetworkError ? 'offline' : 'online'
-  const deviceCount = devices.length
   const selectedCount = selectedDevices.size
   const selectedOnlineCount = devices.filter((device) => selectedDevices.has(device.id) && device.status === 'online').length
 
   useNetwork()
 
   useEffect(() => {
-    // Get app info on mount
     window.electronAPI?.getAppInfo().then((info) => {
       setAppInfo({ name: info.name, version: info.version })
     })
 
-    // Listen for menu events
     window.electronAPI?.onOpenSettings(() => {
       setActiveTab('settings')
     })
@@ -49,7 +47,6 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Header */}
       <header className="header">
         <div className="logo">
           <img src={icoPng} alt="Logo" className="logo-icon" />
@@ -57,13 +54,15 @@ function App() {
         </div>
         <nav className="tabs">
           {tabs.map((tab) => (
-            <button
+            <Button
               key={tab.id}
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+              variant={activeTab === tab.id ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-9 px-4"
               onClick={() => setActiveTab(tab.id)}
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
         </nav>
         <div className="header-right">
@@ -76,19 +75,13 @@ function App() {
 
       {hasNetworkError && (
         <div className="network-alert">
-          <div className="network-alert-text">
-            网络服务启动失败：{networkError?.udp || networkError?.tcp}
-          </div>
-          <button
-            className="network-alert-action"
-            onClick={() => setActiveTab('settings')}
-          >
+          <div className="network-alert-text">网络服务启动失败：{networkError?.udp || networkError?.tcp}</div>
+          <Button variant="outline" size="sm" onClick={() => setActiveTab('settings')} className="h-8 px-3 text-xs">
             去设置端口
-          </button>
+          </Button>
         </div>
       )}
 
-      {/* Main Content */}
       <main className="main-content">
         {activeTab === 'console' && <ConsolePanel />}
         {activeTab === 'resource' && <ResourcePanel />}
@@ -96,15 +89,13 @@ function App() {
         {activeTab === 'settings' && <SettingsPanel />}
       </main>
 
-      {/* Footer */}
       <footer className="footer">
         <div className="status-info">
-          {/* <span id="network-status">网络: {networkStatus}</span> */}
           <Dialog.Root>
             <Dialog.Trigger asChild>
-              <button id="selected-count" className="text-xs text-primary hover:underline">
+              <Button variant="link" size="sm" className="h-auto px-0 text-xs text-primary">
                 已选设备: {selectedCount}（在线 {selectedOnlineCount}）
-              </button>
+              </Button>
             </Dialog.Trigger>
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
