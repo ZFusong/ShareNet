@@ -75,6 +75,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onImageDownloadError: (callback: (payload: unknown) => void) => {
     ipcRenderer.on('image-download-error', (_event, payload) => callback(payload))
   },
+  onFileDownloadProgress: (callback: (payload: unknown) => void) => {
+    ipcRenderer.on('file-download-progress', (_event, payload) => callback(payload))
+  },
+  onFileDownloadComplete: (callback: (payload: unknown) => void) => {
+    ipcRenderer.on('file-download-complete', (_event, payload) => callback(payload))
+  },
+  onFileDownloadError: (callback: (payload: unknown) => void) => {
+    ipcRenderer.on('file-download-error', (_event, payload) => callback(payload))
+  },
 
   // Device management
   getDevices: () => ipcRenderer.invoke('get-devices'),
@@ -89,6 +98,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setSettings: (settings: unknown) => ipcRenderer.invoke('set-settings', settings),
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
   registerSharedImage: (resource: unknown) => ipcRenderer.invoke('register-shared-image', resource),
+  registerSharedFile: (resource: unknown) => ipcRenderer.invoke('register-shared-file', resource),
   getSetting: (key: string) => ipcRenderer.invoke('get-setting', key),
   setSetting: (key: string, value: unknown) => ipcRenderer.invoke('set-setting', key, value),
   exportConfig: (modules: string[]) => ipcRenderer.invoke('export-config', modules),
@@ -185,6 +195,9 @@ export interface ElectronAPI {
   onImageDownloadProgress: (callback: (payload: unknown) => void) => void
   onImageDownloadComplete: (callback: (payload: unknown) => void) => void
   onImageDownloadError: (callback: (payload: unknown) => void) => void
+  onFileDownloadProgress: (callback: (payload: unknown) => void) => void
+  onFileDownloadComplete: (callback: (payload: unknown) => void) => void
+  onFileDownloadError: (callback: (payload: unknown) => void) => void
 
   // Device management
   getDevices: () => Promise<unknown[]>
@@ -206,6 +219,7 @@ export interface ElectronAPI {
   saveReceivedFile: (messageId: string, savePath: string) => Promise<void>
   saveReceived: (data: { type: 'text' | 'image' | 'file'; content: string; fileName?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
   revealFile: (filePath: string) => Promise<{ success: boolean; error?: string }>
+  registerSharedFile: (resource: unknown) => Promise<{ success: boolean; error?: string }>
 
   // Receive events
   onDeviceUpdate: (callback: (data: unknown) => void) => void

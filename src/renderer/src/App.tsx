@@ -8,6 +8,7 @@ import { useDeviceStore } from './stores/deviceStore'
 import { useNetwork } from './hooks/useNetwork'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Toaster } from "@/components/ui/sonner";
+import icoPng from '@/assets/ico.png';
 
 type Tab = 'console' | 'resource' | 'config' | 'settings'
 
@@ -51,7 +52,7 @@ function App() {
       {/* Header */}
       <header className="header">
         <div className="logo">
-          <span className="logo-icon">🔗</span>
+          <img src={icoPng} alt="Logo" className="logo-icon" />
           <span className="logo-text">ShareNet</span>
         </div>
         <nav className="tabs">

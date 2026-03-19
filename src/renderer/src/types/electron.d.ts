@@ -79,6 +79,9 @@ export interface ElectronAPI {
   onImageDownloadProgress: (callback: (payload: unknown) => void) => void
   onImageDownloadComplete: (callback: (payload: unknown) => void) => void
   onImageDownloadError: (callback: (payload: unknown) => void) => void
+  onFileDownloadProgress: (callback: (payload: unknown) => void) => void
+  onFileDownloadComplete: (callback: (payload: unknown) => void) => void
+  onFileDownloadError: (callback: (payload: unknown) => void) => void
 
   getDevices: () => Promise<DeviceInfo[]>
   refreshDevices: () => Promise<void>
@@ -91,6 +94,7 @@ export interface ElectronAPI {
   setSettings: (settings: AppSettings) => Promise<void>
   selectDirectory: () => Promise<{ success: boolean; path?: string }>
   registerSharedImage: (resource: unknown) => Promise<{ success: boolean; error?: string }>
+  registerSharedFile: (resource: unknown) => Promise<{ success: boolean; error?: string }>
   getSetting: (key: string) => Promise<unknown>
   setSetting: (key: string, value: unknown) => Promise<void>
   exportConfig: (modules: string[], filePath: string) => Promise<{ success: boolean; data?: unknown; error?: string }>
