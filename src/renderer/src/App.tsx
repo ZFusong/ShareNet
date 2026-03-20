@@ -9,6 +9,7 @@ import { SettingsPanel } from './components/settings/SettingsPanel'
 import { DeviceList } from './components/console/DeviceList'
 import { useDeviceStore } from './stores/deviceStore'
 import { useNetwork } from './hooks/useNetwork'
+import { useShareReceiver } from './hooks/useShareReceiver'
 import icoPng from '@/assets/ico.png'
 
 type Tab = 'console' | 'resource' | 'config' | 'settings'
@@ -24,6 +25,7 @@ function App() {
   const selectedOnlineCount = devices.filter((device) => selectedDevices.has(device.id) && device.status === 'online').length
 
   useNetwork()
+  useShareReceiver()
 
   useEffect(() => {
     window.electronAPI?.getAppInfo().then((info) => {

@@ -13,32 +13,7 @@ import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-
-type ContentType = 'text' | 'image' | 'file'
-type ImageStatus = 'offered' | 'downloading' | 'downloaded'
-type FileStatus = 'offered' | 'downloading' | 'downloaded'
-
-type Message = {
-  id: string
-  type: ContentType
-  content: string
-  from: string
-  fromPort?: number
-  fromName?: string
-  subject?: string
-  timestamp: number
-  fileName?: string
-  fileSize?: number
-  thumbnail?: string
-  mimeType?: string
-  shareId?: string
-  imageStatus?: ImageStatus
-  fileStatus?: FileStatus
-  downloadPath?: string
-  progress?: number
-  isSelf?: boolean
-  batchId?: string
-}
+import { useShareStore, type ContentType, type ShareMessage as Message } from '../../stores/shareStore'
 
 type PickedFile = {
   name: string
@@ -46,31 +21,6 @@ type PickedFile = {
   size: number
   file: File
   sourcePath?: string
-}
-
-type ImageEvent = {
-  shareId: string
-  fromIp?: string
-  fromPort?: number
-  progress?: number
-  path?: string
-  dataUrl?: string
-  error?: string
-  fileName?: string
-  fileSize?: number
-  mimeType?: string
-}
-
-type FileEvent = {
-  shareId: string
-  fromIp?: string
-  fromPort?: number
-  progress?: number
-  path?: string
-  error?: string
-  fileName?: string
-  fileSize?: number
-  mimeType?: string
 }
 
 type MessageGroup = {
@@ -97,7 +47,6 @@ export function ResourcePanel() {
   const [sendTarget, setSendTarget] = useState<'broadcast' | 'selected' | 'group'>('broadcast')
   const [groupFilter, setGroupFilter] = useState('all')
   const [groupTargetId, setGroupTargetId] = useState('all')
-  const [messages, setMessages] = useState<Message[]>([])
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [clearOpen, setClearOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -111,6 +60,7 @@ export function ResourcePanel() {
 
   const { devices, deviceGroups, selectedDevices, toggleSelectDevice, selectAll, deselectAll, localDevice } =
     useDeviceStore()
+  const { messages, prependMessage, clearMessages, updateImageMessage, updateFileMessage } = useShareStore()
 
   const selectedCount = selectedDevices.size
   const defaultShareSubject = buildDefaultSubject(localDevice?.name?.trim() || '', contentType)
@@ -180,34 +130,6 @@ export function ResourcePanel() {
     bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   const getPreviewImage = (message: Message) => message.content || message.thumbnail || null
 
-  const updateImageMessage = useCallback((payload: ImageEvent, updater: (message: Message) => Message) => {
-    setMessages((prev) =>
-      prev.map((message) => {
-        const sameShare = message.type === 'image' && message.shareId === payload.shareId
-        const sameSender =
-          (payload.fromIp ? message.from === payload.fromIp : true) &&
-          (payload.fromPort ? message.fromPort === payload.fromPort : true)
-        return sameShare && sameSender ? updater(message) : message
-      })
-    )
-  }, [])
-
-  const updateFileMessage = useCallback((payload: FileEvent, updater: (message: Message) => Message) => {
-    setMessages((prev) =>
-      prev.map((message) => {
-        const sameShare = message.type === 'file' && message.shareId === payload.shareId
-        const sameSender =
-          (payload.fromIp ? message.from === payload.fromIp : true) &&
-          (payload.fromPort ? message.fromPort === payload.fromPort : true)
-        return sameShare && sameSender ? updater(message) : message
-      })
-    )
-  }, [])
-
-  const prependMessage = useCallback((message: Message) => {
-    setMessages((prev) => [message, ...prev])
-  }, [])
-
   const sendMessageToTargets = useCallback(
     async (message: any) => {
       let targets = sendTarget === 'broadcast' ? devices : devices.filter((d) => selectedDevices.has(d.id))
@@ -253,156 +175,6 @@ export function ResourcePanel() {
     },
     [deviceGroups, devices, groupTargetId, selectedDevices, sendTarget]
   )
-
-  useEffect(() => {
-    window.electronAPI?.onTcpMessage((message: any, from: any) => {
-      if (message?.msg_type === 'SHARE_TEXT') {
-        const payload = message.payload || {}
-        prependMessage({
-          id: createMessageId(),
-          type: 'text',
-          content: payload.content || '',
-          from: from?.ip || 'unknown',
-          fromPort: from?.port,
-          fromName: from?.name || 'Unknown',
-          subject: payload.subject || buildDefaultSubject(from?.name || 'Unknown', 'text'),
-          timestamp: message.timestamp || Date.now()
-        })
-        return
-      }
-
-      if (message?.msg_type === 'IMAGE_OFFER') {
-        const payload = message.payload || {}
-        prependMessage({
-          id: createMessageId(),
-          type: 'image',
-          content: payload.thumbnail || '',
-          thumbnail: payload.thumbnail || '',
-          from: from?.ip || 'unknown',
-          fromPort: from?.port,
-          fromName: from?.name || 'Unknown',
-          subject: payload.subject || buildDefaultSubject(from?.name || 'Unknown', 'image'),
-          timestamp: payload.createdAt || message.timestamp || Date.now(),
-          fileName: payload.fileName,
-          fileSize: payload.fileSize,
-          mimeType: payload.mimeType,
-          shareId: payload.shareId,
-          imageStatus: 'offered',
-          progress: 0,
-          batchId: payload.batchId
-        })
-        return
-      }
-
-      if (message?.msg_type === 'IMAGE_DOWNLOAD_ERROR') {
-        const payload = message.payload || {}
-        updateImageMessage({ shareId: payload.shareId, fromIp: from?.ip, fromPort: from?.port }, (current) => ({
-          ...current,
-          imageStatus: current.downloadPath ? 'downloaded' : 'offered',
-          progress: 0
-        }))
-        toast.error(payload.message || '图片下载失败')
-        return
-      }
-
-      if (message?.msg_type === 'FILE_OFFER') {
-        const payload = message.payload || {}
-        prependMessage({
-          id: createMessageId(),
-          type: 'file',
-          content: '',
-          from: from?.ip || 'unknown',
-          fromPort: from?.port,
-          fromName: from?.name || 'Unknown',
-          subject: payload.subject || buildDefaultSubject(from?.name || 'Unknown', 'file'),
-          timestamp: payload.createdAt || message.timestamp || Date.now(),
-          fileName: payload.fileName,
-          fileSize: payload.fileSize,
-          mimeType: payload.mimeType,
-          shareId: payload.shareId,
-          fileStatus: 'offered',
-          progress: 0,
-          batchId: payload.batchId
-        })
-        return
-      }
-
-      if (message?.msg_type === 'FILE_DOWNLOAD_ERROR') {
-        const payload = message.payload || {}
-        updateFileMessage({ shareId: payload.shareId, fromIp: from?.ip, fromPort: from?.port }, (current) => ({
-          ...current,
-          fileStatus: current.downloadPath ? 'downloaded' : 'offered',
-          progress: 0
-        }))
-        toast.error(payload.message || '文件下载失败')
-      }
-    })
-
-    window.electronAPI?.onImageDownloadProgress?.((payload: unknown) => {
-      const event = payload as ImageEvent
-      updateImageMessage(event, (current) => ({ ...current, imageStatus: 'downloading', progress: event.progress || 0 }))
-    })
-    window.electronAPI?.onImageDownloadComplete?.((payload: unknown) => {
-      const event = payload as ImageEvent
-      updateImageMessage(event, (current) => ({
-        ...current,
-        imageStatus: 'downloaded',
-        progress: 100,
-        content: event.dataUrl || current.content,
-        downloadPath: event.path,
-        fileName: event.fileName || current.fileName,
-        fileSize: event.fileSize || current.fileSize,
-        mimeType: event.mimeType || current.mimeType
-      }))
-      toast.success(`图片已下载到 ${event.path}`)
-    })
-    window.electronAPI?.onImageDownloadError?.((payload: unknown) => {
-      const event = payload as ImageEvent
-      updateImageMessage(event, (current) => ({
-        ...current,
-        imageStatus: current.downloadPath ? 'downloaded' : 'offered',
-        progress: 0
-      }))
-      toast.error(event.error || '图片下载失败')
-    })
-    window.electronAPI?.onFileDownloadProgress?.((payload: unknown) => {
-      const event = payload as FileEvent
-      updateFileMessage(event, (current) => ({ ...current, fileStatus: 'downloading', progress: event.progress || 0 }))
-    })
-    window.electronAPI?.onFileDownloadComplete?.((payload: unknown) => {
-      const event = payload as FileEvent
-      updateFileMessage(event, (current) => ({
-        ...current,
-        fileStatus: 'downloaded',
-        progress: 100,
-        content: event.path || current.content,
-        downloadPath: event.path,
-        fileName: event.fileName || current.fileName,
-        fileSize: event.fileSize || current.fileSize,
-        mimeType: event.mimeType || current.mimeType
-      }))
-      toast.success(`文件已下载到 ${event.path}`)
-    })
-    window.electronAPI?.onFileDownloadError?.((payload: unknown) => {
-      const event = payload as FileEvent
-      updateFileMessage(event, (current) => ({
-        ...current,
-        fileStatus: current.downloadPath ? 'downloaded' : 'offered',
-        progress: 0
-      }))
-      toast.error(event.error || '文件下载失败')
-    })
-
-    return () => {
-      window.electronAPI?.removeAllListeners?.('tcp-message')
-      window.electronAPI?.removeAllListeners?.('image-download-progress')
-      window.electronAPI?.removeAllListeners?.('image-download-complete')
-      window.electronAPI?.removeAllListeners?.('image-download-error')
-      window.electronAPI?.removeAllListeners?.('file-download-progress')
-      window.electronAPI?.removeAllListeners?.('file-download-complete')
-      window.electronAPI?.removeAllListeners?.('file-download-error')
-    }
-  }, [prependMessage, updateFileMessage, updateImageMessage])
 
   const addFiles = (files: FileList, type: 'image' | 'file') => {
     const next: PickedFile[] = []
@@ -791,7 +563,7 @@ export function ResourcePanel() {
                       </AlertDialog.Cancel>
                       <AlertDialog.Action
                         onClick={() => {
-                          setMessages([])
+                          clearMessages()
                           setClearOpen(false)
                         }}
                         className="rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red/90"
@@ -1368,8 +1140,6 @@ function handleSaveImage(imageUrl: string, fileName: string) {
   link.download = fileName
   link.click()
 }
-
-
 
 
 

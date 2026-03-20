@@ -18,7 +18,7 @@ import { Tabs } from '@/components/ui/tabs'
 
 export function ConfigPanel() {
   const { exportConfig, importConfig } = useConfigStore()
-  const [activeTab, setActiveTab] = useState<'software' | 'input' | 'scene'>('software')
+  const [activeTab, setActiveTab] = useState<'software' | 'input' | 'scene'>('scene')
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [exportModules, setExportModules] = useState({
@@ -86,37 +86,37 @@ export function ConfigPanel() {
   return (
     <section id="config-panel" className="panel h-full">
       <Tabs.Root value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
-        <Tabs.List className="flex border-b px-4">
+        <Tabs.List className="flex border-b px-4 justify-start bg-background">
+          <Tabs.Trigger
+            value="scene"
+            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
+          >
+            场景编排
+          </Tabs.Trigger>
           <Tabs.Trigger
             value="software"
-            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
+            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
           >
             软件预设
           </Tabs.Trigger>
           <Tabs.Trigger
             value="input"
-            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
+            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
           >
             键鼠预设
           </Tabs.Trigger>
-          <Tabs.Trigger
-            value="scene"
-            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary"
-          >
-            场景编排
-          </Tabs.Trigger>
         </Tabs.List>
 
+        <Tabs.Content value="scene" className="flex-1 overflow-auto p-4">
+          <SceneList />
+        </Tabs.Content>
+        
         <Tabs.Content value="software" className="flex-1 overflow-auto p-4">
           <SoftwarePresetList />
         </Tabs.Content>
 
         <Tabs.Content value="input" className="flex-1 overflow-auto p-4">
           <InputPresetList />
-        </Tabs.Content>
-
-        <Tabs.Content value="scene" className="flex-1 overflow-auto p-4">
-          <SceneList />
         </Tabs.Content>
       </Tabs.Root>
 
