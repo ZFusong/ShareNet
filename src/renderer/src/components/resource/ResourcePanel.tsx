@@ -6,8 +6,10 @@ import textIconPng from '@/assets/text-icon.png'
 import imageIconPng from '@/assets/image-icon.png'
 import fileIconPng from '@/assets/file-icon.png'
 import { Button } from '@/components/ui/button'
+import { Collapse } from '@/components/ui/collapse'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
@@ -23,6 +25,7 @@ type Message = {
   from: string
   fromPort?: number
   fromName?: string
+  subject?: string
   timestamp: number
   fileName?: string
   fileSize?: number
@@ -76,12 +79,20 @@ type MessageGroup = {
 }
 
 const COLLAPSED_MEDIA_PREVIEW_COUNT = 4
-const COLLAPSED_TEXT_MAX_HEIGHT = 132
-const COLLAPSED_MEDIA_MAX_HEIGHT = 168
+const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
+  text: '文字',
+  image: '图片',
+  file: '文件'
+}
+
+const buildDefaultSubject = (deviceName: string, contentType: ContentType) =>
+  `${deviceName || ''}的${CONTENT_TYPE_LABELS[contentType]}分享`
 
 export function ResourcePanel() {
   const [contentType, setContentType] = useState<ContentType>('text')
   const [textContent, setTextContent] = useState('')
+  const [shareSubject, setShareSubject] = useState('')
+  const [subjectTouched, setSubjectTouched] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<PickedFile[]>([])
   const [sendTarget, setSendTarget] = useState<'broadcast' | 'selected' | 'group'>('broadcast')
   const [groupFilter, setGroupFilter] = useState('all')
@@ -102,6 +113,14 @@ export function ResourcePanel() {
     useDeviceStore()
 
   const selectedCount = selectedDevices.size
+  const defaultShareSubject = buildDefaultSubject(localDevice?.name?.trim() || '', contentType)
+
+  useEffect(() => {
+    if (!subjectTouched) {
+      setShareSubject(defaultShareSubject)
+    }
+  }, [defaultShareSubject, subjectTouched])
+
   const onlineDevices = devices.filter((d) => d.status !== 'offline')
   const getDeviceKey = (d: { ip: string; port: number }) => `${d.ip}:${d.port}`
   const groupsForFilter = deviceGroups.map((group) => ({
@@ -238,13 +257,15 @@ export function ResourcePanel() {
   useEffect(() => {
     window.electronAPI?.onTcpMessage((message: any, from: any) => {
       if (message?.msg_type === 'SHARE_TEXT') {
+        const payload = message.payload || {}
         prependMessage({
           id: createMessageId(),
           type: 'text',
-          content: message.payload?.content || '',
+          content: payload.content || '',
           from: from?.ip || 'unknown',
           fromPort: from?.port,
           fromName: from?.name || 'Unknown',
+          subject: payload.subject || buildDefaultSubject(from?.name || 'Unknown', 'text'),
           timestamp: message.timestamp || Date.now()
         })
         return
@@ -260,6 +281,7 @@ export function ResourcePanel() {
           from: from?.ip || 'unknown',
           fromPort: from?.port,
           fromName: from?.name || 'Unknown',
+          subject: payload.subject || buildDefaultSubject(from?.name || 'Unknown', 'image'),
           timestamp: payload.createdAt || message.timestamp || Date.now(),
           fileName: payload.fileName,
           fileSize: payload.fileSize,
@@ -292,6 +314,7 @@ export function ResourcePanel() {
           from: from?.ip || 'unknown',
           fromPort: from?.port,
           fromName: from?.name || 'Unknown',
+          subject: payload.subject || buildDefaultSubject(from?.name || 'Unknown', 'file'),
           timestamp: payload.createdAt || message.timestamp || Date.now(),
           fileName: payload.fileName,
           fileSize: payload.fileSize,
@@ -447,7 +470,8 @@ export function ResourcePanel() {
 
     const content = textContent
     const sender = senderDevice()
-    const ok = await sendMessageToTargets({ msg_type: 'SHARE_TEXT', payload: { content } })
+    const subject = shareSubject.trim() || buildDefaultSubject(sender.name, 'text')
+    const ok = await sendMessageToTargets({ msg_type: 'SHARE_TEXT', payload: { content, subject } })
 
     if (ok) {
       prependMessage({
@@ -457,6 +481,7 @@ export function ResourcePanel() {
         from: sender.ip,
         fromPort: sender.port,
         fromName: sender.name,
+        subject,
         timestamp: Date.now(),
         isSelf: true
       })
@@ -477,6 +502,7 @@ export function ResourcePanel() {
 
     let failed = false
     const sender = senderDevice()
+    const subject = shareSubject.trim() || buildDefaultSubject(sender.name, 'image')
     const batchId = `img-batch-${Date.now()}-${Math.random().toString(36).slice(2)}`
 
     for (const file of selectedFiles) {
@@ -513,7 +539,8 @@ export function ResourcePanel() {
           mimeType: file.file.type || 'image/png',
           thumbnail,
           createdAt: Date.now(),
-          batchId
+          batchId,
+          subject
         }
       })
 
@@ -535,6 +562,7 @@ export function ResourcePanel() {
         fileSize: file.size,
         mimeType: file.file.type || 'image/png',
         shareId,
+        subject,
         imageStatus: 'offered',
         progress: 0,
         isSelf: true,
@@ -560,6 +588,7 @@ export function ResourcePanel() {
 
     let failed = false
     const sender = senderDevice()
+    const subject = shareSubject.trim() || buildDefaultSubject(sender.name, 'file')
     const batchId = `file-batch-${Date.now()}-${Math.random().toString(36).slice(2)}`
 
     for (const file of selectedFiles) {
@@ -593,7 +622,8 @@ export function ResourcePanel() {
           fileSize: file.size,
           mimeType: file.file.type || 'application/octet-stream',
           createdAt: Date.now(),
-          batchId
+          batchId,
+          subject
         }
       })
 
@@ -614,6 +644,7 @@ export function ResourcePanel() {
         fileSize: file.size,
         mimeType: file.file.type || 'application/octet-stream',
         shareId,
+        subject,
         fileStatus: 'offered',
         progress: 0,
         isSelf: true,
@@ -725,11 +756,11 @@ export function ResourcePanel() {
     [messages]
   )
 
-  const toggleGroup = (groupKey: string) => {
+  const setGroupExpanded = (groupKey: string, open: boolean) => {
     setExpandedGroups((prev) => {
       const next = new Set(prev)
-      if (next.has(groupKey)) next.delete(groupKey)
-      else next.add(groupKey)
+      if (open) next.add(groupKey)
+      else next.delete(groupKey)
       return next
     })
   }
@@ -745,7 +776,7 @@ export function ResourcePanel() {
               <h3 className="text-sm font-medium">分享记录</h3>
               <AlertDialog.Root open={clearOpen} onOpenChange={setClearOpen}>
                 <AlertDialog.Trigger asChild>
-                  <Button className="text-xs text-muted-foreground hover:text-foreground">清理</Button>
+                  <Button className="text-xs text-muted-foreground hover:text-foreground" size={"xs"}>清理</Button>
                 </AlertDialog.Trigger>
                 <AlertDialog.Portal>
                   <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
@@ -785,153 +816,215 @@ export function ResourcePanel() {
                       const first = group.items[0]
                       const isBatch = group.items.length > 1
                       const isExpanded = expandedGroups.has(group.key)
-                      const hiddenCount = Math.max(0, group.items.length - COLLAPSED_MEDIA_PREVIEW_COUNT)
                       const offeredFiles = group.items.filter(
                         (item) => item.type === 'file' && item.fileStatus === 'offered' && !item.isSelf
                       )
-                      const collapsedHeight = first.type === 'text' ? COLLAPSED_TEXT_MAX_HEIGHT : COLLAPSED_MEDIA_MAX_HEIGHT
 
                       return (
-                        <article key={group.key} className="rounded-xl border bg-background shadow-sm">
-                          <Button
-                            type="button"
-                            onClick={() => toggleGroup(group.key)}
-                            className="h-auto flex w-full items-start justify-between gap-3 px-4 py-3 text-left bg-background hover:bg-inherit"
-                          >
-                            <div className="flex min-w-0 items-start gap-3">
-                              {/* Large Type Icon */}
-                              <img
-                                src={
-                                  first.type === 'text'
-                                    ? textIconPng
-                                    : first.type === 'image'
-                                    ? imageIconPng
-                                    : fileIconPng
-                                }
-                                alt={first.type}
-                                className="h-10 w-10 shrink-0 rounded-md  p-1"
-                              />
-                              <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex min-w-0 items-center gap-2">
-                                  <span className="truncate text-sm font-medium">{first.fromName || first.from}</span>
-                                  {first.isSelf && (
-                                    <span className="shrink-0 rounded-md border border-green-200 bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700">
-                                      本机
+                        <Collapse.Root
+                          key={group.key}
+                          open={isExpanded}
+                          onOpenChange={(open) => setGroupExpanded(group.key, open)}
+                        >
+                          <article className="rounded-xl border bg-background shadow-sm">
+                            <Collapse.Trigger className="w-full px-4 py-3 hover:bg-background/80">
+                              <div className="flex min-w-0 items-start gap-3">
+                                <img
+                                  src={
+                                    first.type === 'text'
+                                      ? textIconPng
+                                      : first.type === 'image'
+                                      ? imageIconPng
+                                      : fileIconPng
+                                  }
+                                  alt={first.type}
+                                  className="h-10 w-10 shrink-0 rounded-md p-1"
+                                />
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <div className="min-w-0">
+                                      <div className="truncate text-sm font-medium">
+                                        {first.subject || buildDefaultSubject(first.fromName || first.from, first.type)}
+                                      </div>
+                                      <div className="truncate text-xs text-muted-foreground">
+                                        {first.fromName || first.from}
+                                      </div>
+                                    </div>
+                                    {first.isSelf && (
+                                      <span className="shrink-0 rounded-md border border-green-200 bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                                        本机
+                                      </span>
+                                    )}
+                                    <span className="shrink-0 rounded-md border bg-background px-2 py-0.5 text-[11px] text-muted-foreground">
+                                      {first.type === 'text' ? '文字' : first.type === 'image' ? '图片' : '文件'}
+                                      {isBatch ? ` · ${group.items.length}` : ''}
                                     </span>
-                                  )}
-                                  <span className="shrink-0 rounded-md border bg-background px-2 py-0.5 text-[11px] text-muted-foreground">
-                                    {first.type === 'text' ? '文字' : first.type === 'image' ? '图片' : '文件'}
-                                    {isBatch ? ` · ${group.items.length}` : ''}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {new Date(first.timestamp).toLocaleString()}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {new Date(first.timestamp).toLocaleString()}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <span className="shrink-0 text-xs text-muted-foreground">
-                              {isExpanded ? '收起 ▲' : '展开 ▼'}
-                            </span>
-                          </Button>
+                            </Collapse.Trigger>
 
-                          <div className="px-4 pb-4">
-                            <div
-                              className="overflow-hidden rounded-lg border bg-background/70 p-3"
-                              style={{ maxHeight: isExpanded ? `${historyCardBodyMaxHeight}px` : `${collapsedHeight}px` }}
-                            >
-                              <div
-                                className={`${isExpanded ? ' overflow-y-auto' : 'overflow-hidden'} space-y-3`}
-                                style={{ maxHeight: isExpanded ? `${historyCardBodyMaxHeight - 24}px` : `${collapsedHeight - 24}px` }}
-                              >
-                                {first.type === 'text' && (
-                                  <div>
-                                    <Button
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(first.content)
-                                        toast.success('已复制到剪贴板')
-                                      }}
-                                      size={"xs"}
-                                      className="text-xs text-primary"
-                                    >
-                                      复制
-                                    </Button>
-                                    <p
-                                      className="break-words whitespace-pre-wrap text-sm"
-                                      style={
-                                        isExpanded
-                                          ? undefined
-                                          : {
-                                              display: '-webkit-box',
-                                              WebkitLineClamp: 4,
-                                              WebkitBoxOrient: 'vertical',
-                                              overflow: 'hidden'
-                                            }
-                                      }
-                                    >
-                                      {first.content}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {first.type === 'image' && (
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      {group.items.filter((item) => item.type === 'image' && item.imageStatus === 'offered' && !item.isSelf).length > 1 && (
-                                        <Button
-                                          onClick={() => {
-                                            for (const item of group.items) {
-                                              if (item.type === 'image' && item.imageStatus === 'offered' && !item.isSelf) {
-                                                void handleDownloadImage(item)
+                            <Collapse.Content className="px-4 pb-4">
+                              <div className="overflow-hidden rounded-lg border bg-background/70 p-3">
+                                <div
+                                  className="space-y-3 overflow-y-auto"
+                                  style={{ maxHeight: `${historyCardBodyMaxHeight - 24}px` }}
+                                >
+                                  {first.type === 'text' && (
+                                    <div>
+                                      <Button
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(first.content)
+                                          toast.success('已复制到剪贴板')
+                                        }}
+                                        size={"xs"}
+                                        className="text-xs text-primary"
+                                      >
+                                        复制
+                                      </Button>
+                                      <p
+                                        className="break-words whitespace-pre-wrap text-sm"
+                                        style={
+                                          isExpanded
+                                            ? undefined
+                                            : {
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 4,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden'
                                               }
-                                            }
-                                          }}
-                                          size={"xs"}
-                                          className="text-xs text-primary"
-                                        >
-                                          下载全部
-                                        </Button>
-                                      )}
-
-                                      {isBatch && <div className="text-xs text-muted-foreground">本次共 {group.items.length} 张图片</div>}
+                                        }
+                                      >
+                                        {first.content}
+                                      </p>
                                     </div>
-                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                  )}
+
+                                  {first.type === 'image' && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        {group.items.filter((item) => item.type === 'image' && item.imageStatus === 'offered' && !item.isSelf).length > 1 && (
+                                          <Button
+                                            onClick={() => {
+                                              for (const item of group.items) {
+                                                if (item.type === 'image' && item.imageStatus === 'offered' && !item.isSelf) {
+                                                  void handleDownloadImage(item)
+                                                }
+                                              }
+                                            }}
+                                            size={"xs"}
+                                            className="text-xs text-primary"
+                                          >
+                                            下载全部
+                                          </Button>
+                                        )}
+
+                                        {isBatch && <div className="text-xs text-muted-foreground">本次共 {group.items.length} 张图片</div>}
+                                      </div>
+                                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        {group.items
+                                          .slice(0, isExpanded ? group.items.length : COLLAPSED_MEDIA_PREVIEW_COUNT)
+                                          .map((msg) => (
+                                            <div key={msg.id} className="space-y-2 rounded border bg-background/90 p-2">
+                                              {msg.thumbnail && (
+                                                <img
+                                                  src={msg.thumbnail}
+                                                  alt="offer"
+                                                  className={`${isExpanded ? 'max-h-40' : 'h-16'} w-full cursor-pointer rounded object-cover hover:opacity-80`}
+                                                  onClick={() => setPreviewImage(getPreviewImage(msg))}
+                                                />
+                                              )}
+                                              <div className="break-all text-sm">{msg.fileName}</div>
+                                              <div className="text-xs text-muted-foreground">{formatSize(msg.fileSize || 0)}</div>
+                                              <div className="flex flex-wrap items-center gap-2">
+                                                {msg.imageStatus === 'offered' && !msg.isSelf && (
+                                                  <Button
+                                                    onClick={() => handleDownloadImage(msg)}
+                                                    className="text-xs text-primary"
+                                                    size={"xs"}
+                                                  >
+                                                    下载原图
+                                                  </Button>
+                                                )}
+                                                {msg.imageStatus === 'downloading' && (
+                                                  <span className="text-xs text-muted-foreground">下载中 {msg.progress || 0}%</span>
+                                                )}
+                                                {msg.imageStatus === 'downloaded' && (
+                                                  <Button
+                                                    onClick={() => handleSaveImage(msg.content, msg.fileName || 'image')}
+                                                    className="text-xs text-primary"
+                                                    size={"xs"}
+                                                  >
+                                                    另存为
+                                                  </Button>
+                                                )}
+                                                {msg.imageStatus === 'downloaded' && msg.downloadPath && (
+                                                  <Button
+                                                    onClick={() => handleRevealFile(msg.downloadPath)}
+                                                    className="text-xs text-primary"
+                                                    size={"xs"}
+                                                  >
+                                                    打开所在位置
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            </div>
+                                          ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {first.type === 'file' && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        {offeredFiles.length > 1 && (
+                                          <Button
+                                            onClick={() => {
+                                              for (const item of offeredFiles) void handleDownloadFile(item)
+                                            }}
+                                            size={"xs"}
+                                            className="text-xs text-primary"
+                                          >
+                                            下载全部
+                                          </Button>
+                                        )}
+
+                                        {isBatch && <div className="text-xs text-muted-foreground">本次共 {group.items.length} 个文件</div>}
+                                      </div>
+
                                       {group.items
                                         .slice(0, isExpanded ? group.items.length : COLLAPSED_MEDIA_PREVIEW_COUNT)
                                         .map((msg) => (
-                                          <div key={msg.id} className="space-y-2 rounded border bg-background/90 p-2">
-                                            {msg.thumbnail && (
-                                              <img
-                                                src={msg.thumbnail}
-                                                alt="offer"
-                                                className={`${isExpanded ? 'max-h-40' : 'h-16'} w-full cursor-pointer rounded object-cover hover:opacity-80`}
-                                                onClick={() => setPreviewImage(getPreviewImage(msg))}
-                                              />
-                                            )}
-                                            <div className="break-all text-sm">{msg.fileName}</div>
-                                            <div className="text-xs text-muted-foreground">{formatSize(msg.fileSize || 0)}</div>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                              {msg.imageStatus === 'offered' && !msg.isSelf && (
+                                          <div
+                                            key={msg.id}
+                                            className="flex items-center justify-between gap-3 rounded border bg-background/90 p-1"
+                                          >
+                                            <div className="flex min-w-0 gap-3">
+                                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-secondary text-[10px] font-semibold tracking-wide text-muted-foreground">
+                                                FILE
+                                              </div>
+                                              <div className="min-w-0">
+                                                <div className="break-all text-sm">{msg.fileName}</div>
+                                                <div className="text-xs text-muted-foreground">{formatSize(msg.fileSize || 0)}</div>
+                                              </div>
+                                            </div>
+                                            <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                              {msg.fileStatus === 'offered' && !msg.isSelf && (
                                                 <Button
-                                                  onClick={() => handleDownloadImage(msg)}
+                                                  onClick={() => handleDownloadFile(msg)}
                                                   className="text-xs text-primary"
                                                   size={"xs"}
                                                 >
-                                                  下载原图
+                                                  下载
                                                 </Button>
                                               )}
-                                              {msg.imageStatus === 'downloading' && (
+                                              {msg.fileStatus === 'downloading' && (
                                                 <span className="text-xs text-muted-foreground">下载中 {msg.progress || 0}%</span>
                                               )}
-                                              {msg.imageStatus === 'downloaded' && (
-                                                <Button
-                                                  onClick={() => handleSaveImage(msg.content, msg.fileName || 'image')}
-                                                  className="text-xs text-primary"
-                                                  size={"xs"}
-                                                >
-                                                  另存为
-                                                </Button>
-                                              )}
-                                              {msg.imageStatus === 'downloaded' && msg.downloadPath && (
+                                              {msg.fileStatus === 'downloaded' && msg.downloadPath && (
                                                 <Button
                                                   onClick={() => handleRevealFile(msg.downloadPath)}
                                                   className="text-xs text-primary"
@@ -944,74 +1037,12 @@ export function ResourcePanel() {
                                           </div>
                                         ))}
                                     </div>
-                                  </div>
-                                )}
-
-                                {first.type === 'file' && (
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      {offeredFiles.length > 1 && (
-                                        <Button
-                                          onClick={() => {
-                                            for (const item of offeredFiles) void handleDownloadFile(item)
-                                          }}
-                                          size={"xs"}
-                                          className="text-xs text-primary"
-                                        >
-                                          下载全部
-                                        </Button>
-                                      )}
-
-                                      {isBatch && <div className="text-xs text-muted-foreground">本次共 {group.items.length} 个文件</div>}
-                                    </div>
-
-                                    {group.items
-                                      .slice(0, isExpanded ? group.items.length : COLLAPSED_MEDIA_PREVIEW_COUNT)
-                                      .map((msg) => (
-                                        <div
-                                          key={msg.id}
-                                          className="flex items-start justify-between gap-3 rounded border bg-background/90 p-1"
-                                        >
-                                          <div className="flex min-w-0 gap-3">
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-secondary text-[10px] font-semibold tracking-wide text-muted-foreground">
-                                              FILE
-                                            </div>
-                                            <div className="min-w-0">
-                                              <div className="break-all text-sm">{msg.fileName}</div>
-                                              <div className="text-xs text-muted-foreground">{formatSize(msg.fileSize || 0)}</div>
-                                            </div>
-                                          </div>
-                                          <div className="flex shrink-0 flex-wrap items-center gap-2">
-                                            {msg.fileStatus === 'offered' && !msg.isSelf && (
-                                              <Button
-                                                onClick={() => handleDownloadFile(msg)}
-                                                className="text-xs text-primary"
-                                                size={"xs"}
-                                              >
-                                                下载
-                                              </Button>
-                                            )}
-                                            {msg.fileStatus === 'downloading' && (
-                                              <span className="text-xs text-muted-foreground">下载中 {msg.progress || 0}%</span>
-                                            )}
-                                            {msg.fileStatus === 'downloaded' && msg.downloadPath && (
-                                              <Button
-                                                onClick={() => handleRevealFile(msg.downloadPath)}
-                                                className="text-xs text-primary"
-                                                size={"xs"}
-                                              >
-                                                打开所在位置
-                                              </Button>
-                                            )}
-                                          </div>
-                                        </div>
-                                      ))}
-                                  </div>
-                                )}
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        </article>
+                            </Collapse.Content>
+                          </article>
+                        </Collapse.Root>
                       )
                     })}
                   </div>
@@ -1020,16 +1051,30 @@ export function ResourcePanel() {
             </div>
           </div>
 
-          <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-secondary/40 p-4">
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-              <div className="space-y-4">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-secondary/40">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4">
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2 rounded-lg px-3">
+                  <label className="text-sm font-medium">主题名称</label>
+                  <Input
+                    className="h-8 flex-1"
+                    value={shareSubject}
+                    onChange={(e) => {
+                      setShareSubject(e.target.value)
+                      setSubjectTouched(true)
+                    }}
+                    placeholder={defaultShareSubject}
+                  />
+                </div>
+
                 <div className="flex gap-2">
                   {(['text', 'image', 'file'] as ContentType[]).map((type) => (
                     <Button
                       key={type}
-                      className={`rounded px-4 py-2 text-sm ${
-                        contentType === type ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'
+                      className={`rounded px-6 py-2 text-sm ${
+                        contentType === type ? 'bg-primary text-primary-foreground hover:bg-primary' : 'bg-secondary hover:bg-secondary'
                       }`}
+                      size={"sm"}
                       onClick={() => {
                         setContentType(type)
                         setSelectedFiles([])
@@ -1323,6 +1368,8 @@ function handleSaveImage(imageUrl: string, fileName: string) {
   link.download = fileName
   link.click()
 }
+
+
 
 
 

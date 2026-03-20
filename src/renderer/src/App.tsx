@@ -16,6 +16,7 @@ type Tab = 'console' | 'resource' | 'config' | 'settings'
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('resource')
   const [appInfo, setAppInfo] = useState({ name: 'ShareNet', version: '1.0.0' })
+  const [hostname, setHostname] = useState('')
   const { networkStatus, networkError, devices, selectedDevices, deviceStatusCheckCount } = useDeviceStore()
   const hasNetworkError = !!(networkError?.udp || networkError?.tcp)
   const statusClass = hasNetworkError ? 'offline' : 'online'
@@ -27,6 +28,15 @@ function App() {
   useEffect(() => {
     window.electronAPI?.getAppInfo().then((info) => {
       setAppInfo({ name: info.name, version: info.version })
+    })
+
+    // 优先获取系统设置中的设备名称，如果没有则使用主机名
+    Promise.all([
+      window.electronAPI?.getSettings(),
+      window.electronAPI?.getHostname()
+    ]).then(([settings, hostnameValue]) => {
+      const deviceName = settings?.device?.name
+      setHostname(deviceName || hostnameValue || '本机')
     })
 
     window.electronAPI?.onOpenSettings(() => {
@@ -67,7 +77,7 @@ function App() {
         </nav>
         <div className="header-right">
           <div className="device-info">
-            <span id="local-device-name">本机</span>
+            <span id="local-device-name">{hostname}</span>
             <span className={`status-dot ${statusClass}`}></span>
           </div>
         </div>
