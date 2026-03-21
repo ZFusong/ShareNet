@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
   getLocalIP: () => ipcRenderer.invoke('get-local-ip'),
   getHostname: () => ipcRenderer.invoke('get-hostname'),
+  getCursorScreenPoint: () => ipcRenderer.invoke('get-cursor-screen-point'),
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
 
   // Config management
@@ -105,6 +106,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportConfig: (modules: string[]) => ipcRenderer.invoke('export-config', modules),
   importConfig: (data: unknown, mode: string) => ipcRenderer.invoke('import-config', data, mode),
   checkSceneDependencies: (scene: unknown) => ipcRenderer.invoke('check-scene-dependencies', scene),
+  startMousePicker: (initialPoint?: { screenX: number; screenY: number } | null) => ipcRenderer.invoke('start-mouse-picker', initialPoint),
+  confirmMousePicker: (pickerId: string, point: { screenX: number; screenY: number }) => ipcRenderer.send('mouse-picker-confirm', { pickerId, point }),
+  cancelMousePicker: (pickerId: string) => ipcRenderer.send('mouse-picker-cancel', pickerId),
 
   // Execution engine
   executeCommand: (targetId: string, command: unknown) => ipcRenderer.invoke('execute-command', targetId, command),
@@ -157,6 +161,7 @@ export interface ElectronAPI {
   getUserDataPath: () => Promise<string>
   getLocalIP: () => Promise<string>
   getHostname: () => Promise<string>
+  getCursorScreenPoint: () => Promise<{ x: number; y: number }>
   getPathForFile: (file: File) => string
   getConfig: (key: string) => Promise<unknown>
   setConfig: (key: string, value: unknown) => Promise<void>
@@ -210,6 +215,9 @@ export interface ElectronAPI {
   deletePreset: (type: string, id: string) => Promise<void>
   exportConfig: (modules: string[], filePath: string) => Promise<void>
   importConfig: (filePath: string, mode: string) => Promise<unknown>
+  startMousePicker: (initialPoint?: { screenX: number; screenY: number } | null) => Promise<{ confirmed: boolean; point: { screenX: number; screenY: number } | null }>
+  confirmMousePicker: (pickerId: string, point: { screenX: number; screenY: number }) => void
+  cancelMousePicker: (pickerId: string) => void
 
   // Execution engine
   executeCommand: (targetId: string, command: unknown) => Promise<unknown>
@@ -238,8 +246,3 @@ declare global {
     electronAPI: ElectronAPI
   }
 }
-
-
-
-
-

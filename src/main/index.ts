@@ -3,7 +3,7 @@
  * 局域网通讯与控制工具
  */
 
-import { app, BrowserWindow, ipcMain, Menu, shell, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, shell, dialog, screen } from 'electron'
 import { join, basename, parse } from 'path'
 import os from 'os'
 import { getUDPService } from './services/udpService'
@@ -34,6 +34,22 @@ log.info('Electron version:', process.versions.electron)
 log.info('Node version:', process.versions.node)
 
 let mainWindow: BrowserWindow | null = null
+type ScreenPoint = {
+  screenX: number
+  screenY: number
+}
+
+type MousePickerResult = {
+  confirmed: boolean
+  point: ScreenPoint | null
+}
+
+interface MousePickerSession {
+  id: string
+  windows: BrowserWindow[]
+  resolve: (result: MousePickerResult) => void
+  settled: boolean
+}
 
 interface SharedImageResource {
   shareId: string
@@ -185,6 +201,133 @@ const currentSenderDevice = (): DeviceInfo => (
   }
 )
 
+let mousePickerSession: MousePickerSession | null = null
+
+const normalizeScreenPoint = (point: Partial<ScreenPoint> | null | undefined): ScreenPoint | null => {
+  const screenX = Number(point?.screenX)
+  const screenY = Number(point?.screenY)
+
+  if (!Number.isFinite(screenX) || !Number.isFinite(screenY)) {
+    return null
+  }
+
+  return {
+    screenX: Math.round(screenX),
+    screenY: Math.round(screenY)
+  }
+}
+
+const loadRendererPage = async (targetWindow: BrowserWindow, query?: Record<string, string>): Promise<void> => {
+  if (process.env.ELECTRON_RENDERER_URL) {
+    const url = new URL(process.env.ELECTRON_RENDERER_URL)
+    for (const [key, value] of Object.entries(query || {})) {
+      url.searchParams.set(key, value)
+    }
+    await targetWindow.loadURL(url.toString())
+    return
+  }
+
+  await targetWindow.loadFile(join(__dirname, '../renderer/index.html'), query ? { query } : undefined)
+}
+
+const closeMousePickerWindows = (session: MousePickerSession): void => {
+  for (const pickerWindow of session.windows) {
+    if (!pickerWindow.isDestroyed()) {
+      pickerWindow.destroy()
+    }
+  }
+  session.windows = []
+}
+
+const finishMousePicker = (result: MousePickerResult): void => {
+  const session = mousePickerSession
+  if (!session || session.settled) {
+    return
+  }
+
+  session.settled = true
+  mousePickerSession = null
+  closeMousePickerWindows(session)
+  session.resolve({
+    confirmed: result.confirmed,
+    point: result.point ?? null
+  })
+}
+
+const startMousePicker = (initialPoint: ScreenPoint | null): Promise<MousePickerResult> => {
+  finishMousePicker({ confirmed: false, point: null })
+
+  const sessionId = uuidv4()
+  const primaryDisplayId = screen.getPrimaryDisplay().id
+
+  return new Promise((resolve) => {
+    const session: MousePickerSession = {
+      id: sessionId,
+      windows: [],
+      resolve,
+      settled: false
+    }
+
+    mousePickerSession = session
+
+    for (const display of screen.getAllDisplays()) {
+      const pickerWindow = new BrowserWindow({
+        x: display.bounds.x,
+        y: display.bounds.y,
+        width: display.bounds.width,
+        height: display.bounds.height,
+        show: false,
+        frame: false,
+        transparent: true,
+        resizable: false,
+        movable: false,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
+        skipTaskbar: true,
+        alwaysOnTop: true,
+        hasShadow: false,
+        backgroundColor: '#00000001',
+        webPreferences: {
+          preload: join(__dirname, '../preload/index.js'),
+          sandbox: false,
+          contextIsolation: true,
+          nodeIntegration: false
+        }
+      })
+
+      pickerWindow.setMenuBarVisibility(false)
+      pickerWindow.setAlwaysOnTop(true, 'screen-saver')
+      pickerWindow.once('ready-to-show', () => {
+        pickerWindow.show()
+        if (display.id === primaryDisplayId) {
+          pickerWindow.focus()
+        }
+      })
+      pickerWindow.on('closed', () => {
+        session.windows = session.windows.filter((item) => item !== pickerWindow)
+        if (!session.settled && mousePickerSession?.id === sessionId && session.windows.length === 0) {
+          finishMousePicker({ confirmed: false, point: null })
+        }
+      })
+
+      session.windows.push(pickerWindow)
+
+      void loadRendererPage(pickerWindow, {
+        mode: 'mouse-picker',
+        pickerId: sessionId,
+        displayId: String(display.id),
+        initialX: initialPoint ? String(initialPoint.screenX) : '',
+        initialY: initialPoint ? String(initialPoint.screenY) : '',
+        primary: display.id === primaryDisplayId ? '1' : '0'
+      }).catch((error) => {
+        log.error('加载鼠标选点窗口失败:', error)
+        finishMousePicker({ confirmed: false, point: null })
+      })
+    }
+  })
+}
+
 function createWindow(): void {
   log.info('创建主窗口...')
 
@@ -261,11 +404,7 @@ function createWindow(): void {
   Menu.setApplicationMenu(menu)
 
   // Load the renderer
-  if (process.env.ELECTRON_RENDERER_URL) {
-    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
+  void loadRendererPage(mainWindow)
 
   mainWindow.on('closed', () => {
     log.info('主窗口关闭')
@@ -349,6 +488,34 @@ ipcMain.handle('get-hostname', () => {
   return os.hostname()
 })
 
+ipcMain.handle('get-cursor-screen-point', () => {
+  const point = screen.getCursorScreenPoint()
+  return { x: point.x, y: point.y }
+})
+
+ipcMain.handle('start-mouse-picker', async (_event, initialPoint?: ScreenPoint | null) => {
+  return startMousePicker(normalizeScreenPoint(initialPoint) ?? null)
+})
+
+ipcMain.on('mouse-picker-confirm', (_event, payload: { pickerId: string; point?: Partial<ScreenPoint> | null }) => {
+  if (!mousePickerSession || payload?.pickerId !== mousePickerSession.id) {
+    return
+  }
+
+  const point = normalizeScreenPoint(payload.point)
+  finishMousePicker({
+    confirmed: point !== null,
+    point
+  })
+})
+
+ipcMain.on('mouse-picker-cancel', (_event, pickerId: string) => {
+  if (!mousePickerSession || pickerId !== mousePickerSession.id) {
+    return
+  }
+
+  finishMousePicker({ confirmed: false, point: null })
+})
 // ========== UDP Service IPC Handlers ==========
 
 let udpService: ReturnType<typeof getUDPService> | null = null
@@ -1378,14 +1545,3 @@ ipcMain.on('subscribe-execution-events', (event) => {
 })
 
 log.info('主进程初始化完成')
-
-
-
-
-
-
-
-
-
-
-

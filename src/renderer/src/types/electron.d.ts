@@ -45,6 +45,7 @@ export interface ElectronAPI {
   getUserDataPath: () => Promise<string>
   getLocalIP: () => Promise<string>
   getHostname: () => Promise<string>
+  getCursorScreenPoint: () => Promise<{ x: number; y: number }>
   getPathForFile: (file: File) => string
   getConfig: (key: string) => Promise<unknown>
   setConfig: (key: string, value: unknown) => Promise<void>
@@ -104,6 +105,9 @@ export interface ElectronAPI {
   exportConfig: (modules: string[], filePath: string) => Promise<{ success: boolean; data?: unknown; error?: string }>
   importConfig: (data: unknown, mode: string) => Promise<{ success: boolean; result?: unknown; error?: string }>
   checkSceneDependencies: (scene: unknown) => Promise<SceneDependencyCheckResult>
+  startMousePicker: (initialPoint?: { screenX: number; screenY: number } | null) => Promise<{ confirmed: boolean; point: { screenX: number; screenY: number } | null }>
+  confirmMousePicker: (pickerId: string, point: { screenX: number; screenY: number }) => void
+  cancelMousePicker: (pickerId: string) => void
 
   executeCommand: (targetId: string, command: unknown) => Promise<unknown>
   executeLocal: (command: unknown) => Promise<unknown>
@@ -130,4 +134,3 @@ declare global {
 }
 
 export {}
-

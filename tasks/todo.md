@@ -20,6 +20,28 @@
 - [ ] Confirm mouse presets only allow move, scroll, and click steps.
 - [ ] Confirm move steps can be filled from the recorder and the recorder stops on left click without delay capture.
 - [ ] Confirm scenes can select mouse presets and still save/load existing data.
+# Global Mouse Recorder Coordinates (2026-03-21)
+- [x] Locate why the mouse recorder only updates inside the app client area.
+- [x] Expose global cursor screen coordinates from the main process to the renderer.
+- [x] Update the mouse recorder to poll full-screen cursor coordinates while recording.
+- [ ] Verify the recorder stores full-screen absolute coordinates and update the review notes.
+
+## Review
+- [ ] Confirm moving the cursor outside the app window still updates the recorder coordinates.
+- [ ] Confirm the saved mouse move step uses the polled full-screen coordinates.
+- [x] Confirm the recorder copy no longer claims that out-of-window clicks are captured.
+# Fullscreen Mouse Picker Overlay (2026-03-21)
+- [x] Inspect the current recorder flow and renderer entry strategy for adding a fullscreen picker.
+- [x] Add a fullscreen overlay picker window flow that covers every display.
+- [x] Support repeated left-click sampling with Enter confirm and Esc cancel.
+- [x] Wire the mouse preset recorder to launch the fullscreen picker and consume the selected point.
+- [x] Verify the new picker flow builds successfully.
+
+## Review
+- [ ] Confirm every display gets a fullscreen overlay while picking.
+- [ ] Confirm left-click updates the selected point without closing the picker.
+- [ ] Confirm Enter submits the last selected point and Esc cancels without changes.
+- [ ] Confirm the mouse preset move step receives the confirmed screen coordinates.
 # Scene Step Card Polish (2026-03-21)
 - [x] Unify spacing and alignment inside scene step cards.
 - [x] Tighten the step header, field rows, and action buttons into one consistent rhythm.
@@ -411,30 +433,3 @@ pm run build passes after the UI and IPC changes.
 - [ ] Confirm switching away from the resource tab still receives text/image/file offers from other devices.
 - [ ] Confirm returning to the resource tab shows messages received during other tabs.
 - [ ] Confirm image/file download progress and completion status still update correctly.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
