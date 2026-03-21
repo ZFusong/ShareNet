@@ -421,7 +421,7 @@ export function DeviceList() {
           </Button>
           <Dialog.Root open={showAddDialog} onOpenChange={setShowAddDialog}>
             <Dialog.Trigger asChild>
-              <Button className="btn-primary text-sm px-3 py-1.5" title="手动添加设备">
+              <Button className="text-sm px-3 py-1.5" variant= {"secondary"} title="手动添加设备">
                 + 添加
               </Button>
             </Dialog.Trigger>
@@ -455,7 +455,7 @@ export function DeviceList() {
                   <Dialog.Close asChild>
                     <Button className="btn-secondary">取消</Button>
                   </Dialog.Close>
-                  <Button onClick={handleAddDevice} className="btn-primary">
+                  <Button onClick={handleAddDevice} className="" variant= {"secondary"}>
                     添加
                   </Button>
                 </div>
@@ -829,7 +829,7 @@ export function DeviceList() {
               <Dialog.Close asChild>
                 <Button className="btn-secondary" onClick={() => setAliasTarget(null)}>取消</Button>
               </Dialog.Close>
-              <Button onClick={handleSaveAlias} className="btn-primary">
+              <Button onClick={handleSaveAlias} className="" variant= {"secondary"}>
                 保存
               </Button>
             </div>
@@ -859,7 +859,7 @@ export function DeviceList() {
               <Dialog.Close asChild>
                 <Button className="btn-secondary" onClick={() => setGroupNameError('')}>取消</Button>
               </Dialog.Close>
-              <Button onClick={handleCreateGroup} className="btn-primary">
+              <Button onClick={handleCreateGroup} className="" variant= {"secondary"}>
                 创建
               </Button>
             </div>

@@ -4,7 +4,21 @@
  */
 
 import { useEffect, useState } from 'react'
-import * as Dialog from '@radix-ui/react-dialog'
+import { Dialog } from '../ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '../ui/alert-dialog'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Checkbox } from '../ui/checkbox'
+import { Select } from '../ui/select'
 import { useConfigStore, type Scene, type TriggerBinding } from '../../stores/configStore'
 
 interface BindingFormData {
@@ -26,6 +40,7 @@ export function TriggerBindingList() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingBinding, setEditingBinding] = useState<TriggerBinding | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<TriggerBinding | null>(null)
   const [formData, setFormData] = useState<BindingFormData>(emptyForm)
 
   useEffect(() => {
@@ -83,10 +98,10 @@ export function TriggerBindingList() {
     setIsDialogOpen(false)
   }
 
-  const handleDelete = async (bindingId: string) => {
-    if (confirm('确定要删除此触发器绑定吗？')) {
-      await deletePreset('trigger', bindingId)
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    await deletePreset('trigger', deleteTarget.id)
+    setDeleteTarget(null)
   }
 
   return (
@@ -96,9 +111,9 @@ export function TriggerBindingList() {
           <h3 className="text-lg font-semibold">触发器绑定</h3>
           <div className="text-sm text-muted-foreground">本机收到 triggerKey 后，将按这里的绑定执行对应场景。</div>
         </div>
-        <button onClick={openCreate} className="btn-primary text-sm">
+        <Button type="button" onClick={openCreate} className="text-sm" variant= {"secondary"}>
           + 新增
-        </button>
+        </Button>
       </div>
 
       {triggerBindings.length === 0 ? (
@@ -123,12 +138,12 @@ export function TriggerBindingList() {
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button onClick={() => openEdit(binding)} className="text-muted-foreground hover:text-primary">
+                  <Button type="button" onClick={() => openEdit(binding)} className="text-muted-foreground hover:text-primary">
                     编辑
-                  </button>
-                  <button onClick={() => handleDelete(binding.id)} className="text-muted-foreground hover:text-destructive">
+                  </Button>
+                  <Button type="button" onClick={() => setDeleteTarget(binding)} className="text-muted-foreground hover:text-destructive">
                     删除
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -147,47 +162,47 @@ export function TriggerBindingList() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">触发器 Key *</label>
-                <input
+                <Input
                   type="text"
                   value={formData.triggerKey}
                   onChange={(e) => setFormData({ ...formData, triggerKey: e.target.value })}
                   placeholder="例如：meeting-start"
-                  className="w-full px-3 py-2 border rounded-md"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1">触发器名称</label>
-                <input
+                <Input
                   type="text"
                   value={formData.triggerName}
                   onChange={(e) => setFormData({ ...formData, triggerName: e.target.value })}
                   placeholder="例如：开始会议"
-                  className="w-full px-3 py-2 border rounded-md"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1">场景 *</label>
-                <select
-                  value={formData.sceneId}
-                  onChange={(e) => setFormData({ ...formData, sceneId: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background"
-                >
-                  <option value="">请选择场景</option>
-                  {scenes.map((scene: Scene) => (
-                    <option key={scene.id} value={scene.id}>
-                      {scene.name}
-                    </option>
-                  ))}
-                </select>
+                <Select.Root value={formData.sceneId} onValueChange={(value) => setFormData({ ...formData, sceneId: value })}>
+                  <Select.Trigger className="w-full">
+                    <Select.Value placeholder="请选择场景" />
+                    <Select.Icon />
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Content>
+                      {scenes.map((scene: Scene) => (
+                        <Select.Item key={scene.id} value={scene.id}>
+                          {scene.name}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
               </div>
 
               <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={formData.enabled}
-                  onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
+                  onCheckedChange={(checked) => setFormData({ ...formData, enabled: checked === true })}
                 />
                 启用绑定
               </label>
@@ -195,15 +210,44 @@ export function TriggerBindingList() {
 
             <div className="flex justify-end gap-2 mt-6">
               <Dialog.Close asChild>
-                <button className="btn-secondary">取消</button>
+                <Button type="button" variant="outline">
+                  取消
+                </Button>
               </Dialog.Close>
-              <button onClick={handleSave} className="btn-primary">
+              <Button type="button" onClick={handleSave}>
                 保存
-              </button>
+              </Button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      <AlertDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>删除触发器绑定</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? '确定要删除此触发器绑定吗？「' + (deleteTarget.triggerName || deleteTarget.triggerKey) + '」'
+                : '确定要删除此触发器绑定吗？'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className='bg-red-500 hover:bg-red/90 text-white'>删除</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
+
+
+
+
+

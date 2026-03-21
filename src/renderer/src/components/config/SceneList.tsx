@@ -4,8 +4,22 @@
  */
 
 import { useEffect, useState } from 'react'
-import * as Dialog from '@radix-ui/react-dialog'
+import { Dialog } from '../ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '../ui/alert-dialog'
+import { Select } from '../ui/select'
 import { useConfigStore, type Scene, type SceneStep, type InputStep } from '../../stores/configStore'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Textarea } from '../ui/textarea'
 import { RecorderDialog } from '../recorder/RecorderDialog'
 
 interface Props {
@@ -194,6 +208,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
   const [editingScene, setEditingScene] = useState<Scene | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Scene | null>(null)
   const [formData, setFormData] = useState<SceneFormData>(emptyForm)
   const [dependencyErrors, setDependencyErrors] = useState<string[]>([])
 
@@ -387,10 +402,10 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
     setIsDialogOpen(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('确定要删除此场景吗？')) {
-      await deletePreset('scene', id)
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    await deletePreset('scene', deleteTarget.id)
+    setDeleteTarget(null)
   }
 
   const handleSelect = (scene: Scene) => {
@@ -414,16 +429,17 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
           <h3 className="text-lg font-semibold">场景编排</h3>
           <div className="text-sm text-muted-foreground">以步骤流编排软件、键盘、鼠标和延迟动作。</div>
         </div>
-        <button
+        <Button
           onClick={() => {
             setEditingScene(null)
             setFormData(emptyForm)
             setIsDialogOpen(true)
           }}
-          className="btn-primary text-sm"
+          className="text-sm"
+          variant= {"secondary"}
         >
           + 新增
-        </button>
+        </Button>
       </div>
 
       {scenes.length === 0 ? (
@@ -458,7 +474,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                     </div>
                   </div>
                   <div className="flex gap-2 ml-2">
-                    <button
+                    <Button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleEdit(scene)
@@ -466,16 +482,16 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                       className="text-muted-foreground hover:text-primary"
                     >
                       编辑
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDelete(scene.id)
+                        setDeleteTarget(scene)
                       }}
                       className="text-muted-foreground hover:text-destructive"
                     >
                       删除
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -504,7 +520,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">名称 *</label>
-                <input
+                <Input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -514,7 +530,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">描述</label>
-                <textarea
+                <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="场景描述（可选）"
@@ -527,24 +543,24 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                 <div className="flex items-center justify-between gap-2">
                   <label className="block text-sm font-medium">步骤编排</label>
                   <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => setIsRecorderOpen(true)} className="text-xs px-2 py-1 rounded border">
+                    <Button type="button" onClick={() => setIsRecorderOpen(true)} className="text-xs px-2 py-1 rounded border">
                       从录制器导入
-                    </button>
-                    <button type="button" onClick={() => addStep('software')} className="text-xs px-2 py-1 rounded border">
+                    </Button>
+                    <Button type="button" onClick={() => addStep('software')} className="text-xs px-2 py-1 rounded border">
                       + 软件
-                    </button>
-                    <button type="button" onClick={() => addStep('input')} className="text-xs px-2 py-1 rounded border">
+                    </Button>
+                    <Button type="button" onClick={() => addStep('input')} className="text-xs px-2 py-1 rounded border">
                       + 键盘
-                    </button>
-                    <button type="button" onClick={() => addStep('delay')} className="text-xs px-2 py-1 rounded border">
+                    </Button>
+                    <Button type="button" onClick={() => addStep('delay')} className="text-xs px-2 py-1 rounded border">
                       + 延迟
-                    </button>
-                    <button type="button" onClick={() => addStep('mouseClick')} className="text-xs px-2 py-1 rounded border">
+                    </Button>
+                    <Button type="button" onClick={() => addStep('mouseClick')} className="text-xs px-2 py-1 rounded border">
                       + 鼠标点击
-                    </button>
-                    <button type="button" onClick={() => addStep('mouseMove')} className="text-xs px-2 py-1 rounded border">
+                    </Button>
+                    <Button type="button" onClick={() => addStep('mouseMove')} className="text-xs px-2 py-1 rounded border">
                       + 鼠标移动
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -559,45 +575,52 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground shrink-0">#{index + 1}</span>
-                            <select
+                            <Select.Root
                               value={step.type}
-                              onChange={(e) => replaceStepType(index, e.target.value as SceneStep['type'])}
-                              className="text-sm px-2 py-1 border rounded bg-background"
+                              onValueChange={(value) => replaceStepType(index, value as SceneStep['type'])}
                             >
-                              <option value="software">软件步骤</option>
-                              <option value="input">键盘步骤</option>
-                              <option value="delay">延迟</option>
-                              <option value="mouseClick">鼠标点击</option>
-                              <option value="mouseMove">鼠标移动</option>
-                            </select>
+                              <Select.Trigger className="text-sm w-32">
+                                <Select.Value />
+                                <Select.Icon />
+                              </Select.Trigger>
+                              <Select.Portal>
+                                <Select.Content>
+                                  <Select.Item value="software">软件步骤</Select.Item>
+                                  <Select.Item value="input">键盘步骤</Select.Item>
+                                  <Select.Item value="delay">延迟</Select.Item>
+                                  <Select.Item value="mouseClick">鼠标点击</Select.Item>
+                                  <Select.Item value="mouseMove">鼠标移动</Select.Item>
+                                </Select.Content>
+                              </Select.Portal>
+                            </Select.Root>
                           </div>
 
                           <div className="flex items-center gap-1">
-                            <button
+                            <Button
                               type="button"
                               onClick={() => moveStep(index, -1)}
                               className="text-xs px-2 py-1 rounded border"
                               disabled={index === 0}
                             >
                               上移
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
                               onClick={() => moveStep(index, 1)}
                               className="text-xs px-2 py-1 rounded border"
                               disabled={index === formData.steps.length - 1}
                             >
                               下移
-                            </button>
-                            <button type="button" onClick={() => removeStep(index)} className="text-xs px-2 py-1 rounded border text-destructive">
+                            </Button>
+                            <Button type="button" onClick={() => removeStep(index)} className="text-xs px-2 py-1 rounded border text-destructive">
                               删除
-                            </button>
+                            </Button>
                           </div>
                         </div>
 
                         <div>
                           <label className="block text-xs text-muted-foreground mb-1">前置延迟（毫秒）</label>
-                          <input
+                          <Input
                             type="number"
                             min={0}
                             value={step.delay ?? 0}
@@ -609,43 +632,55 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                         {step.type === 'software' && (
                           <div>
                             <label className="block text-xs text-muted-foreground mb-1">软件预设</label>
-                            <select
+                            <Select.Root
                               value={step.presetId || ''}
-                              onChange={(e) => updateStep(index, { presetId: e.target.value })}
-                              className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                              onValueChange={(value) => updateStep(index, { presetId: value })}
                             >
-                              <option value="">请选择软件预设</option>
-                              {softwarePresets.map((preset) => (
-                                <option key={preset.id} value={preset.id}>
-                                  {preset.name}
-                                </option>
-                              ))}
-                            </select>
+                              <Select.Trigger className="w-full">
+                                <Select.Value placeholder="请选择软件预设" />
+                                <Select.Icon />
+                              </Select.Trigger>
+                              <Select.Portal>
+                                <Select.Content>
+                                  {softwarePresets.map((preset) => (
+                                    <Select.Item key={preset.id} value={preset.id}>
+                                      {preset.name}
+                                    </Select.Item>
+                                  ))}
+                                </Select.Content>
+                              </Select.Portal>
+                            </Select.Root>
                           </div>
                         )}
 
                         {step.type === 'input' && (
                           <div>
                             <label className="block text-xs text-muted-foreground mb-1">键盘预设</label>
-                            <select
+                            <Select.Root
                               value={step.presetId || ''}
-                              onChange={(e) => updateStep(index, { presetId: e.target.value })}
-                              className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                              onValueChange={(value) => updateStep(index, { presetId: value })}
                             >
-                              <option value="">请选择键盘预设</option>
-                              {inputPresets.map((preset) => (
-                                <option key={preset.id} value={preset.id}>
-                                  {preset.name}
-                                </option>
-                              ))}
-                            </select>
+                              <Select.Trigger className="w-full">
+                                <Select.Value placeholder="请选择键盘预设" />
+                                <Select.Icon />
+                              </Select.Trigger>
+                              <Select.Portal>
+                                <Select.Content>
+                                  {inputPresets.map((preset) => (
+                                    <Select.Item key={preset.id} value={preset.id}>
+                                      {preset.name}
+                                    </Select.Item>
+                                  ))}
+                                </Select.Content>
+                              </Select.Portal>
+                            </Select.Root>
                           </div>
                         )}
 
                         {step.type === 'delay' && (
                           <div>
                             <label className="block text-xs text-muted-foreground mb-1">延迟时间（毫秒）</label>
-                            <input
+                            <Input
                               type="number"
                               min={0}
                               value={step.delay ?? 0}
@@ -659,26 +694,33 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">按钮</label>
-                              <select
-                                value={Number(step.config?.button ?? 0)}
-                                onChange={(e) =>
+                              <Select.Root
+                                value={String(Number(step.config?.button ?? 0))}
+                                onValueChange={(value) =>
                                   updateStep(index, {
                                     config: {
                                       ...(step.config || {}),
-                                      button: Number(e.target.value)
+                                      button: Number(value)
                                     }
                                   })
                                 }
-                                className="w-full px-3 py-2 border rounded-md bg-background text-sm"
                               >
-                                <option value={0}>左键</option>
-                                <option value={1}>中键</option>
-                                <option value={2}>右键</option>
-                              </select>
+                                <Select.Trigger className="w-full">
+                                  <Select.Value />
+                                  <Select.Icon />
+                                </Select.Trigger>
+                                <Select.Portal>
+                                  <Select.Content>
+                                    <Select.Item value="0">左键</Select.Item>
+                                    <Select.Item value="1">中键</Select.Item>
+                                    <Select.Item value="2">右键</Select.Item>
+                                  </Select.Content>
+                                </Select.Portal>
+                              </Select.Root>
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">点击次数</label>
-                              <input
+                              <Input
                                 type="number"
                                 min={1}
                                 value={Number(step.config?.clickCount ?? step.config?.detail ?? 1)}
@@ -696,7 +738,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">客户端 X</label>
-                              <input
+                              <Input
                                 type="number"
                                 value={Number(step.config?.clientX ?? 0)}
                                 onChange={(e) =>
@@ -712,7 +754,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">客户端 Y</label>
-                              <input
+                              <Input
                                 type="number"
                                 value={Number(step.config?.clientY ?? 0)}
                                 onChange={(e) =>
@@ -728,7 +770,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">屏幕 X</label>
-                              <input
+                              <Input
                                 type="number"
                                 value={Number(step.config?.screenX ?? 0)}
                                 onChange={(e) =>
@@ -744,7 +786,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">屏幕 Y</label>
-                              <input
+                              <Input
                                 type="number"
                                 value={Number(step.config?.screenY ?? 0)}
                                 onChange={(e) =>
@@ -760,7 +802,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">备注</label>
-                              <input
+                              <Input
                                 type="text"
                                 value={String(step.config?.note || '')}
                                 onChange={(e) =>
@@ -782,7 +824,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">客户端 X</label>
-                              <input
+                              <Input
                                 type="number"
                                 value={Number(step.config?.clientX ?? 0)}
                                 onChange={(e) =>
@@ -798,7 +840,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">客户端 Y</label>
-                              <input
+                              <Input
                                 type="number"
                                 value={Number(step.config?.clientY ?? 0)}
                                 onChange={(e) =>
@@ -814,7 +856,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">屏幕 X</label>
-                              <input
+                              <Input
                                 type="number"
                                 value={Number(step.config?.screenX ?? 0)}
                                 onChange={(e) =>
@@ -830,7 +872,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">屏幕 Y</label>
-                              <input
+                              <Input
                                 type="number"
                                 value={Number(step.config?.screenY ?? 0)}
                                 onChange={(e) =>
@@ -846,7 +888,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">持续时间</label>
-                              <input
+                              <Input
                                 type="number"
                                 min={0}
                                 value={Number(step.config?.duration ?? 0)}
@@ -863,7 +905,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                             </div>
                             <div>
                               <label className="block text-xs text-muted-foreground mb-1">备注</label>
-                              <input
+                              <Input
                                 type="text"
                                 value={String(step.config?.note || '')}
                                 onChange={(e) =>
@@ -889,11 +931,11 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
 
             <div className="flex justify-end gap-2 mt-6">
               <Dialog.Close asChild>
-                <button className="btn-secondary">取消</button>
+                <Button className="btn-secondary">取消</Button>
               </Dialog.Close>
-              <button onClick={handleSave} className="btn-primary">
+              <Button onClick={handleSave} className="" variant= {"secondary"}>
                 保存
-              </button>
+              </Button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
@@ -904,8 +946,28 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
         onOpenChange={setIsRecorderOpen}
         onSave={handleImportRecording}
       />
+      <AlertDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>删除场景</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget ? '确定要删除此场景吗？「' + deleteTarget.name + '」' : '确定要删除此场景吗？'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className='bg-red-500 hover:bg-red/90 text-white'>删除</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
+
 
 

@@ -3,8 +3,22 @@
  * 软件预设列表组件
  */
 
-import { useState, useEffect } from 'react'
-import * as Dialog from '@radix-ui/react-dialog'
+import { useEffect, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
+import { toast } from 'sonner'
+import { Dialog } from '../ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '../ui/alert-dialog'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 import { useConfigStore, type SoftwarePreset } from '../../stores/configStore'
 
 interface Props {
@@ -17,17 +31,42 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
   const { softwarePresets, loadPresets, savePreset, updatePreset, deletePreset } = useConfigStore()
   const [editingPreset, setEditingPreset] = useState<SoftwarePreset | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<SoftwarePreset | null>(null)
   const [formData, setFormData] = useState({ name: '', path: '', args: '' })
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     loadPresets('software')
   }, [loadPresets])
 
   const handlePickPath = async () => {
-    const result = await window.electronAPI?.selectFile()
-    if (result?.success && result.path) {
-      setFormData((prev) => ({ ...prev, path: result.path }))
+    const selectFile = window.electronAPI?.selectFile
+    if (typeof selectFile === 'function') {
+      const result = await selectFile()
+      if (result?.success && result.path) {
+        setFormData((prev) => ({ ...prev, path: result.path }))
+        return
+      }
     }
+
+    fileInputRef.current?.click()
+  }
+
+  const handleFallbackFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    const path = window.electronAPI?.getPathForFile?.(file) || (file as File & { path?: string }).path
+    if (!path) {
+      toast.error('当前环境无法获取文件路径，请在 Electron 中重新打开')
+      event.target.value = ''
+      return
+    }
+
+    setFormData((prev) => ({ ...prev, path }))
+    event.target.value = ''
   }
 
   const handleSave = async () => {
@@ -54,10 +93,10 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
     setIsDialogOpen(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('确定要删除此预设吗？')) {
-      await deletePreset('software', id)
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    await deletePreset('software', deleteTarget.id)
+    setDeleteTarget(null)
   }
 
   const handleSelect = (preset: SoftwarePreset) => {
@@ -75,16 +114,18 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
           <h3 className="text-lg font-semibold">软件预设</h3>
           <div className="text-sm text-muted-foreground">程序路径可用文件选择器填写，工作目录默认使用程序所在目录。</div>
         </div>
-        <button
+        <Button
+          type="button"
           onClick={() => {
             setEditingPreset(null)
             setFormData({ name: '', path: '', args: '' })
             setIsDialogOpen(true)
           }}
-          className="btn-primary text-sm"
+          className="text-sm"
+          variant="secondary"
         >
           + 新增
-        </button>
+        </Button>
       </div>
 
       {softwarePresets.length === 0 ? (
@@ -110,7 +151,8 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
                   )}
                 </div>
                 <div className="flex gap-2 ml-2">
-                  <button
+                  <Button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleEdit(preset)
@@ -118,16 +160,17 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
                     className="text-muted-foreground hover:text-primary"
                   >
                     编辑
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleDelete(preset.id)
+                      setDeleteTarget(preset)
                     }}
                     className="text-muted-foreground hover:text-destructive"
                   >
                     删除
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -146,53 +189,75 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">名称 *</label>
-                <input
+                <Input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="预设名称"
-                  className="w-full px-3 py-2 border rounded-md"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">程序路径 *</label>
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     type="text"
                     value={formData.path}
                     onChange={(e) => setFormData({ ...formData, path: e.target.value })}
                     placeholder="C:\\Program Files\\..."
-                    className="flex-1 px-3 py-2 border rounded-md"
+                    className="flex-1"
                   />
-                  <button type="button" onClick={handlePickPath} className="px-3 py-2 border rounded-md text-sm">
+                  <Button type="button" onClick={handlePickPath} variant="outline">
                     选择文件
-                  </button>
+                  </Button>
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground">留空时会自动使用程序所在目录作为工作目录。</div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">启动参数</label>
-                <input
+                <Input
                   type="text"
                   value={formData.args}
                   onChange={(e) => setFormData({ ...formData, args: e.target.value })}
                   placeholder="--arg1 --arg2"
-                  className="w-full px-3 py-2 border rounded-md"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
               <Dialog.Close asChild>
-                <button className="btn-secondary">取消</button>
+                <Button type="button" variant="outline">
+                  取消
+                </Button>
               </Dialog.Close>
-              <button onClick={handleSave} className="btn-primary">
+              <Button type="button" onClick={handleSave}>
                 保存
-              </button>
+              </Button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFallbackFileChange} />
+
+      <AlertDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>删除软件预设</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget ? `确定要删除此预设吗？「${deleteTarget.name}」` : '确定要删除此预设吗？'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className='bg-red-500 hover:bg-red/90 text-white'>删除</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -39,6 +39,9 @@ const dedupeShortcutTokens = (tokens: ShortcutToken[]) => {
 
 const createRecordedStep = (type: InputStep['type'], seed?: InputStep): InputStep => {
   const delay = seed?.delay ?? 0
+  const isShortcutType = seed?.type === 'keyCombo' || seed?.type === 'keyPress'
+  const isNextShortcutType = type === 'keyCombo' || type === 'keyPress'
+  const shouldClearShortcut = isShortcutType && isNextShortcutType && seed?.type !== type
 
   switch (type) {
     case 'delay':
@@ -94,13 +97,13 @@ const createRecordedStep = (type: InputStep['type'], seed?: InputStep): InputSte
         type,
         delay,
         data: {
-          key: String(seed?.data.key ?? ''),
-          code: String(seed?.data.code ?? ''),
-          ctrlKey: Boolean(seed?.data.ctrlKey ?? false),
-          altKey: Boolean(seed?.data.altKey ?? false),
-          shiftKey: Boolean(seed?.data.shiftKey ?? false),
-          metaKey: Boolean(seed?.data.metaKey ?? false),
-          repeat: Boolean(seed?.data.repeat ?? false)
+          key: shouldClearShortcut ? '' : String(seed?.data.key ?? ''),
+          code: shouldClearShortcut ? '' : String(seed?.data.code ?? ''),
+          ctrlKey: shouldClearShortcut ? false : Boolean(seed?.data.ctrlKey ?? false),
+          altKey: shouldClearShortcut ? false : Boolean(seed?.data.altKey ?? false),
+          shiftKey: shouldClearShortcut ? false : Boolean(seed?.data.shiftKey ?? false),
+          metaKey: shouldClearShortcut ? false : Boolean(seed?.data.metaKey ?? false),
+          repeat: shouldClearShortcut ? false : Boolean(seed?.data.repeat ?? false)
         }
       }
   }
@@ -819,7 +822,7 @@ export function RecorderDialog({ open, onOpenChange, onSave }: Props) {
                 <button type="button" onClick={closeEditor} className="btn-secondary">
                   取消编辑
                 </button>
-                <button type="button" onClick={saveEditor} className="btn-primary">
+                <button type="button" onClick={saveEditor} className="">
                   保存步骤
                 </button>
               </div>

@@ -286,7 +286,7 @@ export function ConsolePanel() {
                 logs.map((log) => (
                   <div
                     key={log.id}
-                    className={`flex gap-2 ${
+                    className={`flex gap-2 items-center ${
                       log.type === 'error' ? 'text-red-500' : log.type === 'success' ? 'text-green-500' : 'text-foreground'
                     }`}
                   >

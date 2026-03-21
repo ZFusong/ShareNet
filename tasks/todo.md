@@ -1,3 +1,23 @@
+# Config Center Component Swap (2026-03-21)
+- [x] Replace config-center native `button`/`select` controls with shared UI components.
+- [x] Replace delete confirmation `confirm()` dialogs with shared in-app alert dialogs.
+- [x] Verify the config center still builds and the dialogs/selects behave normally.
+
+## Review
+- [ ] Confirm all config-center actions use shared UI components instead of raw browser controls.
+- [ ] Confirm delete flows no longer rely on native browser dialogs.
+- [ ] Confirm the config center still opens, edits, saves, and deletes presets correctly.
+
+# Shortcut Type Switch Clear (2026-03-21)
+- [x] Clear shortcut input data when switching between `keyCombo` and `keyPress`.
+- [x] Keep non-shortcut step types unchanged when switching away from shortcut types.
+- [ ] Verify both the preset editor and recorder step editor open with empty shortcut fields after cross-switching.
+
+## Review
+- [ ] Confirm switching `keyCombo` to `keyPress` clears the shortcut box.
+- [ ] Confirm switching `keyPress` to `keyCombo` clears the shortcut box.
+- [ ] Confirm switching to text/delay types still preserves their own fields.
+
 # Keyboard Combo Recording De-duplication (2026-03-21)
 - [x] Normalize keyboard shortcut summaries so a single key never renders twice.
 - [x] Ignore repeated keydown events and track pressed codes while recording keyboard presets.
@@ -352,6 +372,12 @@ pm run build passes after the UI and IPC changes.
 - [ ] Confirm switching away from the resource tab still receives text/image/file offers from other devices.
 - [ ] Confirm returning to the resource tab shows messages received during other tabs.
 - [ ] Confirm image/file download progress and completion status still update correctly.
+
+
+
+
+
+
 
 
 

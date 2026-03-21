@@ -5,8 +5,21 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import * as Dialog from '@radix-ui/react-dialog'
+import { Dialog } from '../ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '../ui/alert-dialog'
+import { Select } from '../ui/select'
 import { useConfigStore, type InputPreset, type InputStep } from '../../stores/configStore'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 
 interface Props {
   onSelect?: (preset: InputPreset) => void
@@ -136,6 +149,12 @@ const createKeyboardStep = (type: KeyboardStepType, seed?: InputStep): InputStep
 
 const createDefaultStep = (type: KeyboardStepType): InputStep => createKeyboardStep(type)
 
+const createClearedShortcutStep = (type: 'keyCombo' | 'keyPress', seed?: InputStep): InputStep => ({
+  type,
+  delay: seed?.delay ?? 0,
+  data: emptyKeyboardData()
+})
+
 const getShortcutParts = (step: InputStep) => {
   const tokens = getShortcutTokens(step)
   return {
@@ -185,6 +204,7 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
   const { inputPresets, loadPresets, savePreset, updatePreset, deletePreset } = useConfigStore()
   const [editingPreset, setEditingPreset] = useState<InputPreset | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<InputPreset | null>(null)
   const [formData, setFormData] = useState({ name: '', steps: [] as InputStep[] })
   const shortcutRefs = useRef<(HTMLDivElement | null)[]>([])
   const [recordingIndex, setRecordingIndex] = useState<number | null>(null)
@@ -223,7 +243,14 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
   const replaceStepType = (index: number, type: KeyboardStepType) => {
     setFormData((prev) => {
       const nextSteps = [...prev.steps]
-      nextSteps[index] = createKeyboardStep(type, nextSteps[index])
+      const currentStep = nextSteps[index]
+      const isShortcutType = currentStep.type === 'keyCombo' || currentStep.type === 'keyPress'
+      const isNextShortcutType = type === 'keyCombo' || type === 'keyPress'
+
+      nextSteps[index] =
+        isShortcutType && isNextShortcutType && currentStep.type !== type
+          ? createClearedShortcutStep(type, currentStep)
+          : createKeyboardStep(type, currentStep)
       return { ...prev, steps: nextSteps }
     })
 
@@ -329,10 +356,10 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
     setIsDialogOpen(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('确定要删除此预设吗？')) {
-      await deletePreset('input', id)
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    await deletePreset('input', deleteTarget.id)
+    setDeleteTarget(null)
   }
 
   const handleSelect = (preset: InputPreset) => {
@@ -371,16 +398,17 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
           <h3 className="text-lg font-semibold">键盘宏</h3>
           <div className="text-sm text-muted-foreground">按键、组合键、文字输入和延迟会根据类型显示对应编辑控件。</div>
         </div>
-        <button
+        <Button
           onClick={() => {
             setEditingPreset(null)
             setFormData({ name: '', steps: [] })
             setIsDialogOpen(true)
           }}
-          className="btn-primary text-sm"
+          className="text-sm"
+          variant= {"secondary"}
         >
           + 新增
-        </button>
+        </Button>
       </div>
 
       {inputPresets.length === 0 ? (
@@ -411,7 +439,7 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
                     </div>
                   </div>
                   <div className="flex gap-2 ml-2">
-                    <button
+                    <Button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleEdit(preset)
@@ -419,16 +447,16 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
                       className="text-muted-foreground hover:text-primary"
                     >
                       编辑
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDelete(preset.id)
+                        setDeleteTarget(preset)
                       }}
                       className="text-muted-foreground hover:text-destructive"
                     >
                       删除
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -456,7 +484,7 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">名称 *</label>
-                <input
+                <Input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -468,33 +496,40 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-medium">步骤（仅键盘宏）</label>
-                  <button
+                  <Button
                     type="button"
                     onClick={() => addStep('keyPress')}
-                    className="text-sm text-primary hover:underline"
+                    className="text-sm text-primary"
                   >
                     + 添加步骤
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="space-y-2">
                   {formData.steps.map((step, index) => (
                     <div key={index} className="rounded border p-3 space-y-3">
                       <div className="flex items-center gap-2 h-8">
-                        <select
+                        <Select.Root
                           value={step.type}
-                          onChange={(e) => replaceStepType(index, e.target.value as KeyboardStepType)}
-                          className="text-sm w-24 px-2 py-1 border rounded bg-background"
+                          onValueChange={(value) => replaceStepType(index, value as KeyboardStepType)}
                         >
-                          <option value="keyCombo">组合键</option>
-                          <option value="keyPress">按键</option>
-                          <option value="textInput">文字输入</option>
-                          <option value="delay">延迟</option>
-                        </select>
+                          <Select.Trigger className="text-sm w-24">
+                            <Select.Value />
+                            <Select.Icon />
+                          </Select.Trigger>
+                          <Select.Portal>
+                            <Select.Content>
+                              <Select.Item value="keyCombo">组合键</Select.Item>
+                              <Select.Item value="keyPress">按键</Select.Item>
+                              <Select.Item value="textInput">文字输入</Select.Item>
+                              <Select.Item value="delay">延迟</Select.Item>
+                            </Select.Content>
+                          </Select.Portal>
+                        </Select.Root>
 
                         <div className="text-xs text-muted-foreground flex-1">
                           {step.type === 'keyCombo' || step.type === 'keyPress'
-                              ? step.type === 'keyCombo'
+                            ? step.type === 'keyCombo'
                               ? '组合键：连续录制多个按键，最多 4 个。后按的键会覆盖前一个，点击"取消录制"停止。'
                               : '按键：只记录单个按键，后按的键会覆盖前一个，点击"取消录制"停止。'
                             : step.type === 'textInput'
@@ -502,7 +537,7 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
                               : '输入延迟时间，单位为毫秒。'}
                         </div>
 
-                        <button
+                        <Button
                           type="button"
                           onClick={() => {
                             setFormData((prev) => ({
@@ -510,10 +545,10 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
                               steps: prev.steps.filter((_, i) => i !== index)
                             }))
                           }}
-                          className="text-destructive hover:underline text-sm"
+                          className="text-destructive text-sm px-3"
                         >
                           删除
-                        </button>
+                        </Button>
                       </div>
 
                       {step.type === 'keyCombo' || step.type === 'keyPress' ? (
@@ -572,34 +607,34 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
                             </div>
                           </div>
                           {recordingIndex === index ? (
-                            <button
+                            <Button
                               type="button"
                               onClick={stopRecording}
                               className="shrink-0 px-3 py-2 border rounded-md text-sm text-muted-foreground hover:text-primary"
                             >
                               取消录制
-                            </button>
+                            </Button>
                           ) : (
-                            <button
+                            <Button
                               type="button"
                               onClick={() => startRecording(index)}
                               className="shrink-0 px-3 py-2 border rounded-md text-sm text-muted-foreground hover:text-primary"
                             >
                               开始录制
-                            </button>
+                            </Button>
                           )}
-                          <button
+                          <Button
                             type="button"
                             onClick={() => clearShortcut(index)}
                             className="shrink-0 px-3 py-2 border rounded-md text-sm text-muted-foreground hover:text-destructive"
                           >
                             清空
-                          </button>
+                          </Button>
                         </div>
                       ) : null}
 
                       {step.type === 'textInput' && (
-                        <input
+                        <Input
                           type="text"
                           value={String(step.data.text ?? '')}
                           onChange={(e) => updateStep(index, { data: { ...step.data, text: e.target.value } })}
@@ -609,7 +644,7 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
                       )}
 
                       {step.type === 'delay' && (
-                        <input
+                        <Input
                           type="number"
                           min={0}
                           value={Number(step.data.delay ?? 1000)}
@@ -626,15 +661,35 @@ export function InputPresetList({ onSelect, multiSelect = false, selectedIds = [
 
             <div className="flex justify-end gap-2 mt-6">
               <Dialog.Close asChild>
-                <button className="btn-secondary">取消</button>
+                <Button className="btn-secondary">取消</Button>
               </Dialog.Close>
-              <button onClick={handleSave} className="btn-primary">
+              <Button onClick={handleSave} className="" variant= {"secondary"}>
                 保存
-              </button>
+              </Button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+      <AlertDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>删除键盘预设</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget ? '确定要删除此预设吗？「' + deleteTarget.name + '」' : '确定要删除此预设吗？'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className='bg-red-500 hover:bg-red/90 text-white'>删除</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
+
