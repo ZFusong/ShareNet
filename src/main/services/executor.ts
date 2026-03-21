@@ -7,8 +7,8 @@ import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import { app } from 'electron'
 import path from 'path'
-import { getSoftwarePresets, getInputPresets, getScene } from './configStore'
-import type { InputStep, SceneStep } from './configStore'
+import { getSoftwarePresets, getInputPresets, getMousePresets, getScene } from './configStore'
+import type { InputStep, MouseStep, SceneStep } from './configStore'
 
 // Running processes map
 const runningProcesses: Map<string, ChildProcess> = new Map()
@@ -206,6 +206,37 @@ class ExecutionEngine extends EventEmitter {
   }
 
   /**
+   * Execute mouse preset
+   */
+  private async executeMouse(presetId: string, startTime?: number): Promise<ExecutionResult> {
+    const presets = getMousePresets()
+    const preset = presets.find((p) => p.id === presetId)
+
+    if (!preset) {
+      return { success: false, error: 'Mouse preset not found', duration: 0 }
+    }
+
+    try {
+      for (const step of preset.steps) {
+        await this.executeMouseStep(step)
+      }
+
+      this.emit('execution-complete', { presetId, type: 'mouse' })
+      return {
+        success: true,
+        output: `Executed ${preset.steps.length} mouse steps`,
+        duration: Date.now() - (startTime || Date.now())
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: String(error),
+        duration: Date.now() - (startTime || Date.now())
+      }
+    }
+  }
+
+  /**
    * Execute a single input step
    */
   private async executeInputStep(step: InputStep): Promise<void> {
@@ -225,6 +256,14 @@ class ExecutionEngine extends EventEmitter {
 
     // Simulate execution time
     await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+
+  /**
+   * Execute a single mouse step
+   */
+  private async executeMouseStep(step: MouseStep): Promise<void> {
+    console.log('[Executor] Mouse step:', step.type, step.data)
+    await new Promise((resolve) => setTimeout(resolve, 50))
   }
 
   /**
@@ -270,12 +309,15 @@ class ExecutionEngine extends EventEmitter {
       await new Promise((resolve) => setTimeout(resolve, step.delay))
     }
 
-    if (step.type === 'mouseMove' || step.type === 'mouseClick') {
-      await this.executeInputStep({
-        type: step.type,
-        data: step.config || {},
-        delay: 0
-      })
+    if (step.type === 'mouse') {
+      if (!step.presetId) {
+        throw new Error('Scene step missing presetId')
+      }
+
+      const result = await this.executeMouse(step.presetId)
+      if (!result.success) {
+        throw new Error(result.error || 'Mouse step failed')
+      }
       return
     }
 

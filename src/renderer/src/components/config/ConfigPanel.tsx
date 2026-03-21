@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { SoftwarePresetList } from './SoftwarePresetList'
 import { InputPresetList } from './InputPresetList'
+import { MousePresetList } from './MousePresetList'
 import { SceneList } from './SceneList'
 import { TriggerBindingList } from './TriggerBindingList'
 import { useConfigStore } from '../../stores/configStore'
@@ -19,12 +20,13 @@ import { Tabs } from '@/components/ui/tabs'
 
 export function ConfigPanel() {
   const { exportConfig, importConfig } = useConfigStore()
-  const [activeTab, setActiveTab] = useState<'software' | 'input' | 'scene' | 'trigger'>('scene')
+  const [activeTab, setActiveTab] = useState<'software' | 'input' | 'mouse' | 'scene' | 'trigger'>('scene')
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [exportModules, setExportModules] = useState({
     'software-presets': true,
     'input-presets': true,
+    'mouse-presets': true,
     scenes: true,
     'trigger-bindings': true
   })
@@ -108,6 +110,12 @@ export function ConfigPanel() {
             键盘预设
           </Tabs.Trigger>
           <Tabs.Trigger
+            value="mouse"
+            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
+          >
+            鼠标预设
+          </Tabs.Trigger>
+          <Tabs.Trigger
             value="trigger"
             className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
           >
@@ -125,6 +133,10 @@ export function ConfigPanel() {
 
         <Tabs.Content value="input" className="flex-1 overflow-auto p-4">
           <InputPresetList />
+        </Tabs.Content>
+
+        <Tabs.Content value="mouse" className="flex-1 overflow-auto p-4">
+          <MousePresetList />
         </Tabs.Content>
 
         <Tabs.Content value="trigger" className="flex-1 overflow-auto p-4">
@@ -160,6 +172,13 @@ export function ConfigPanel() {
                   onCheckedChange={(checked) => setExportModules({ ...exportModules, 'input-presets': checked === true })}
                 />
                 <span>键盘预设</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <Checkbox
+                  checked={exportModules['mouse-presets']}
+                  onCheckedChange={(checked) => setExportModules({ ...exportModules, 'mouse-presets': checked === true })}
+                />
+                <span>鼠标预设</span>
               </label>
               <label className="flex items-center gap-2">
                 <Checkbox

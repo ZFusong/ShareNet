@@ -4,7 +4,6 @@
  */
 
 import Store from 'electron-store'
-import { v4 as uuidv4 } from 'uuid'
 
 // ========== Types ==========
 
@@ -57,9 +56,23 @@ export interface InputPreset {
 }
 
 export interface InputStep {
-  type: 'keyCombo' | 'keyPress' | 'mouseClick' | 'mouseMove' | 'textInput' | 'delay'
+  type: 'keyCombo' | 'keyPress' | 'textInput' | 'delay'
   data: Record<string, unknown>
   delay?: number // ms before this step
+}
+
+export interface MouseStep {
+  type: 'mouseMove' | 'mouseScroll' | 'mouseClick'
+  data: Record<string, unknown>
+}
+
+export interface MousePreset {
+  id: string
+  name: string
+  steps: MouseStep[]
+  sourceInputPresetId?: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface Scene {
@@ -68,13 +81,14 @@ export interface Scene {
   description?: string
   softwarePresetIds: string[]
   inputPresetIds: string[]
+  mousePresetIds?: string[]
   steps: SceneStep[]
   createdAt: number
   updatedAt: number
 }
 
 export interface SceneStep {
-  type: 'software' | 'input' | 'delay' | 'mouseClick' | 'mouseMove'
+  type: 'software' | 'input' | 'mouse' | 'delay'
   presetId?: string
   delay?: number
   config?: Record<string, unknown>
@@ -94,6 +108,7 @@ export interface AppConfig {
   settings: Settings
   'software-presets': SoftwarePreset[]
   'input-presets': InputPreset[]
+  'mouse-presets': MousePreset[]
   scenes: Scene[]
   'trigger-bindings': TriggerBinding[]
   offlineDevices: Record<string, { lastSeen: number; device: unknown }>
@@ -138,89 +153,62 @@ const store = new Store<AppConfig>({
     settings: defaultSettings,
     'software-presets': [],
     'input-presets': [],
+    'mouse-presets': [],
     scenes: [],
     'trigger-bindings': [],
     offlineDevices: {}
   }
 })
 
-const isMouseInputStep = (step: InputStep) => step.type === 'mouseClick' || step.type === 'mouseMove'
-const isKeyboardInputStep = (step: InputStep) =>
-  step.type === 'keyCombo' || step.type === 'keyPress' || step.type === 'textInput' || step.type === 'delay'
+const normalizeMouseStep = (step: MouseStep): MouseStep | null => {
+  if (step.type !== 'mouseMove' && step.type !== 'mouseScroll' && step.type !== 'mouseClick') {
+    return null
+  }
 
-const normalizeKeyboardInputSteps = (steps: InputStep[]): InputStep[] => steps.filter(isKeyboardInputStep)
-
-function migrateMouseStepsFromInputPresetsToScenes(): void {
-  const inputPresets = store.get('input-presets', [])
-  const scenes = store.get('scenes', [])
-  if (inputPresets.length === 0) return
-
-  const mouseStepsByPresetId = new Map<string, InputStep[]>()
-  let inputPresetChanged = false
-
-  const cleanedInputPresets = inputPresets.map((preset) => {
-    const mouseSteps = preset.steps.filter(isMouseInputStep)
-    const keyboardSteps = normalizeKeyboardInputSteps(preset.steps)
-    if (mouseSteps.length > 0 || keyboardSteps.length !== preset.steps.length) {
-      if (mouseSteps.length > 0) {
-        mouseStepsByPresetId.set(preset.id, mouseSteps)
-      }
-      inputPresetChanged = true
-      return { ...preset, steps: keyboardSteps, updatedAt: Date.now() }
-    }
-    return preset
-  })
-
-  if (!inputPresetChanged) return
-
-  store.set('input-presets', cleanedInputPresets)
-
-  if (scenes.length === 0) return
-
-  const nextScenes = scenes.map((scene) => {
-    const baseSteps: SceneStep[] =
-      scene.steps && scene.steps.length > 0
-        ? scene.steps
-        : [
-            ...(scene.softwarePresetIds || []).map((presetId) => ({ type: 'software' as const, presetId })),
-            ...(scene.inputPresetIds || []).map((presetId) => ({ type: 'input' as const, presetId }))
-          ]
-
-    const migratedSteps: SceneStep[] = []
-    let sceneChanged = false
-
-    for (const step of baseSteps) {
-      migratedSteps.push(step)
-      if (step.type !== 'input' || !step.presetId) continue
-
-      const mouseSteps = mouseStepsByPresetId.get(step.presetId)
-      if (!mouseSteps || mouseSteps.length === 0) continue
-
-      sceneChanged = true
-      for (const mouseStep of mouseSteps) {
-        migratedSteps.push({
-          type: mouseStep.type,
-          delay: mouseStep.delay,
-          config: {
-            ...(mouseStep.data || {}),
-            sourcePresetId: step.presetId
-          }
-        })
-      }
-    }
-
-    if (!sceneChanged) return scene
+  if (step.type === 'mouseMove') {
     return {
-      ...scene,
-      steps: migratedSteps,
-      updatedAt: Date.now()
+      type: step.type,
+      data: {
+        screenX: Number(step.data.screenX ?? step.data.clientX ?? 0),
+        screenY: Number(step.data.screenY ?? step.data.clientY ?? 0),
+        note: String(step.data.note ?? '')
+      }
     }
-  })
+  }
 
-  store.set('scenes', nextScenes)
+  if (step.type === 'mouseScroll') {
+    const rawDirection = String(step.data.direction ?? '').toLowerCase()
+    const direction =
+      rawDirection === 'up' || rawDirection === 'down'
+        ? rawDirection
+        : Number(step.data.deltaY ?? 0) < 0
+          ? 'up'
+          : 'down'
+    const legacyDeltaY = Number(step.data.deltaY ?? 0)
+    const stepCount = Number(step.data.step ?? step.data.steps ?? 0)
+
+    return {
+      type: step.type,
+      data: {
+        direction,
+        step: Number.isFinite(stepCount) && stepCount > 0 ? Math.round(stepCount) : Math.max(1, Math.round(Math.abs(legacyDeltaY) / 120) || 1),
+        note: String(step.data.note ?? '')
+      }
+    }
+  }
+
+  return {
+    type: step.type,
+    data: {
+      button: Number(step.data.button ?? 0),
+      clickCount: Number(step.data.clickCount ?? 1),
+      note: String(step.data.note ?? '')
+    }
+  }
 }
 
-migrateMouseStepsFromInputPresetsToScenes()
+const normalizeMousePresetSteps = (steps: MouseStep[]): MouseStep[] =>
+  steps.map(normalizeMouseStep).filter((step): step is MouseStep => step !== null)
 
 function migrateTriggerBindingsToLocalOnly(): void {
   const triggerBindings = store.get('trigger-bindings', []) as Array<TriggerBinding & { deviceKey?: string }>
@@ -356,7 +344,9 @@ export function getInputPreset(id: string): InputPreset | undefined {
 export function saveInputPreset(preset: Omit<InputPreset, 'id' | 'createdAt' | 'updatedAt'>): InputPreset {
   const presets = getInputPresets()
   const now = Date.now()
-  const normalizedSteps = normalizeKeyboardInputSteps(preset.steps)
+  const normalizedSteps = preset.steps.filter((step) =>
+    step.type === 'keyCombo' || step.type === 'keyPress' || step.type === 'textInput' || step.type === 'delay'
+  )
 
   const newPreset: InputPreset = {
     ...preset,
@@ -380,7 +370,13 @@ export function updateInputPreset(id: string, updates: Partial<Omit<InputPreset,
 
   const normalizedUpdates = {
     ...updates,
-    ...(updates.steps !== undefined ? { steps: normalizeKeyboardInputSteps(updates.steps) } : {})
+    ...(updates.steps !== undefined
+      ? {
+          steps: updates.steps.filter(
+            (step) => step.type === 'keyCombo' || step.type === 'keyPress' || step.type === 'textInput' || step.type === 'delay'
+          )
+        }
+      : {})
   }
 
   presets[index] = {
@@ -400,6 +396,67 @@ export function deleteInputPreset(id: string): boolean {
   if (filtered.length === presets.length) return false
 
   store.set('input-presets', filtered)
+  return true
+}
+
+// ========== Mouse Presets ==========
+
+export function getMousePresets(): MousePreset[] {
+  return store.get('mouse-presets', [])
+}
+
+export function getMousePreset(id: string): MousePreset | undefined {
+  const presets = getMousePresets()
+  return presets.find((p) => p.id === id)
+}
+
+export function saveMousePreset(preset: Omit<MousePreset, 'id' | 'createdAt' | 'updatedAt'>): MousePreset {
+  const presets = getMousePresets()
+  const now = Date.now()
+  const normalizedSteps = normalizeMousePresetSteps(preset.steps)
+
+  const newPreset: MousePreset = {
+    ...preset,
+    steps: normalizedSteps,
+    id: `mp-${now}-${Math.random().toString(36).substr(2, 4)}`,
+    createdAt: now,
+    updatedAt: now
+  }
+
+  presets.push(newPreset)
+  store.set('mouse-presets', presets)
+
+  return newPreset
+}
+
+export function updateMousePreset(id: string, updates: Partial<Omit<MousePreset, 'id' | 'createdAt'>>): MousePreset | null {
+  const presets = getMousePresets()
+  const index = presets.findIndex((p) => p.id === id)
+
+  if (index === -1) return null
+
+  const normalizedUpdates = {
+    ...updates,
+    ...(updates.steps !== undefined ? { steps: normalizeMousePresetSteps(updates.steps) } : {})
+  }
+
+  presets[index] = {
+    ...presets[index],
+    ...normalizedUpdates,
+    updatedAt: Date.now()
+  }
+
+  store.set('mouse-presets', presets)
+  return presets[index]
+}
+
+export function deleteMousePreset(id: string): boolean {
+  const presets = getMousePresets()
+  const filtered = presets.filter((p) => p.id !== id)
+
+  if (filtered.length === presets.length) return false
+
+  store.set('mouse-presets', filtered)
   return true
 }
 
@@ -570,6 +627,14 @@ export function exportConfig(modules: string[]): Record<string, unknown> {
     }
   }
 
+  if (modules.includes('mouse-presets')) {
+    (data.data as Record<string, unknown>)['mouse-presets'] = getMousePresets()
+    ;(data.exportMeta as Record<string, unknown>).itemCount = {
+      ...(data.exportMeta as Record<string, unknown>).itemCount,
+      'mouse-presets': getMousePresets().length
+    }
+  }
+
   if (modules.includes('scenes')) {
     (data.data as Record<string, unknown>)['scenes'] = getScenes()
     ;(data.exportMeta as Record<string, unknown>).itemCount = {
@@ -622,7 +687,9 @@ export function importConfig(config: { data: Record<string, unknown> }, mode: 'a
   if (config.data['input-presets'] && Array.isArray(config.data['input-presets'])) {
     const normalizedInputPresets = (config.data['input-presets'] as InputPreset[]).map((preset) => ({
       ...preset,
-      steps: normalizeKeyboardInputSteps(preset.steps || [])
+      steps: (preset.steps || []).filter(
+        (step) => step.type === 'keyCombo' || step.type === 'keyPress' || step.type === 'textInput' || step.type === 'delay'
+      )
     }))
     const imported = importPresets(
       normalizedInputPresets,
@@ -634,6 +701,23 @@ export function importConfig(config: { data: Record<string, unknown> }, mode: 'a
     result.errors.push(...imported.errors)
     result.conflicts.push(...imported.conflicts)
     store.set('input-presets', imported.items)
+  }
+
+  if (config.data['mouse-presets'] && Array.isArray(config.data['mouse-presets'])) {
+    const normalizedMousePresets = (config.data['mouse-presets'] as MousePreset[]).map((preset) => ({
+      ...preset,
+      steps: normalizeMousePresetSteps(preset.steps || [])
+    }))
+    const imported = importPresets(
+      normalizedMousePresets,
+      getMousePresets(),
+      mode,
+      'mouse-presets'
+    )
+    result.imported['mouse-presets'] = imported.count
+    result.errors.push(...imported.errors)
+    result.conflicts.push(...imported.conflicts)
+    store.set('mouse-presets', imported.items)
   }
 
   // Import scenes
@@ -725,7 +809,7 @@ function importPresets<T extends { id: string; name?: string; triggerKey?: strin
 
 // ========== ID Generator ==========
 
-export function generateId(type: 'software' | 'input' | 'scene' | 'trigger'): string {
+export function generateId(type: 'software' | 'input' | 'mouse' | 'scene' | 'trigger'): string {
   const timestamp = Date.now()
   const random = Math.random().toString(36).substr(2, 4)
   switch (type) {
@@ -733,6 +817,8 @@ export function generateId(type: 'software' | 'input' | 'scene' | 'trigger'): st
       return `sw-${timestamp}-${random}`
     case 'input':
       return `ip-${timestamp}-${random}`
+    case 'mouse':
+      return `mp-${timestamp}-${random}`
     case 'scene':
       return `sc-${timestamp}-${random}`
     case 'trigger':
@@ -746,6 +832,7 @@ export function checkDependencies(scene: Scene): { valid: boolean; missing: stri
   const missing: string[] = []
   const softwarePresets = getSoftwarePresets()
   const inputPresets = getInputPresets()
+  const mousePresets = getMousePresets()
 
   for (const presetId of scene.softwarePresetIds) {
     if (!softwarePresets.find((p) => p.id === presetId)) {
@@ -756,6 +843,12 @@ export function checkDependencies(scene: Scene): { valid: boolean; missing: stri
   for (const presetId of scene.inputPresetIds) {
     if (!inputPresets.find((p) => p.id === presetId)) {
       missing.push(`键盘预设: ${presetId}`)
+    }
+  }
+
+  for (const presetId of scene.mousePresetIds || []) {
+    if (!mousePresets.find((p) => p.id === presetId)) {
+      missing.push(`鼠标预设: ${presetId}`)
     }
   }
 

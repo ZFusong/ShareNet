@@ -24,9 +24,23 @@ export interface InputPreset {
 }
 
 export interface InputStep {
-  type: 'keyCombo' | 'keyPress' | 'mouseClick' | 'mouseMove' | 'textInput' | 'delay'
+  type: 'keyCombo' | 'keyPress' | 'textInput' | 'delay'
   data: Record<string, unknown>
   delay?: number
+}
+
+export interface MouseStep {
+  type: 'mouseMove' | 'mouseScroll' | 'mouseClick'
+  data: Record<string, unknown>
+}
+
+export interface MousePreset {
+  id: string
+  name: string
+  steps: MouseStep[]
+  sourceInputPresetId?: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface Scene {
@@ -35,13 +49,14 @@ export interface Scene {
   description?: string
   softwarePresetIds: string[]
   inputPresetIds: string[]
+  mousePresetIds?: string[]
   steps: SceneStep[]
   createdAt: number
   updatedAt: number
 }
 
 export interface SceneStep {
-  type: 'software' | 'input' | 'delay' | 'mouseClick' | 'mouseMove'
+  type: 'software' | 'input' | 'mouse' | 'delay'
   presetId?: string
   delay?: number
   config?: Record<string, unknown>
@@ -57,19 +72,20 @@ export interface TriggerBinding {
   updatedAt: number
 }
 
-type PresetType = 'software' | 'input' | 'scene' | 'trigger'
+type PresetType = 'software' | 'input' | 'mouse' | 'scene' | 'trigger'
 
 interface ConfigState {
   softwarePresets: SoftwarePreset[]
   inputPresets: InputPreset[]
+  mousePresets: MousePreset[]
   scenes: Scene[]
   triggerBindings: TriggerBinding[]
   loading: boolean
 
   // Actions
   loadPresets: (type: PresetType) => Promise<void>
-  savePreset: (type: PresetType, preset: Partial<SoftwarePreset | InputPreset | Scene | TriggerBinding>) => Promise<boolean>
-  updatePreset: (type: PresetType, id: string, updates: Partial<SoftwarePreset | InputPreset | Scene | TriggerBinding>) => Promise<boolean>
+  savePreset: (type: PresetType, preset: Partial<SoftwarePreset | InputPreset | MousePreset | Scene | TriggerBinding>) => Promise<boolean>
+  updatePreset: (type: PresetType, id: string, updates: Partial<SoftwarePreset | InputPreset | MousePreset | Scene | TriggerBinding>) => Promise<boolean>
   deletePreset: (type: PresetType, id: string) => Promise<boolean>
   exportConfig: (modules: string[]) => Promise<{ success: boolean; data?: unknown; error?: string }>
   importConfig: (data: unknown, mode: string) => Promise<{ success: boolean; result?: unknown; error?: string }>
@@ -78,6 +94,7 @@ interface ConfigState {
 export const useConfigStore = create<ConfigState>((set, get) => ({
   softwarePresets: [],
   inputPresets: [],
+  mousePresets: [],
   scenes: [],
   triggerBindings: [],
   loading: false,
@@ -90,6 +107,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         set({ softwarePresets: (presets as SoftwarePreset[]) || [] })
       } else if (type === 'input') {
         set({ inputPresets: (presets as InputPreset[]) || [] })
+      } else if (type === 'mouse') {
+        set({ mousePresets: (presets as MousePreset[]) || [] })
       } else if (type === 'scene') {
         set({ scenes: (presets as Scene[]) || [] })
       } else if (type === 'trigger') {
@@ -163,6 +182,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         // Reload all presets
         await get().loadPresets('software')
         await get().loadPresets('input')
+        await get().loadPresets('mouse')
         await get().loadPresets('scene')
         await get().loadPresets('trigger')
         return { success: true, result: result.result }

@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { ScrollArea } from '../ui/scroll-area'
 import { Dialog } from '../ui/dialog'
 import {
   AlertDialog,
@@ -16,11 +17,11 @@ import {
   AlertDialogTitle
 } from '../ui/alert-dialog'
 import { Select } from '../ui/select'
-import { useConfigStore, type Scene, type SceneStep, type InputStep } from '../../stores/configStore'
+import { FieldRow } from '../ui/field-row'
+import { useConfigStore, type Scene, type SceneStep } from '../../stores/configStore'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
-import { RecorderDialog } from '../recorder/RecorderDialog'
 
 interface Props {
   onSelect?: (scene: Scene) => void
@@ -40,16 +41,6 @@ const emptyForm: SceneFormData = {
   steps: []
 }
 
-type SceneDraftStep = {
-  kind: 'scene'
-  step: SceneStep
-}
-
-type PresetDraftStep = {
-  kind: 'preset'
-  steps: InputStep[]
-}
-
 const createDefaultStep = (type: SceneStep['type'], seed?: SceneStep): SceneStep => {
   const delay = seed?.delay ?? 0
   if (type === 'software') {
@@ -58,27 +49,11 @@ const createDefaultStep = (type: SceneStep['type'], seed?: SceneStep): SceneStep
   if (type === 'input') {
     return { type, presetId: '', delay }
   }
+  if (type === 'mouse') {
+    return { type, presetId: '', delay }
+  }
   if (type === 'delay') {
     return { type, delay: seed?.delay ?? 1000 }
-  }
-  if (type === 'mouseClick') {
-    return {
-      type,
-      delay,
-      config: {
-        button: 0,
-        clientX: 0,
-        clientY: 0,
-        screenX: 0,
-        screenY: 0,
-        clickCount: 1,
-        ctrlKey: false,
-        altKey: false,
-        shiftKey: false,
-        metaKey: false,
-        note: ''
-      }
-    }
   }
   return {
     type,
@@ -94,34 +69,6 @@ const createDefaultStep = (type: SceneStep['type'], seed?: SceneStep): SceneStep
   }
 }
 
-const isRecordedKeyboardStep = (step: InputStep) =>
-  step.type === 'keyCombo' || step.type === 'keyPress' || step.type === 'textInput'
-
-const isRecordedDelayStep = (step: InputStep) => step.type === 'delay'
-
-const isRecordedMouseStep = (step: InputStep) => step.type === 'mouseClick'
-
-const mapRecordedMouseStep = (step: InputStep): SceneStep => ({
-  type: 'mouseClick',
-  delay: step.delay ?? 0,
-  config: {
-    ...(step.data || {}),
-    button: Number(step.data.button ?? 0),
-    clientX: Number(step.data.clientX ?? 0),
-    clientY: Number(step.data.clientY ?? 0),
-    screenX: Number(step.data.screenX ?? step.data.clientX ?? 0),
-    screenY: Number(step.data.screenY ?? step.data.clientY ?? 0),
-    clickCount: Number(step.data.detail ?? step.data.clickCount ?? 1),
-    ctrlKey: Boolean(step.data.ctrlKey ?? false),
-    altKey: Boolean(step.data.altKey ?? false),
-    shiftKey: Boolean(step.data.shiftKey ?? false),
-    metaKey: Boolean(step.data.metaKey ?? false),
-    note: String(step.data.note ?? '')
-  }
-})
-
-const isSceneStepPreset = (step: SceneDraftStep | PresetDraftStep): step is PresetDraftStep => step.kind === 'preset'
-
 const normalizeLegacySteps = (scene: Scene): SceneStep[] => {
   if (scene.steps && scene.steps.length > 0) {
     return scene.steps
@@ -134,6 +81,10 @@ const normalizeLegacySteps = (scene: Scene): SceneStep[] => {
     })),
     ...(scene.inputPresetIds || []).map((presetId) => ({
       type: 'input' as const,
+      presetId
+    })),
+    ...(scene.mousePresetIds || []).map((presetId) => ({
+      type: 'mouse' as const,
       presetId
     }))
   ]
@@ -148,20 +99,23 @@ const extractPresetIds = (steps: SceneStep[]) => {
     .filter((step) => step.type === 'input' && typeof step.presetId === 'string' && step.presetId.trim())
     .map((step) => step.presetId!.trim())
 
-  return { softwarePresetIds, inputPresetIds }
+  const mousePresetIds = steps
+    .filter((step) => step.type === 'mouse' && typeof step.presetId === 'string' && step.presetId.trim())
+    .map((step) => step.presetId!.trim())
+
+  return { softwarePresetIds, inputPresetIds, mousePresetIds }
 }
 
 const getStepTitle = (
   step: SceneStep,
   index: number,
-  resolvePresetName: (id: string, type: 'software' | 'input') => string
+  resolvePresetName: (id: string, type: 'software' | 'input' | 'mouse') => string
 ) => {
   const labels: Record<SceneStep['type'], string> = {
     software: '软件步骤',
     input: '键盘步骤',
-    delay: '延迟',
-    mouseClick: '鼠标点击',
-    mouseMove: '鼠标移动'
+    mouse: '鼠标',
+    delay: '延迟'
   }
 
   let detail = ''
@@ -169,31 +123,10 @@ const getStepTitle = (
     detail = step.presetId ? resolvePresetName(step.presetId, 'software') : '未选择预设'
   } else if (step.type === 'input') {
     detail = step.presetId ? resolvePresetName(step.presetId, 'input') : '未选择预设'
+  } else if (step.type === 'mouse') {
+    detail = step.presetId ? resolvePresetName(step.presetId, 'mouse') : '未选择预设'
   } else if (step.type === 'delay') {
     detail = `${step.delay ?? 0}ms`
-  } else if (step.type === 'mouseClick') {
-    const button = Number(step.config?.button ?? 0)
-    const buttonLabel = button === 1 ? '中键' : button === 2 ? '右键' : '左键'
-    const clickCount = Number(step.config?.clickCount ?? step.config?.detail ?? 1)
-    const modifierLabels = [
-      step.config?.ctrlKey ? 'Ctrl' : '',
-      step.config?.altKey ? 'Alt' : '',
-      step.config?.shiftKey ? 'Shift' : '',
-      step.config?.metaKey ? 'Meta' : ''
-    ].filter((label): label is string => Boolean(label))
-    const point = `${step.config?.clientX ?? 0}, ${step.config?.clientY ?? 0}`
-    const screenPoint = `${step.config?.screenX ?? 0}, ${step.config?.screenY ?? 0}`
-    const modifiers = modifierLabels.length > 0 ? `${modifierLabels.join('+')} ` : ''
-    const note = String(step.config?.note ?? '')
-    const noteSuffix = note ? `，${note}` : ''
-    detail = `${modifiers}${buttonLabel} @ ${point} [屏幕 ${screenPoint}] x${clickCount}${noteSuffix}`
-  } else if (step.type === 'mouseMove') {
-    const point = `${step.config?.clientX ?? 0}, ${step.config?.clientY ?? 0}`
-    const screenPoint = `${step.config?.screenX ?? 0}, ${step.config?.screenY ?? 0}`
-    const duration = Number(step.config?.duration ?? 0)
-    const note = String(step.config?.note ?? '')
-    const noteSuffix = note ? `，${note}` : ''
-    detail = `${point} [屏幕 ${screenPoint}]${duration > 0 ? `，持续 ${duration}ms` : ''}${noteSuffix}`
   }
 
   if (typeof step.delay === 'number' && step.delay > 0) {
@@ -204,10 +137,9 @@ const getStepTitle = (
 }
 
 export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: Props) {
-  const { scenes, softwarePresets, inputPresets, loadPresets, savePreset, updatePreset, deletePreset } = useConfigStore()
+  const { scenes, softwarePresets, inputPresets, mousePresets, loadPresets, savePreset, updatePreset, deletePreset } = useConfigStore()
   const [editingScene, setEditingScene] = useState<Scene | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isRecorderOpen, setIsRecorderOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Scene | null>(null)
   const [formData, setFormData] = useState<SceneFormData>(emptyForm)
   const [dependencyErrors, setDependencyErrors] = useState<string[]>([])
@@ -216,6 +148,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
     loadPresets('scene')
     loadPresets('software')
     loadPresets('input')
+    loadPresets('mouse')
   }, [loadPresets])
 
   const updateStep = (index: number, updates: Partial<SceneStep>) => {
@@ -260,99 +193,11 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
     }))
   }
 
-  const handleImportRecording = async (name: string, steps: InputStep[]) => {
-    const trimmedName = name.trim() || `录制步骤 ${Date.now()}`
-    const draftSteps: Array<SceneDraftStep | PresetDraftStep> = []
-    let keyboardBuffer: InputStep[] = []
-
-    const flushKeyboardBuffer = () => {
-      if (keyboardBuffer.length === 0) return
-      draftSteps.push({ kind: 'preset', steps: [...keyboardBuffer] })
-      keyboardBuffer = []
-    }
-
-    for (const step of steps) {
-      if (isRecordedKeyboardStep(step)) {
-        keyboardBuffer.push(step)
-        continue
-      }
-
-      if (isRecordedDelayStep(step) && keyboardBuffer.length > 0) {
-        keyboardBuffer.push(step)
-        continue
-      }
-
-      flushKeyboardBuffer()
-
-      if (isRecordedMouseStep(step)) {
-        draftSteps.push({
-          kind: 'scene',
-          step: mapRecordedMouseStep(step)
-        })
-        continue
-      }
-
-      if (isRecordedDelayStep(step)) {
-        draftSteps.push({
-          kind: 'scene',
-          step: {
-            type: 'delay',
-            delay: Number(step.data.delay ?? step.delay ?? 0) || 0
-          }
-        })
-      }
-    }
-
-    flushKeyboardBuffer()
-
-    const keyboardSegments = draftSteps.filter(isSceneStepPreset)
-    const sceneSteps: SceneStep[] = []
-    let keyboardIndex = 0
-
-    for (const draft of draftSteps) {
-      if (draft.kind === 'scene') {
-        sceneSteps.push(draft.step)
-        continue
-      }
-
-      keyboardIndex += 1
-      const presetName = keyboardSegments.length === 1 ? trimmedName : `${trimmedName} - 键盘片段 ${keyboardIndex}`
-      const result = (await window.electronAPI?.savePreset('input', {
-        name: presetName,
-        steps: draft.steps
-      })) as { success?: boolean; preset?: { id?: string } } | undefined
-      const preset = result?.preset
-      if (!result?.success || !preset?.id) {
-        setDependencyErrors((prev) => [...prev, `录制导入失败：无法创建键盘预设「${presetName}」`])
-        return
-      }
-
-      sceneSteps.push({
-        type: 'input',
-        presetId: preset.id
-      })
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      steps: [...prev.steps, ...sceneSteps]
-    }))
-    await loadPresets('input')
-    setIsRecorderOpen(false)
-    if (!formData.name.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        name: trimmedName,
-        steps: prev.steps
-      }))
-    }
-  }
-
   const handleSave = async () => {
     if (!formData.name.trim()) return
 
     const steps = formData.steps
-    const { softwarePresetIds, inputPresetIds } = extractPresetIds(steps)
+    const { softwarePresetIds, inputPresetIds, mousePresetIds } = extractPresetIds(steps)
 
     const testScene: Scene = {
       id: editingScene?.id || '',
@@ -360,6 +205,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
       description: formData.description,
       softwarePresetIds,
       inputPresetIds,
+      mousePresetIds,
       steps,
       createdAt: editingScene?.createdAt || Date.now(),
       updatedAt: Date.now()
@@ -378,6 +224,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
       description: formData.description,
       softwarePresetIds,
       inputPresetIds,
+      mousePresetIds,
       steps
     }
 
@@ -416,8 +263,8 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
 
   const isSelected = (id: string) => selectedIds.includes(id)
 
-  const getPresetName = (id: string, type: 'software' | 'input') => {
-    const presets = type === 'software' ? softwarePresets : inputPresets
+  const getPresetName = (id: string, type: 'software' | 'input' | 'mouse') => {
+    const presets = type === 'software' ? softwarePresets : type === 'input' ? inputPresets : mousePresets
     const preset = presets.find((p) => p.id === id)
     return preset?.name || id
   }
@@ -503,449 +350,249 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
       <Dialog.Root open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[760px] max-h-[85vh] overflow-y-auto">
-            <Dialog.Title className="text-lg font-semibold mb-4">{editingScene ? '编辑场景' : '新增场景'}</Dialog.Title>
-
-            {dependencyErrors.length > 0 && (
-              <div className="mb-4 p-3 bg-destructive/10 border border-destructive rounded text-sm text-destructive">
-                <div className="font-medium mb-1">依赖检查失败:</div>
-                <ul className="list-disc list-inside">
-                  {dependencyErrors.map((err, i) => (
-                    <li key={i}>{err}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="space-y-4">
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex h-[85vh] max-h-[90vh] w-[660px] max-w-[95vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-background shadow-lg">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b py-2">
               <div>
-                <label className="block text-sm font-medium mb-1">名称 *</label>
-                <Input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="场景名称"
-                  className="w-full px-3 py-2 border rounded-md"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">描述</label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="场景描述（可选）"
-                  className="w-full px-3 py-2 border rounded-md"
-                  rows={2}
-                />
-              </div>
-
-              <div className="rounded border p-3 space-y-3 bg-secondary/20">
-                <div className="flex items-center justify-between gap-2">
-                  <label className="block text-sm font-medium">步骤编排</label>
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" onClick={() => setIsRecorderOpen(true)} className="text-xs px-2 py-1 rounded border">
-                      从录制器导入
-                    </Button>
-                    <Button type="button" onClick={() => addStep('software')} className="text-xs px-2 py-1 rounded border">
-                      + 软件
-                    </Button>
-                    <Button type="button" onClick={() => addStep('input')} className="text-xs px-2 py-1 rounded border">
-                      + 键盘
-                    </Button>
-                    <Button type="button" onClick={() => addStep('delay')} className="text-xs px-2 py-1 rounded border">
-                      + 延迟
-                    </Button>
-                    <Button type="button" onClick={() => addStep('mouseClick')} className="text-xs px-2 py-1 rounded border">
-                      + 鼠标点击
-                    </Button>
-                    <Button type="button" onClick={() => addStep('mouseMove')} className="text-xs px-2 py-1 rounded border">
-                      + 鼠标移动
-                    </Button>
-                  </div>
-                </div>
-
-                {formData.steps.length === 0 ? (
-                  <div className="text-sm text-muted-foreground border border-dashed rounded p-4 bg-background">
-                    还没有步骤，先添加一个软件、键盘、鼠标或延迟步骤。
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {formData.steps.map((step, index) => (
-                      <div key={`${step.type}-${index}`} className="rounded border bg-background p-3 space-y-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground shrink-0">#{index + 1}</span>
-                            <Select.Root
-                              value={step.type}
-                              onValueChange={(value) => replaceStepType(index, value as SceneStep['type'])}
-                            >
-                              <Select.Trigger className="text-sm w-32">
-                                <Select.Value />
-                                <Select.Icon />
-                              </Select.Trigger>
-                              <Select.Portal>
-                                <Select.Content>
-                                  <Select.Item value="software">软件步骤</Select.Item>
-                                  <Select.Item value="input">键盘步骤</Select.Item>
-                                  <Select.Item value="delay">延迟</Select.Item>
-                                  <Select.Item value="mouseClick">鼠标点击</Select.Item>
-                                  <Select.Item value="mouseMove">鼠标移动</Select.Item>
-                                </Select.Content>
-                              </Select.Portal>
-                            </Select.Root>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              onClick={() => moveStep(index, -1)}
-                              className="text-xs px-2 py-1 rounded border"
-                              disabled={index === 0}
-                            >
-                              上移
-                            </Button>
-                            <Button
-                              type="button"
-                              onClick={() => moveStep(index, 1)}
-                              className="text-xs px-2 py-1 rounded border"
-                              disabled={index === formData.steps.length - 1}
-                            >
-                              下移
-                            </Button>
-                            <Button type="button" onClick={() => removeStep(index)} className="text-xs px-2 py-1 rounded border text-destructive">
-                              删除
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs text-muted-foreground mb-1">前置延迟（毫秒）</label>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={step.delay ?? 0}
-                            onChange={(e) => updateStep(index, { delay: Number(e.target.value) || 0 })}
-                            className="w-full px-3 py-2 border rounded-md"
-                          />
-                        </div>
-
-                        {step.type === 'software' && (
-                          <div>
-                            <label className="block text-xs text-muted-foreground mb-1">软件预设</label>
-                            <Select.Root
-                              value={step.presetId || ''}
-                              onValueChange={(value) => updateStep(index, { presetId: value })}
-                            >
-                              <Select.Trigger className="w-full">
-                                <Select.Value placeholder="请选择软件预设" />
-                                <Select.Icon />
-                              </Select.Trigger>
-                              <Select.Portal>
-                                <Select.Content>
-                                  {softwarePresets.map((preset) => (
-                                    <Select.Item key={preset.id} value={preset.id}>
-                                      {preset.name}
-                                    </Select.Item>
-                                  ))}
-                                </Select.Content>
-                              </Select.Portal>
-                            </Select.Root>
-                          </div>
-                        )}
-
-                        {step.type === 'input' && (
-                          <div>
-                            <label className="block text-xs text-muted-foreground mb-1">键盘预设</label>
-                            <Select.Root
-                              value={step.presetId || ''}
-                              onValueChange={(value) => updateStep(index, { presetId: value })}
-                            >
-                              <Select.Trigger className="w-full">
-                                <Select.Value placeholder="请选择键盘预设" />
-                                <Select.Icon />
-                              </Select.Trigger>
-                              <Select.Portal>
-                                <Select.Content>
-                                  {inputPresets.map((preset) => (
-                                    <Select.Item key={preset.id} value={preset.id}>
-                                      {preset.name}
-                                    </Select.Item>
-                                  ))}
-                                </Select.Content>
-                              </Select.Portal>
-                            </Select.Root>
-                          </div>
-                        )}
-
-                        {step.type === 'delay' && (
-                          <div>
-                            <label className="block text-xs text-muted-foreground mb-1">延迟时间（毫秒）</label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={step.delay ?? 0}
-                              onChange={(e) => updateStep(index, { delay: Number(e.target.value) || 0 })}
-                              className="w-full px-3 py-2 border rounded-md"
-                            />
-                          </div>
-                        )}
-
-                        {step.type === 'mouseClick' && (
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">按钮</label>
-                              <Select.Root
-                                value={String(Number(step.config?.button ?? 0))}
-                                onValueChange={(value) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      button: Number(value)
-                                    }
-                                  })
-                                }
-                              >
-                                <Select.Trigger className="w-full">
-                                  <Select.Value />
-                                  <Select.Icon />
-                                </Select.Trigger>
-                                <Select.Portal>
-                                  <Select.Content>
-                                    <Select.Item value="0">左键</Select.Item>
-                                    <Select.Item value="1">中键</Select.Item>
-                                    <Select.Item value="2">右键</Select.Item>
-                                  </Select.Content>
-                                </Select.Portal>
-                              </Select.Root>
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">点击次数</label>
-                              <Input
-                                type="number"
-                                min={1}
-                                value={Number(step.config?.clickCount ?? step.config?.detail ?? 1)}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      clickCount: Number(e.target.value) || 1,
-                                      detail: Number(e.target.value) || 1
-                                    }
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">客户端 X</label>
-                              <Input
-                                type="number"
-                                value={Number(step.config?.clientX ?? 0)}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      clientX: Number(e.target.value) || 0
-                                    }
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">客户端 Y</label>
-                              <Input
-                                type="number"
-                                value={Number(step.config?.clientY ?? 0)}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      clientY: Number(e.target.value) || 0
-                                    }
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">屏幕 X</label>
-                              <Input
-                                type="number"
-                                value={Number(step.config?.screenX ?? 0)}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      screenX: Number(e.target.value) || 0
-                                    }
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">屏幕 Y</label>
-                              <Input
-                                type="number"
-                                value={Number(step.config?.screenY ?? 0)}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      screenY: Number(e.target.value) || 0
-                                    }
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">备注</label>
-                              <Input
-                                type="text"
-                                value={String(step.config?.note || '')}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      note: e.target.value
-                                    }
-                                  })
-                                }
-                                placeholder="可选"
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {step.type === 'mouseMove' && (
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">客户端 X</label>
-                              <Input
-                                type="number"
-                                value={Number(step.config?.clientX ?? 0)}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      clientX: Number(e.target.value) || 0
-                                    }
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">客户端 Y</label>
-                              <Input
-                                type="number"
-                                value={Number(step.config?.clientY ?? 0)}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      clientY: Number(e.target.value) || 0
-                                    }
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">屏幕 X</label>
-                              <Input
-                                type="number"
-                                value={Number(step.config?.screenX ?? 0)}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      screenX: Number(e.target.value) || 0
-                                    }
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">屏幕 Y</label>
-                              <Input
-                                type="number"
-                                value={Number(step.config?.screenY ?? 0)}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      screenY: Number(e.target.value) || 0
-                                    }
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">持续时间</label>
-                              <Input
-                                type="number"
-                                min={0}
-                                value={Number(step.config?.duration ?? 0)}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      duration: Number(e.target.value) || 0
-                                    }
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-muted-foreground mb-1">备注</label>
-                              <Input
-                                type="text"
-                                value={String(step.config?.note || '')}
-                                onChange={(e) =>
-                                  updateStep(index, {
-                                    config: {
-                                      ...(step.config || {}),
-                                      note: e.target.value
-                                    }
-                                  })
-                                }
-                                placeholder="可选"
-                                className="w-full px-3 py-2 border rounded-md"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <Dialog.Title className="text-lg font-semibold">{editingScene ? '编辑场景' : '新增场景'}</Dialog.Title>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 mt-6">
-              <Dialog.Close asChild>
-                <Button className="btn-secondary">取消</Button>
-              </Dialog.Close>
-              <Button onClick={handleSave} className="" variant= {"secondary"}>
-                保存
-              </Button>
+            <div className="min-h-0 flex-1 overflow-hidden py-0">
+              <ScrollArea.Root className="h-full">
+                <ScrollArea.Viewport className="h-full w-full pr-1">
+                  <div className="space-y-2">
+                    {dependencyErrors.length > 0 && (
+                      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                        <div className="mb-1 font-medium">依赖检查失败:</div>
+                        <ul className="list-disc space-y-1 pl-5">
+                          {dependencyErrors.map((err, i) => (
+                            <li key={i}>{err}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="space-y-2 pt-2">
+                      <FieldRow label="名称 *">
+                        <Input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="场景名称"
+                          className="h-10 w-full"
+                        />
+                      </FieldRow>
+
+                      <FieldRow label="描述">
+                        <Textarea
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          placeholder="场景描述"
+                          className="w-full resize-none min-h-10"
+                          rows={2}
+                        />
+                      </FieldRow>
+                    </div>
+
+                    <div className="rounded-xl border bg-secondary/20 p-4 shadow-sm space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <label className="text-sm font-medium text-muted-foreground">步骤编排</label>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button type="button" onClick={() => addStep('software')} className="h-8 px-2.5 text-xs">
+                            + 软件
+                          </Button>
+                          <Button type="button" onClick={() => addStep('input')} className="h-8 px-2.5 text-xs">
+                            + 键盘
+                          </Button>
+                          <Button type="button" onClick={() => addStep('mouse')} className="h-8 px-2.5 text-xs">
+                            + 鼠标
+                          </Button>
+                          <Button type="button" onClick={() => addStep('delay')} className="h-8 px-2.5 text-xs">
+                            + 延迟
+                          </Button>
+                        </div>
+                      </div>
+
+                      {formData.steps.length === 0 ? (
+                        <div className="rounded-lg border border-dashed bg-background px-4 py-6 text-sm text-muted-foreground">
+                          还没有步骤，先添加一个软件、键盘、鼠标或延迟步骤。
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {formData.steps.map((step, index) => (
+                            <div key={`${step.type}-${index}`} className="rounded-xl border bg-background p-3 shadow-sm">
+                              <div className="flex flex-col gap-3 border-b pb-2 md:flex-row md:items-center md:justify-between">
+                                <div className="flex items-center gap-3">
+                                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-muted px-2 text-xs font-medium text-muted-foreground">
+                                    #{index + 1}
+                                  </span>
+                                  <Select.Root
+                                    value={step.type}
+                                    onValueChange={(value) => replaceStepType(index, value as SceneStep['type'])}
+                                  >
+                                    <Select.Trigger className="h-9 w-36 text-sm">
+                                      <Select.Value />
+                                      <Select.Icon />
+                                    </Select.Trigger>
+                                    <Select.Portal>
+                                        <Select.Content>
+                                          <Select.Item value="software">软件步骤</Select.Item>
+                                          <Select.Item value="input">键盘步骤</Select.Item>
+                                          <Select.Item value="mouse">鼠标</Select.Item>
+                                          <Select.Item value="delay">延迟</Select.Item>
+                                        </Select.Content>
+                                      </Select.Portal>
+                                  </Select.Root>
+                                </div>
+
+                                <div className="flex flex-wrap justify-end gap-1.5">
+                                  <Button
+                                    type="button"
+                                    onClick={() => moveStep(index, -1)}
+                                    className="h-8 px-2.5 text-xs"
+                                    disabled={index === 0}
+                                  >
+                                    上移
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    onClick={() => moveStep(index, 1)}
+                                    className="h-8 px-2.5 text-xs"
+                                    disabled={index === formData.steps.length - 1}
+                                  >
+                                    下移
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    onClick={() => removeStep(index)}
+                                    className="h-8 px-3 text-xs text-destructive"
+                                  >
+                                    删除
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <div className="mt-2 flex gap-4">
+                                {step.type === 'software' && (
+                                  <FieldRow className="flex-1" labelClassName={"w-14"} label="软件预设">
+                                    <Select.Root
+                                      value={step.presetId || ''}
+                                      onValueChange={(value) => updateStep(index, { presetId: value })}
+                                    >
+                                      <Select.Trigger className="h-10 w-full">
+                                        <Select.Value placeholder="请选择软件预设" />
+                                        <Select.Icon />
+                                      </Select.Trigger>
+                                      <Select.Portal>
+                                        <Select.Content>
+                                          {softwarePresets.map((preset) => (
+                                            <Select.Item key={preset.id} value={preset.id}>
+                                              {preset.name}
+                                            </Select.Item>
+                                          ))}
+                                        </Select.Content>
+                                      </Select.Portal>
+                                    </Select.Root>
+                                  </FieldRow>
+                                )}
+
+                                {step.type === 'input' && (
+                                  <FieldRow className="flex-1" labelClassName={"w-14"} label="键盘预设">
+                                    <Select.Root
+                                      value={step.presetId || ''}
+                                      onValueChange={(value) => updateStep(index, { presetId: value })}
+                                    >
+                                      <Select.Trigger className="h-10 w-full">
+                                        <Select.Value placeholder="请选择键盘预设" />
+                                        <Select.Icon />
+                                      </Select.Trigger>
+                                      <Select.Portal>
+                                        <Select.Content>
+                                          {inputPresets.map((preset) => (
+                                            <Select.Item key={preset.id} value={preset.id}>
+                                              {preset.name}
+                                            </Select.Item>
+                                          ))}
+                                        </Select.Content>
+                                      </Select.Portal>
+                                    </Select.Root>
+                                  </FieldRow>
+                                )}
+
+                                {step.type === 'mouse' && (
+                                  <FieldRow className="flex-1" labelClassName={"w-14"} label="鼠标预设">
+                                    <Select.Root
+                                      value={step.presetId || ''}
+                                      onValueChange={(value) => updateStep(index, { presetId: value })}
+                                    >
+                                      <Select.Trigger className="h-10 w-full">
+                                        <Select.Value placeholder="请选择鼠标预设" />
+                                        <Select.Icon />
+                                      </Select.Trigger>
+                                      <Select.Portal>
+                                        <Select.Content>
+                                          {mousePresets.map((preset) => (
+                                            <Select.Item key={preset.id} value={preset.id}>
+                                              {preset.name}
+                                            </Select.Item>
+                                          ))}
+                                        </Select.Content>
+                                      </Select.Portal>
+                                    </Select.Root>
+                                  </FieldRow>
+                                )}
+
+                                {step.type === 'delay' && (
+                                  <FieldRow className="flex-1" labelClassName={"w-14"} label="延迟时间（毫秒）">
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      step={100}
+                                      value={step.delay ?? 0}
+                                      onChange={(e) => updateStep(index, { delay: Number(e.target.value) || 0 })}
+                                      className="h-10 w-full"
+                                    />
+                                  </FieldRow>
+                                )}
+
+                                <FieldRow className="flex-1" labelClassName={"w-14"} label="前置延迟（毫秒）">
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    step={100}
+                                    value={step.delay ?? 0}
+                                    onChange={(e) => updateStep(index, { delay: Number(e.target.value) || 0 })}
+                                    className="h-10 w-full"
+                                  />
+                                </FieldRow>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </ScrollArea.Viewport>
+                <ScrollArea.Scrollbar orientation="vertical" className="w-2.5">
+                  <ScrollArea.Thumb className="bg-border rounded-full" />
+                </ScrollArea.Scrollbar>
+              </ScrollArea.Root>
+            </div>
+
+            <div className="shrink-0 border-t bg-background/95 pt-2 backdrop-blur">
+              <div className="flex justify-end gap-2">
+                <Dialog.Close asChild>
+                  <Button className="btn-secondary">取消</Button>
+                </Dialog.Close>
+                <Button onClick={handleSave} variant={"secondary"}>
+                  保存
+                </Button>
+              </div>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
 
-      <RecorderDialog
-        open={isRecorderOpen}
-        onOpenChange={setIsRecorderOpen}
-        onSave={handleImportRecording}
-      />
       <AlertDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => {
@@ -968,6 +615,3 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
     </div>
   )
 }
-
-
-

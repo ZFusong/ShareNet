@@ -917,6 +917,10 @@ import {
   saveInputPreset,
   updateInputPreset,
   deleteInputPreset,
+  getMousePresets,
+  saveMousePreset,
+  updateMousePreset,
+  deleteMousePreset,
   getScenes,
   saveScene,
   updateScene,
@@ -953,10 +957,12 @@ ipcMain.handle('get-presets', (_event, type: string) => {
   switch (type) {
     case 'software':
       return getSoftwarePresets()
-    case 'input':
-      return getInputPresets()
-    case 'scene':
-      return getScenes()
+      case 'input':
+        return getInputPresets()
+      case 'mouse':
+        return getMousePresets()
+      case 'scene':
+        return getScenes()
     case 'trigger':
       return getTriggerBindings()
     default:
@@ -971,6 +977,8 @@ ipcMain.handle('save-preset', (_event, type: string, preset: unknown) => {
         return { success: true, preset: saveSoftwarePreset(preset as any) }
       case 'input':
         return { success: true, preset: saveInputPreset(preset as any) }
+      case 'mouse':
+        return { success: true, preset: saveMousePreset(preset as any) }
       case 'scene':
         return { success: true, preset: saveScene(preset as any) }
       case 'trigger':
@@ -990,6 +998,8 @@ ipcMain.handle('update-preset', (_event, type: string, id: string, updates: unkn
         return { success: true, preset: updateSoftwarePreset(id, updates as any) }
       case 'input':
         return { success: true, preset: updateInputPreset(id, updates as any) }
+      case 'mouse':
+        return { success: true, preset: updateMousePreset(id, updates as any) }
       case 'scene':
         return { success: true, preset: updateScene(id, updates as any) }
       case 'trigger':
@@ -1011,6 +1021,9 @@ ipcMain.handle('delete-preset', (_event, type: string, id: string) => {
         break
       case 'input':
         success = deleteInputPreset(id)
+        break
+      case 'mouse':
+        success = deleteMousePreset(id)
         break
       case 'scene':
         success = deleteScene(id)

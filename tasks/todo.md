@@ -1,3 +1,42 @@
+# Mouse Coordinate Cleanup (2026-03-21)
+- [x] Remove client-coordinate fields from mouse preset click/scroll editing.
+- [x] Record mouse move steps with screen coordinates only.
+- [x] Replace mouse scroll editing with up/down direction plus step size.
+- [x] Verify the mouse preset editor and recorder behave correctly after the coordinate cleanup.
+
+## Review
+- [ ] Confirm click steps no longer expose coordinate inputs.
+- [ ] Confirm scroll steps use up/down direction plus step size and no longer expose coordinate inputs.
+- [ ] Confirm recorder displays and stores screen coordinates instead of client coordinates.
+- [x] Build verified after recorder start-button coordinate fix.
+
+# Mouse Preset Scene Refactor (2026-03-21)
+- [x] Add a standalone mouse preset store/list/editor after the keyboard preset tab.
+- [x] Move recorder capture into the mouse preset editor and remove scene-level recorder import.
+- [x] Update scene orchestration to add mouse presets from a dropdown and keep mouse steps grouped as mouse.
+- [x] Verify the app builds successfully after the mouse preset refactor.
+
+## Review
+- [ ] Confirm mouse presets only allow move, scroll, and click steps.
+- [ ] Confirm move steps can be filled from the recorder and the recorder stops on left click without delay capture.
+- [ ] Confirm scenes can select mouse presets and still save/load existing data.
+# Scene Step Card Polish (2026-03-21)
+- [x] Unify spacing and alignment inside scene step cards.
+- [x] Tighten the step header, field rows, and action buttons into one consistent rhythm.
+- [x] Verify the app builds successfully after the scene step card polish.
+
+## Review
+- [ ] Confirm step cards read as one coherent block instead of separated chunks.
+- [ ] Confirm the step action buttons and fields align consistently across types.
+# Scene Dialog Layout Polish (2026-03-21)
+- [x] Split the scene editor dialog into fixed header/footer and a scrollable middle section.
+- [x] Convert scene editor form fields to a left-label, right-control layout.
+- [x] Verify the app builds successfully after the scene dialog layout update.
+
+## Review
+- [ ] Confirm the scene dialog header stays visible while the middle content scrolls.
+- [ ] Confirm the scene dialog footer stays fixed at the bottom of the dialog.
+- [ ] Confirm form rows render with labels on the left and controls on the right.
 # Config Center Component Swap (2026-03-21)
 - [x] Replace config-center native `button`/`select` controls with shared UI components.
 - [x] Replace delete confirmation `confirm()` dialogs with shared in-app alert dialogs.
@@ -372,6 +411,9 @@ pm run build passes after the UI and IPC changes.
 - [ ] Confirm switching away from the resource tab still receives text/image/file offers from other devices.
 - [ ] Confirm returning to the resource tab shows messages received during other tabs.
 - [ ] Confirm image/file download progress and completion status still update correctly.
+
+
+
 
 
 
