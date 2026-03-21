@@ -96,6 +96,7 @@ export interface ElectronAPI {
   getSettings: () => Promise<AppSettings>
   setSettings: (settings: AppSettings) => Promise<void>
   selectDirectory: () => Promise<{ success: boolean; path?: string }>
+  selectFile: () => Promise<{ success: boolean; path?: string }>
   registerSharedImage: (resource: unknown) => Promise<{ success: boolean; error?: string }>
   registerSharedFile: (resource: unknown) => Promise<{ success: boolean; error?: string }>
   getSetting: (key: string) => Promise<unknown>
@@ -129,3 +130,4 @@ declare global {
 }
 
 export {}
+

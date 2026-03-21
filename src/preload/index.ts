@@ -97,6 +97,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   setSettings: (settings: unknown) => ipcRenderer.invoke('set-settings', settings),
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  selectFile: () => ipcRenderer.invoke('select-file'),
   registerSharedImage: (resource: unknown) => ipcRenderer.invoke('register-shared-image', resource),
   registerSharedFile: (resource: unknown) => ipcRenderer.invoke('register-shared-file', resource),
   getSetting: (key: string) => ipcRenderer.invoke('get-setting', key),
@@ -237,6 +238,7 @@ declare global {
     electronAPI: ElectronAPI
   }
 }
+
 
 
 

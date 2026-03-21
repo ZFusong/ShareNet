@@ -1,3 +1,74 @@
+# Keyboard Combo Recording De-duplication (2026-03-21)
+- [x] Normalize keyboard shortcut summaries so a single key never renders twice.
+- [x] Ignore repeated keydown events and track pressed codes while recording keyboard presets.
+- [x] Join shortcut tokens with `+` between keys only, without repeated-token separators.
+- [x] Verify the recorder and preset editor no longer append duplicate keys during long press.
+
+## Review
+- [x] Confirm a single key press renders as one token in both the recorder dialog and preset editor.
+- [x] Confirm holding a key does not keep appending the same token.
+- [x] Confirm multi-key combos render as `A + B + C` style sequences.
+
+## Shortcut Combo Repeat State Fix (2026-03-21)
+- [x] Switch combo capture from time-window dedupe to pressed-key state tracking.
+- [x] Ignore auto-repeat keydown events so a long press only records once.
+- [x] Keep simultaneous presses rendered as `+`-joined combos while allowing the same key to be entered again after release.
+- [x] Verify `npm run build` passes after the shortcut capture fix.
+- [ ] Verify the shortcut capture UI no longer duplicates single presses.
+
+## Review
+- [ ] Confirm a single physical press only adds one key token.
+- [ ] Confirm a held key does not keep appending duplicate tokens.
+- [ ] Confirm pressing another key while the first stays down shows a `+`-joined combo.
+## Shortcut Combo Chip Fix (2026-03-21)
+- [x] Render shortcut combos as a single chip instead of separate token pills.
+- [x] Keep combo recording as a sliding four-key window with duplicate keys allowed.
+- [x] Prevent Escape from closing the dialog while recording and keep it recordable.
+- [ ] Verify the combo chip UI feels correct in the dialog.
+
+## Review
+- [ ] Confirm a one-key combo renders as a single chip, not two identical chips.
+- [ ] Confirm fifth and later keys replace the oldest key in the combo.
+- [ ] Confirm Escape still records without closing the dialog.
+## Shortcut Recording Timing (2026-03-21)
+- [x] Prevent Escape from closing the dialog while a shortcut step is recording.
+- [x] Treat repeated captures of the same key within 200ms as a single input.
+- [x] Let fifth and later keys slide the combo window forward instead of being rejected.
+- [ ] Verify the shortcut dialog behavior after the timing tweak.
+
+## Review
+- [ ] Confirm Escape still records as a key while recording.
+- [ ] Confirm repeated key presses within 200ms do not duplicate the shortcut entry.
+- [ ] Confirm combos keep the newest four keys when more than four are entered.
+## Shortcut Recording Refinement (2026-03-21)
+- [x] Highlight the currently pressed shortcut token while recording.
+- [x] Allow Backspace to remove the last token when not recording.
+- [x] Distinguish keyCombo and keyPress behavior and labels more clearly.
+- [x] Verify the app builds successfully after the shortcut recording refinement.
+
+## Review
+- [ ] Confirm duplicate keys can be recorded in a combo.
+- [ ] Confirm Backspace trims the current shortcut only when not recording.
+- [ ] Confirm keyPress stays single-key while keyCombo can accumulate multiple keys.
+## Keyboard Recording Controls (2026-03-21)
+- [x] Allow keyboard preset recording to accumulate up to four keys in one capture.
+- [x] Record special keys like `Esc`, `Ctrl`, and `Shift` while preventing browser-default key handling.
+- [x] Replace Esc-to-clear behavior with explicit start/cancel recording controls.
+- [x] Verify keyboard step recording feels correct in the dialog.
+
+## Review
+- [ ] Confirm shortcut recording keeps accepting keys until manually canceled.
+- [ ] Confirm newly added shortcut steps enter recording mode automatically.
+## Config Center Detail Polish (2026-03-21)
+- [x] Add a file-picker bridge for software preset paths and wire it into the software preset editor.
+- [x] Replace keyboard preset JSON editing with type-specific fields and a VS Code-like key capture box.
+- [x] Keep software workDir optional/hidden in the editor while preserving runtime fallback behavior.
+- [x] Verify the app builds successfully after the config-center UX changes.
+
+## Review
+- [ ] Confirm software preset paths can be selected with a file dialog.
+- [ ] Confirm keyboard preset steps show the correct editor by type and no raw JSON leaks into the input.
+- [ ] Confirm existing presets still load and save with the new editor.
 ## Recorder Config Center Polish (2026-03-21)
 - [x] Draft proposal/spec/design/tasks for the recorder/config-center polish change.
 - [x] Tighten input preset persistence to keyboard-only macros and keep legacy mouse presets migrated.
@@ -281,6 +352,19 @@ pm run build passes after the UI and IPC changes.
 - [ ] Confirm switching away from the resource tab still receives text/image/file offers from other devices.
 - [ ] Confirm returning to the resource tab shows messages received during other tabs.
 - [ ] Confirm image/file download progress and completion status still update correctly.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

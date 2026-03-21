@@ -5,7 +5,6 @@
 
 import { useState, useEffect } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import * as Select from '@radix-ui/react-select'
 import { useConfigStore, type SoftwarePreset } from '../../stores/configStore'
 
 interface Props {
@@ -18,11 +17,18 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
   const { softwarePresets, loadPresets, savePreset, updatePreset, deletePreset } = useConfigStore()
   const [editingPreset, setEditingPreset] = useState<SoftwarePreset | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [formData, setFormData] = useState({ name: '', path: '', args: '', workDir: '' })
+  const [formData, setFormData] = useState({ name: '', path: '', args: '' })
 
   useEffect(() => {
     loadPresets('software')
   }, [loadPresets])
+
+  const handlePickPath = async () => {
+    const result = await window.electronAPI?.selectFile()
+    if (result?.success && result.path) {
+      setFormData((prev) => ({ ...prev, path: result.path }))
+    }
+  }
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.path.trim()) return
@@ -33,7 +39,7 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
       await savePreset('software', formData)
     }
 
-    setFormData({ name: '', path: '', args: '', workDir: '' })
+    setFormData({ name: '', path: '', args: '' })
     setEditingPreset(null)
     setIsDialogOpen(false)
   }
@@ -43,8 +49,7 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
     setFormData({
       name: preset.name,
       path: preset.path,
-      args: preset.args || '',
-      workDir: preset.workDir || ''
+      args: preset.args || ''
     })
     setIsDialogOpen(true)
   }
@@ -66,11 +71,14 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
   return (
     <div className="preset-list-container">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">软件预设</h3>
+        <div>
+          <h3 className="text-lg font-semibold">软件预设</h3>
+          <div className="text-sm text-muted-foreground">程序路径可用文件选择器填写，工作目录默认使用程序所在目录。</div>
+        </div>
         <button
           onClick={() => {
             setEditingPreset(null)
-            setFormData({ name: '', path: '', args: '', workDir: '' })
+            setFormData({ name: '', path: '', args: '' })
             setIsDialogOpen(true)
           }}
           className="btn-primary text-sm"
@@ -127,11 +135,10 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
         </div>
       )}
 
-      {/* Edit Dialog */}
       <Dialog.Root open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[480px] max-h-[80vh] overflow-y-auto">
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background p-6 rounded-lg shadow-lg z-50 w-[520px] max-h-[80vh] overflow-y-auto">
             <Dialog.Title className="text-lg font-semibold mb-4">
               {editingPreset ? '编辑软件预设' : '新增软件预设'}
             </Dialog.Title>
@@ -149,13 +156,19 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">程序路径 *</label>
-                <input
-                  type="text"
-                  value={formData.path}
-                  onChange={(e) => setFormData({ ...formData, path: e.target.value })}
-                  placeholder="C:\Program Files\..."
-                  className="w-full px-3 py-2 border rounded-md"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.path}
+                    onChange={(e) => setFormData({ ...formData, path: e.target.value })}
+                    placeholder="C:\\Program Files\\..."
+                    className="flex-1 px-3 py-2 border rounded-md"
+                  />
+                  <button type="button" onClick={handlePickPath} className="px-3 py-2 border rounded-md text-sm">
+                    选择文件
+                  </button>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">留空时会自动使用程序所在目录作为工作目录。</div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">启动参数</label>
@@ -164,16 +177,6 @@ export function SoftwarePresetList({ onSelect, multiSelect = false, selectedIds 
                   value={formData.args}
                   onChange={(e) => setFormData({ ...formData, args: e.target.value })}
                   placeholder="--arg1 --arg2"
-                  className="w-full px-3 py-2 border rounded-md"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">工作目录</label>
-                <input
-                  type="text"
-                  value={formData.workDir}
-                  onChange={(e) => setFormData({ ...formData, workDir: e.target.value })}
-                  placeholder="C:\WorkDir"
                   className="w-full px-3 py-2 border rounded-md"
                 />
               </div>

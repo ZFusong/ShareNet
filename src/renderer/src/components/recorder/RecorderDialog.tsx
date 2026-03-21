@@ -20,12 +20,22 @@ interface Props {
 type RecorderState = 'idle' | 'recording' | 'paused' | 'preview'
 
 type ModifierKey = 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'
+type ShortcutToken = string
 
 const cloneStep = (step: InputStep): InputStep => ({
   type: step.type,
   delay: step.delay,
   data: { ...(step.data || {}) }
 })
+
+const dedupeShortcutTokens = (tokens: ShortcutToken[]) => {
+  const seen = new Set<string>()
+  return tokens.filter((token) => {
+    if (!token || seen.has(token)) return false
+    seen.add(token)
+    return true
+  })
+}
 
 const createRecordedStep = (type: InputStep['type'], seed?: InputStep): InputStep => {
   const delay = seed?.delay ?? 0
@@ -102,6 +112,20 @@ const getButtonLabel = (button: number) => {
   return '左键'
 }
 
+const normalizeShortcutToken = (key: string) => {
+  if (key === 'Control') return 'Ctrl'
+  if (key === 'Alt') return 'Alt'
+  if (key === 'Shift') return 'Shift'
+  if (key === 'Meta') return 'Meta'
+  if (key === 'Escape') return 'Esc'
+  if (key === ' ') return 'Space'
+  if (key === 'ArrowUp') return 'Up'
+  if (key === 'ArrowDown') return 'Down'
+  if (key === 'ArrowLeft') return 'Left'
+  if (key === 'ArrowRight') return 'Right'
+  return key
+}
+
 const formatModifiers = (data: Record<string, unknown>) => {
   const parts: string[] = []
   if (data.ctrlKey) parts.push('Ctrl')
@@ -111,17 +135,26 @@ const formatModifiers = (data: Record<string, unknown>) => {
   return parts.length > 0 ? parts.join('+') : ''
 }
 
+const getShortcutTokens = (step: InputStep) => {
+  const data = step.data as Record<string, unknown>
+  return dedupeShortcutTokens([
+    data.ctrlKey ? 'Ctrl' : '',
+    data.altKey ? 'Alt' : '',
+    data.shiftKey ? 'Shift' : '',
+    data.metaKey ? 'Meta' : '',
+    normalizeShortcutToken(String(data.key ?? ''))
+  ].filter(Boolean) as ShortcutToken[])
+}
+
 const formatKeyboardDetail = (step: InputStep) => {
-  const modifiers = formatModifiers(step.data)
   if (step.type === 'textInput') {
     const text = String(step.data.text ?? '')
     return text ? `文本: ${text}` : '文本输入'
   }
 
-  const key = String(step.data.key ?? '')
   const code = String(step.data.code ?? '')
-  const keyPart = [modifiers, key].filter(Boolean).join('+')
-  const summary = keyPart || key || '未命名按键'
+  const tokens = getShortcutTokens(step)
+  const summary = tokens.length > 0 ? tokens.join(' + ') : '未命名按键'
   return code ? `${summary} (${code})` : summary
 }
 
@@ -190,6 +223,7 @@ export function RecorderDialog({ open, onOpenChange, onSave }: Props) {
   const [editingStep, setEditingStep] = useState<InputStep | null>(null)
   const previewIndex = useRef(0)
   const previewInterval = useRef<NodeJS.Timeout | null>(null)
+  const pressedKeyboardCodesRef = useRef<Set<string>>(new Set())
 
   const clearPreviewTimer = useCallback(() => {
     if (previewInterval.current) {
@@ -199,6 +233,10 @@ export function RecorderDialog({ open, onOpenChange, onSave }: Props) {
     previewIndex.current = 0
   }, [])
 
+  const clearPressedKeyboardCodes = useCallback(() => {
+    pressedKeyboardCodesRef.current.clear()
+  }, [])
+
   const closeEditor = useCallback(() => {
     setEditingIndex(null)
     setEditingStep(null)
@@ -206,9 +244,13 @@ export function RecorderDialog({ open, onOpenChange, onSave }: Props) {
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (state !== 'recording') return
+    if (e.repeat) return
 
     const now = Date.now()
     const delay = now - lastStepTime
+    const code = e.code || e.key
+    if (!code || pressedKeyboardCodesRef.current.has(code)) return
+    pressedKeyboardCodesRef.current.add(code)
 
     const step: InputStep = {
       type: e.ctrlKey || e.altKey || e.shiftKey || e.metaKey ? 'keyCombo' : 'keyPress',
@@ -227,6 +269,15 @@ export function RecorderDialog({ open, onOpenChange, onSave }: Props) {
     setSteps((prev) => [...prev, step])
     setLastStepTime(now)
   }, [state, lastStepTime])
+
+  const handleKeyUp = useCallback((e: KeyboardEvent) => {
+    if (state !== 'recording' && state !== 'paused') return
+
+    const code = e.code || e.key
+    if (!code) return
+
+    pressedKeyboardCodesRef.current.delete(code)
+  }, [state])
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
     if (state !== 'recording') return
@@ -258,25 +309,29 @@ export function RecorderDialog({ open, onOpenChange, onSave }: Props) {
   useEffect(() => {
     if (state === 'recording') {
       document.addEventListener('keydown', handleKeyDown)
+      document.addEventListener('keyup', handleKeyUp)
       document.addEventListener('mousedown', handleMouseDown)
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('keyup', handleKeyUp)
       document.removeEventListener('mousedown', handleMouseDown)
     }
-  }, [state, handleKeyDown, handleMouseDown])
+  }, [state, handleKeyDown, handleKeyUp, handleMouseDown])
 
   useEffect(() => {
     if (open) return
     clearPreviewTimer()
+    clearPressedKeyboardCodes()
     closeEditor()
     setContextStepIndex(null)
     setState('idle')
-  }, [open, clearPreviewTimer, closeEditor])
+  }, [open, clearPreviewTimer, clearPressedKeyboardCodes, closeEditor])
 
   const startRecording = () => {
     clearPreviewTimer()
+    clearPressedKeyboardCodes()
     closeEditor()
     setContextStepIndex(null)
     setSteps([])
@@ -289,17 +344,20 @@ export function RecorderDialog({ open, onOpenChange, onSave }: Props) {
   }
 
   const resumeRecording = () => {
+    clearPressedKeyboardCodes()
     setLastStepTime(Date.now())
     setState('recording')
   }
 
   const stopRecording = () => {
+    clearPressedKeyboardCodes()
     setState('idle')
   }
 
   const startPreview = () => {
     clearPreviewTimer()
     previewIndex.current = 0
+    clearPressedKeyboardCodes()
     setState('preview')
 
     previewInterval.current = setInterval(() => {
@@ -318,6 +376,7 @@ export function RecorderDialog({ open, onOpenChange, onSave }: Props) {
   const handleSave = () => {
     if (!stepName.trim()) return
     clearPreviewTimer()
+    clearPressedKeyboardCodes()
     onSave(stepName, steps)
     setStepName('')
     setSteps([])

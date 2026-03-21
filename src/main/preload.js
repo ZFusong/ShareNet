@@ -54,6 +54,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   setSettings: (settings) => ipcRenderer.invoke('set-settings', settings),
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  selectFile: () => ipcRenderer.invoke('select-file'),
   registerSharedImage: (resource) => ipcRenderer.invoke('register-shared-image', resource),
   registerSharedFile: (resource) => ipcRenderer.invoke('register-shared-file', resource),
   getSetting: (key) => ipcRenderer.invoke('get-setting', key),
@@ -135,3 +136,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
 });
 
 console.log('Preload 脚本加载完成');
+

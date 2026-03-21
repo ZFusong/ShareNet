@@ -1130,6 +1130,14 @@ ipcMain.handle('select-directory', async () => {
   return { success: true, path: result.filePaths[0] }
 })
 
+ipcMain.handle('select-file', async () => {
+  const result = await dialog.showOpenDialog({ properties: ['openFile'] })
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false }
+  }
+  return { success: true, path: result.filePaths[0] }
+})
+
 ipcMain.handle('register-shared-image', (_event, resource: SharedImageResource) => {
   try {
     if (!resource?.shareId || !resource?.filePath || !existsSync(resource.filePath)) {
@@ -1357,6 +1365,12 @@ ipcMain.on('subscribe-execution-events', (event) => {
 })
 
 log.info('主进程初始化完成')
+
+
+
+
+
+
 
 
 
