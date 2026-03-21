@@ -132,7 +132,7 @@ export function ResourcePanel() {
 
   const sendMessageToTargets = useCallback(
     async (message: any) => {
-      let targets = sendTarget === 'broadcast' ? devices : devices.filter((d) => selectedDevices.has(d.id))
+      let targets = sendTarget === 'broadcast' ? devices : devices.filter((d) => selectedDevices.has(getDeviceKey(d)))
 
       if (sendTarget === 'group') {
         if (groupTargetId === 'all') {
@@ -1053,8 +1053,8 @@ export function ResourcePanel() {
                                   className="flex cursor-pointer items-center gap-2 border-b p-2 last:border-b-0"
                                 >
                                   <Checkbox
-                                    checked={selectedDevices.has(device.id)}
-                                    onCheckedChange={() => toggleSelectDevice(device.id)}
+                                    checked={selectedDevices.has(getDeviceKey(device))}
+                                    onCheckedChange={() => toggleSelectDevice(getDeviceKey(device))}
                                   />
                                   <span className="text-sm">{device.name}</span>
                                   <span className="text-xs text-muted-foreground">
@@ -1140,6 +1140,5 @@ function handleSaveImage(imageUrl: string, fileName: string) {
   link.download = fileName
   link.click()
 }
-
 
 

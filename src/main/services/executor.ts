@@ -209,6 +209,10 @@ class ExecutionEngine extends EventEmitter {
    * Execute a single input step
    */
   private async executeInputStep(step: InputStep): Promise<void> {
+    if (step.type !== 'delay' && typeof step.delay === 'number' && step.delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, step.delay))
+    }
+
     // Delay step
     if (step.type === 'delay') {
       const delay = (step.data.delay as number) || 1000
@@ -227,22 +231,72 @@ class ExecutionEngine extends EventEmitter {
    * Execute scene
    */
   private async executeScene(presetId: string, startTime?: number): Promise<ExecutionResult> {
-    // Scenes are handled via preset IDs in the command
-    // Execute each preset in the scene sequentially
+    const scene = getScene(presetId)
+    if (!scene) {
+      return { success: false, error: 'Scene not found', duration: 0 }
+    }
+    const stepsToRun = scene.steps || []
 
-    // First, try as software preset
-    const softwarePresets = getSoftwarePresets()
-    if (softwarePresets.find((p) => p.id === presetId)) {
-      return this.executeSoftware(presetId, undefined, startTime)
+    try {
+      for (const step of stepsToRun) {
+        await this.executeSceneStep(step)
+      }
+
+      this.emit('execution-complete', { presetId, type: 'scene' })
+      return {
+        success: true,
+        output: `Scene executed with ${stepsToRun.length} steps`,
+        duration: Date.now() - (startTime || Date.now())
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: String(error),
+        duration: Date.now() - (startTime || Date.now())
+      }
+    }
+  }
+
+  private async executeSceneStep(step: SceneStep): Promise<void> {
+    if (step.type === 'delay') {
+      const delay = typeof step.delay === 'number' ? step.delay : 0
+      if (delay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delay))
+      }
+      return
     }
 
-    // Then try as input preset
-    const inputPresets = getInputPresets()
-    if (inputPresets.find((p) => p.id === presetId)) {
-      return this.executeInput(presetId, startTime)
+    if (typeof step.delay === 'number' && step.delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, step.delay))
     }
 
-    return { success: false, error: 'Scene not found', duration: 0 }
+    if (step.type === 'mouseMove' || step.type === 'mouseClick') {
+      await this.executeInputStep({
+        type: step.type,
+        data: step.config || {},
+        delay: 0
+      })
+      return
+    }
+
+    if (!step.presetId) {
+      throw new Error('Scene step missing presetId')
+    }
+
+    if (step.type === 'software') {
+      const result = await this.executeSoftware(step.presetId, step.config)
+      if (!result.success) {
+        throw new Error(result.error || 'Software step failed')
+      }
+      return
+    }
+
+    if (step.type === 'input') {
+      const result = await this.executeInput(step.presetId)
+      if (!result.success) {
+        throw new Error(result.error || 'Input step failed')
+      }
+    }
   }
 
   /**

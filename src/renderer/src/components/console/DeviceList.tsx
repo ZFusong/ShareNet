@@ -193,8 +193,8 @@ export function DeviceList() {
       return a.name.localeCompare(b.name, 'zh-CN')
     })
 
-  const allVisibleSelected = visibleDevices.length > 0 && visibleDevices.every((d) => selectedDevices.has(d.id))
-  const someVisibleSelected = visibleDevices.some((d) => selectedDevices.has(d.id))
+  const allVisibleSelected = visibleDevices.length > 0 && visibleDevices.every((d) => selectedDevices.has(getDeviceKey(d)))
+  const someVisibleSelected = visibleDevices.some((d) => selectedDevices.has(getDeviceKey(d)))
 
   const handleSelectVisible = (checked: boolean | string) => {
     if (!checked) {
@@ -202,7 +202,7 @@ export function DeviceList() {
       return
     }
 
-    visibleDevices.forEach((device) => selectDevice(device.id))
+    visibleDevices.forEach((device) => selectDevice(getDeviceKey(device)))
   }
 
   const getDisplayName = (device: Device) => {
@@ -266,7 +266,7 @@ export function DeviceList() {
 
   const handleDeleteSelected = async () => {
     if (selectedDevices.size === 0) return
-    const targets = devices.filter((device) => selectedDevices.has(device.id))
+    const targets = devices.filter((device) => selectedDevices.has(getDeviceKey(device)))
     for (const device of targets) {
       const key = getDeviceKey(device)
       if (persistentDevices.has(key)) {
@@ -300,14 +300,14 @@ export function DeviceList() {
     <div
       key={device.id}
       className={`device-item group p-3 border-b cursor-pointer transition-colors ${
-        selectedDevices.has(device.id) ? 'bg-primary/10' : 'hover:bg-accent'
+        selectedDevices.has(getDeviceKey(device)) ? 'bg-primary/10' : 'hover:bg-accent'
       }`}
-      onClick={() => toggleSelectDevice(device.id)}
+      onClick={() => toggleSelectDevice(getDeviceKey(device))}
     >
       <div className="flex items-center gap-3">
         <Checkbox
-          checked={selectedDevices.has(device.id)}
-          onCheckedChange={() => toggleSelectDevice(device.id)}
+          checked={selectedDevices.has(getDeviceKey(device))}
+          onCheckedChange={() => toggleSelectDevice(getDeviceKey(device))}
           onClick={(e) => e.stopPropagation()}
           className="w-5 h-5 rounded border-2 border-primary flex items-center justify-center data-[state=checked]:bg-primary"
         >

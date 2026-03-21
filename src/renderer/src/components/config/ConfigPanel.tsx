@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { SoftwarePresetList } from './SoftwarePresetList'
 import { InputPresetList } from './InputPresetList'
 import { SceneList } from './SceneList'
+import { TriggerBindingList } from './TriggerBindingList'
 import { useConfigStore } from '../../stores/configStore'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -18,13 +19,14 @@ import { Tabs } from '@/components/ui/tabs'
 
 export function ConfigPanel() {
   const { exportConfig, importConfig } = useConfigStore()
-  const [activeTab, setActiveTab] = useState<'software' | 'input' | 'scene'>('scene')
+  const [activeTab, setActiveTab] = useState<'software' | 'input' | 'scene' | 'trigger'>('scene')
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [exportModules, setExportModules] = useState({
     'software-presets': true,
     'input-presets': true,
-    scenes: true
+    scenes: true,
+    'trigger-bindings': true
   })
   const [importMode, setImportMode] = useState<'append' | 'overwrite' | 'merge'>('append')
   const [importData, setImportData] = useState('')
@@ -103,7 +105,13 @@ export function ConfigPanel() {
             value="input"
             className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
           >
-            键鼠预设
+            键盘预设
+          </Tabs.Trigger>
+          <Tabs.Trigger
+            value="trigger"
+            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
+          >
+            触发器
           </Tabs.Trigger>
         </Tabs.List>
 
@@ -117,6 +125,10 @@ export function ConfigPanel() {
 
         <Tabs.Content value="input" className="flex-1 overflow-auto p-4">
           <InputPresetList />
+        </Tabs.Content>
+
+        <Tabs.Content value="trigger" className="flex-1 overflow-auto p-4">
+          <TriggerBindingList />
         </Tabs.Content>
       </Tabs.Root>
 
@@ -147,7 +159,7 @@ export function ConfigPanel() {
                   checked={exportModules['input-presets']}
                   onCheckedChange={(checked) => setExportModules({ ...exportModules, 'input-presets': checked === true })}
                 />
-                <span>键鼠预设</span>
+                <span>键盘预设</span>
               </label>
               <label className="flex items-center gap-2">
                 <Checkbox
@@ -155,6 +167,13 @@ export function ConfigPanel() {
                   onCheckedChange={(checked) => setExportModules({ ...exportModules, scenes: checked === true })}
                 />
                 <span>场景编排</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <Checkbox
+                  checked={exportModules['trigger-bindings']}
+                  onCheckedChange={(checked) => setExportModules({ ...exportModules, 'trigger-bindings': checked === true })}
+                />
+                <span>触发器绑定</span>
               </label>
             </div>
             <div className="flex justify-end gap-2 mt-6">

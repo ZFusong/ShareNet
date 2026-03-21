@@ -74,10 +74,20 @@ export interface Scene {
 }
 
 export interface SceneStep {
-  type: 'software' | 'input' | 'delay'
+  type: 'software' | 'input' | 'delay' | 'mouseClick' | 'mouseMove'
   presetId?: string
   delay?: number
   config?: Record<string, unknown>
+}
+
+export interface TriggerBinding {
+  id: string
+  triggerKey: string
+  triggerName?: string
+  sceneId: string
+  enabled: boolean
+  createdAt: number
+  updatedAt: number
 }
 
 export interface AppConfig {
@@ -85,6 +95,7 @@ export interface AppConfig {
   'software-presets': SoftwarePreset[]
   'input-presets': InputPreset[]
   scenes: Scene[]
+  'trigger-bindings': TriggerBinding[]
   offlineDevices: Record<string, { lastSeen: number; device: unknown }>
 }
 
@@ -128,9 +139,126 @@ const store = new Store<AppConfig>({
     'software-presets': [],
     'input-presets': [],
     scenes: [],
+    'trigger-bindings': [],
     offlineDevices: {}
   }
 })
+
+const isMouseInputStep = (step: InputStep) => step.type === 'mouseClick' || step.type === 'mouseMove'
+const isKeyboardInputStep = (step: InputStep) =>
+  step.type === 'keyCombo' || step.type === 'keyPress' || step.type === 'textInput' || step.type === 'delay'
+
+const normalizeKeyboardInputSteps = (steps: InputStep[]): InputStep[] => steps.filter(isKeyboardInputStep)
+
+function migrateMouseStepsFromInputPresetsToScenes(): void {
+  const inputPresets = store.get('input-presets', [])
+  const scenes = store.get('scenes', [])
+  if (inputPresets.length === 0) return
+
+  const mouseStepsByPresetId = new Map<string, InputStep[]>()
+  let inputPresetChanged = false
+
+  const cleanedInputPresets = inputPresets.map((preset) => {
+    const mouseSteps = preset.steps.filter(isMouseInputStep)
+    const keyboardSteps = normalizeKeyboardInputSteps(preset.steps)
+    if (mouseSteps.length > 0 || keyboardSteps.length !== preset.steps.length) {
+      if (mouseSteps.length > 0) {
+        mouseStepsByPresetId.set(preset.id, mouseSteps)
+      }
+      inputPresetChanged = true
+      return { ...preset, steps: keyboardSteps, updatedAt: Date.now() }
+    }
+    return preset
+  })
+
+  if (!inputPresetChanged) return
+
+  store.set('input-presets', cleanedInputPresets)
+
+  if (scenes.length === 0) return
+
+  const nextScenes = scenes.map((scene) => {
+    const baseSteps: SceneStep[] =
+      scene.steps && scene.steps.length > 0
+        ? scene.steps
+        : [
+            ...(scene.softwarePresetIds || []).map((presetId) => ({ type: 'software' as const, presetId })),
+            ...(scene.inputPresetIds || []).map((presetId) => ({ type: 'input' as const, presetId }))
+          ]
+
+    const migratedSteps: SceneStep[] = []
+    let sceneChanged = false
+
+    for (const step of baseSteps) {
+      migratedSteps.push(step)
+      if (step.type !== 'input' || !step.presetId) continue
+
+      const mouseSteps = mouseStepsByPresetId.get(step.presetId)
+      if (!mouseSteps || mouseSteps.length === 0) continue
+
+      sceneChanged = true
+      for (const mouseStep of mouseSteps) {
+        migratedSteps.push({
+          type: mouseStep.type,
+          delay: mouseStep.delay,
+          config: {
+            ...(mouseStep.data || {}),
+            sourcePresetId: step.presetId
+          }
+        })
+      }
+    }
+
+    if (!sceneChanged) return scene
+    return {
+      ...scene,
+      steps: migratedSteps,
+      updatedAt: Date.now()
+    }
+  })
+
+  store.set('scenes', nextScenes)
+}
+
+migrateMouseStepsFromInputPresetsToScenes()
+
+function migrateTriggerBindingsToLocalOnly(): void {
+  const triggerBindings = store.get('trigger-bindings', []) as Array<TriggerBinding & { deviceKey?: string }>
+  if (triggerBindings.length === 0) return
+
+  const normalizedByKey = new Map<string, TriggerBinding>()
+
+  for (const binding of triggerBindings) {
+    const triggerKey = binding.triggerKey?.trim()
+    if (!triggerKey) continue
+
+    const normalized: TriggerBinding = {
+      id: binding.id,
+      triggerKey,
+      triggerName: binding.triggerName,
+      sceneId: binding.sceneId,
+      enabled: binding.enabled !== false,
+      createdAt: binding.createdAt || Date.now(),
+      updatedAt: binding.updatedAt || Date.now()
+    }
+
+    const existing = normalizedByKey.get(triggerKey)
+    if (!existing || normalized.updatedAt >= existing.updatedAt) {
+      normalizedByKey.set(triggerKey, normalized)
+    }
+  }
+
+  const normalizedBindings = Array.from(normalizedByKey.values())
+  const changed =
+    normalizedBindings.length !== triggerBindings.length ||
+    triggerBindings.some((binding) => 'deviceKey' in binding)
+
+  if (changed) {
+    store.set('trigger-bindings', normalizedBindings)
+  }
+}
+
+migrateTriggerBindingsToLocalOnly()
 
 // ========== Settings ==========
 
@@ -228,9 +356,11 @@ export function getInputPreset(id: string): InputPreset | undefined {
 export function saveInputPreset(preset: Omit<InputPreset, 'id' | 'createdAt' | 'updatedAt'>): InputPreset {
   const presets = getInputPresets()
   const now = Date.now()
+  const normalizedSteps = normalizeKeyboardInputSteps(preset.steps)
 
   const newPreset: InputPreset = {
     ...preset,
+    steps: normalizedSteps,
     id: `ip-${now}-${Math.random().toString(36).substr(2, 4)}`,
     createdAt: now,
     updatedAt: now
@@ -248,9 +378,14 @@ export function updateInputPreset(id: string, updates: Partial<Omit<InputPreset,
 
   if (index === -1) return null
 
+  const normalizedUpdates = {
+    ...updates,
+    ...(updates.steps !== undefined ? { steps: normalizeKeyboardInputSteps(updates.steps) } : {})
+  }
+
   presets[index] = {
     ...presets[index],
-    ...updates,
+    ...normalizedUpdates,
     updatedAt: Date.now()
   }
 
@@ -322,6 +457,67 @@ export function deleteScene(id: string): boolean {
   return true
 }
 
+// ========== Trigger Bindings ==========
+
+export function getTriggerBindings(): TriggerBinding[] {
+  return store.get('trigger-bindings', [])
+}
+
+export function saveTriggerBinding(
+  binding: Omit<TriggerBinding, 'id' | 'createdAt' | 'updatedAt'>
+): TriggerBinding {
+  const bindings = getTriggerBindings()
+  const now = Date.now()
+
+  const newBinding: TriggerBinding = {
+    ...binding,
+    id: `tb-${now}-${Math.random().toString(36).slice(2, 4)}`,
+    createdAt: now,
+    updatedAt: now
+  }
+
+  bindings.push(newBinding)
+  store.set('trigger-bindings', bindings)
+  return newBinding
+}
+
+export function updateTriggerBinding(
+  id: string,
+  updates: Partial<Omit<TriggerBinding, 'id' | 'createdAt'>>
+): TriggerBinding | null {
+  const bindings = getTriggerBindings()
+  const index = bindings.findIndex((binding) => binding.id === id)
+
+  if (index === -1) return null
+
+  bindings[index] = {
+    ...bindings[index],
+    ...updates,
+    updatedAt: Date.now()
+  }
+
+  store.set('trigger-bindings', bindings)
+  return bindings[index]
+}
+
+export function deleteTriggerBinding(id: string): boolean {
+  const bindings = getTriggerBindings()
+  const filtered = bindings.filter((binding) => binding.id !== id)
+
+  if (filtered.length === bindings.length) return false
+
+  store.set('trigger-bindings', filtered)
+  return true
+}
+
+export function resolveSceneIdByTrigger(triggerKey: string): string | null {
+  const normalizedTriggerKey = triggerKey.trim()
+  const binding = getTriggerBindings().find(
+    (item) => item.enabled && item.triggerKey === normalizedTriggerKey
+  )
+  return binding?.sceneId || null
+}
+
 // ========== Offline Devices ==========
 
 export function getOfflineDevices(): Record<string, { lastSeen: number; device: unknown }> {
@@ -382,6 +578,14 @@ export function exportConfig(modules: string[]): Record<string, unknown> {
     }
   }
 
+  if (modules.includes('trigger-bindings')) {
+    (data.data as Record<string, unknown>)['trigger-bindings'] = getTriggerBindings()
+    ;(data.exportMeta as Record<string, unknown>).itemCount = {
+      ...(data.exportMeta as Record<string, unknown>).itemCount,
+      'trigger-bindings': getTriggerBindings().length
+    }
+  }
+
   return data
 }
 
@@ -416,8 +620,12 @@ export function importConfig(config: { data: Record<string, unknown> }, mode: 'a
 
   // Import input presets
   if (config.data['input-presets'] && Array.isArray(config.data['input-presets'])) {
+    const normalizedInputPresets = (config.data['input-presets'] as InputPreset[]).map((preset) => ({
+      ...preset,
+      steps: normalizeKeyboardInputSteps(preset.steps || [])
+    }))
     const imported = importPresets(
-      config.data['input-presets'] as InputPreset[],
+      normalizedInputPresets,
       getInputPresets(),
       mode,
       'input-presets'
@@ -442,11 +650,24 @@ export function importConfig(config: { data: Record<string, unknown> }, mode: 'a
     store.set('scenes', imported.items)
   }
 
+  if (config.data['trigger-bindings'] && Array.isArray(config.data['trigger-bindings'])) {
+    const imported = importPresets(
+      config.data['trigger-bindings'] as TriggerBinding[],
+      getTriggerBindings(),
+      mode,
+      'trigger-bindings'
+    )
+    result.imported['trigger-bindings'] = imported.count
+    result.errors.push(...imported.errors)
+    result.conflicts.push(...imported.conflicts)
+    store.set('trigger-bindings', imported.items)
+  }
+
   result.success = result.errors.length === 0
   return result
 }
 
-function importPresets<T extends { id: string; name: string }>(
+function importPresets<T extends { id: string; name?: string; triggerKey?: string }>(
   items: T[],
   existing: T[],
   mode: 'append' | 'overwrite' | 'merge',
@@ -460,14 +681,15 @@ function importPresets<T extends { id: string; name: string }>(
   }
 
   for (const item of items) {
+    const label = item.name || item.triggerKey || item.id
     try {
       const existingIndex = existing.findIndex((e) => e.id === item.id)
 
       if (mode === 'append') {
         if (existingIndex === -1) {
-          // Check for name conflicts
-          const nameExists = existing.some((e) => e.name === item.name)
-          if (nameExists) {
+          const canCheckNameConflict = Boolean(item.name)
+          const nameExists = canCheckNameConflict && existing.some((e) => e.name === item.name)
+          if (nameExists && item.name) {
             result.conflicts.push({
               type,
               oldName: item.name,
@@ -494,7 +716,7 @@ function importPresets<T extends { id: string; name: string }>(
         }
       }
     } catch (error) {
-      result.errors.push(`Failed to import ${type} "${item.name}": ${error}`)
+      result.errors.push(`Failed to import ${type} "${label}": ${error}`)
     }
   }
 
@@ -503,7 +725,7 @@ function importPresets<T extends { id: string; name: string }>(
 
 // ========== ID Generator ==========
 
-export function generateId(type: 'software' | 'input' | 'scene'): string {
+export function generateId(type: 'software' | 'input' | 'scene' | 'trigger'): string {
   const timestamp = Date.now()
   const random = Math.random().toString(36).substr(2, 4)
   switch (type) {
@@ -513,6 +735,8 @@ export function generateId(type: 'software' | 'input' | 'scene'): string {
       return `ip-${timestamp}-${random}`
     case 'scene':
       return `sc-${timestamp}-${random}`
+    case 'trigger':
+      return `tb-${timestamp}-${random}`
   }
 }
 
@@ -531,7 +755,7 @@ export function checkDependencies(scene: Scene): { valid: boolean; missing: stri
 
   for (const presetId of scene.inputPresetIds) {
     if (!inputPresets.find((p) => p.id === presetId)) {
-      missing.push(`键鼠预设: ${presetId}`)
+      missing.push(`键盘预设: ${presetId}`)
     }
   }
 
@@ -544,5 +768,7 @@ export function checkDependencies(scene: Scene): { valid: boolean; missing: stri
 // ========== Store Instance Export ==========
 
 export { store }
+
+
 
 

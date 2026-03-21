@@ -19,10 +19,11 @@ function App() {
   const [appInfo, setAppInfo] = useState({ name: 'ShareNet', version: '1.0.0' })
   const [hostname, setHostname] = useState('')
   const { networkStatus, networkError, devices, selectedDevices, deviceStatusCheckCount } = useDeviceStore()
+  const getDeviceKey = (device: { ip: string; port: number }) => `${device.ip}:${device.port}`
   const hasNetworkError = !!(networkError?.udp || networkError?.tcp)
   const statusClass = hasNetworkError ? 'offline' : 'online'
   const selectedCount = selectedDevices.size
-  const selectedOnlineCount = devices.filter((device) => selectedDevices.has(device.id) && device.status === 'online').length
+  const selectedOnlineCount = devices.filter((device) => selectedDevices.has(getDeviceKey(device)) && device.status === 'online').length
 
   useNetwork()
   useShareReceiver()

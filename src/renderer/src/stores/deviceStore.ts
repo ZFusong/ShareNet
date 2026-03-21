@@ -70,9 +70,9 @@ interface DeviceState {
   updateDevice: (device: Device) => void
   removeDevice: (id: string) => void
   setLocalDevice: (device: Device | null) => void
-  selectDevice: (id: string) => void
-  deselectDevice: (id: string) => void
-  toggleSelectDevice: (id: string) => void
+  selectDevice: (deviceKey: string) => void
+  deselectDevice: (deviceKey: string) => void
+  toggleSelectDevice: (deviceKey: string) => void
   selectAll: () => void
   deselectAll: () => void
   setFilter: (filter: DeviceFilter) => void
@@ -284,7 +284,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
             devices: state.devices.map((d) =>
               d.id === id ? { ...d, status: 'offline', lastSeen: Date.now() } : d
             ),
-            selectedDevices: new Set([...state.selectedDevices].filter((sid) => sid !== id))
+            selectedDevices: new Set([...state.selectedDevices].filter((deviceKey) => deviceKey !== key))
           }
         }
         // Add to offline cache
@@ -293,7 +293,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
         return {
           devices: state.devices.filter((d) => d.id !== id),
           offlineDevices: newOffline,
-          selectedDevices: new Set([...state.selectedDevices].filter((sid) => sid !== id))
+          selectedDevices: new Set([...state.selectedDevices].filter((deviceKey) => deviceKey !== key))
         }
       }
       const hiddenKey = findHiddenKeyById(id, state.hiddenDevices)
@@ -310,34 +310,34 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
 
   setLocalDevice: (device) => set({ localDevice: device }),
 
-  selectDevice: (id) =>
+  selectDevice: (deviceKey) =>
     set((state) => {
       const newSelected = new Set(state.selectedDevices)
-      newSelected.add(id)
+      newSelected.add(deviceKey)
       return { selectedDevices: newSelected }
     }),
 
-  deselectDevice: (id) =>
+  deselectDevice: (deviceKey) =>
     set((state) => {
       const newSelected = new Set(state.selectedDevices)
-      newSelected.delete(id)
+      newSelected.delete(deviceKey)
       return { selectedDevices: newSelected }
     }),
 
-  toggleSelectDevice: (id) =>
+  toggleSelectDevice: (deviceKey) =>
     set((state) => {
       const newSelected = new Set(state.selectedDevices)
-      if (newSelected.has(id)) {
-        newSelected.delete(id)
+      if (newSelected.has(deviceKey)) {
+        newSelected.delete(deviceKey)
       } else {
-        newSelected.add(id)
+        newSelected.add(deviceKey)
       }
       return { selectedDevices: newSelected }
     }),
 
   selectAll: () =>
     set((state) => ({
-      selectedDevices: new Set(get().getFilteredDevices().map((d) => d.id))
+      selectedDevices: new Set(get().getFilteredDevices().map((d) => getDeviceKey(d)))
     })),
 
   deselectAll: () => set({ selectedDevices: new Set() }),
@@ -357,7 +357,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       const nextHidden = new Map(state.hiddenDevices)
       nextHidden.set(key, device)
       const nextSelected = new Set(state.selectedDevices)
-      nextSelected.delete(device.id)
+      nextSelected.delete(key)
       return {
         hiddenDevices: nextHidden,
         devices: state.devices.filter((d) => d.id !== device.id),
@@ -407,7 +407,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
 
   getSelectedDevicesList: () => {
     const { devices, selectedDevices } = get()
-    return devices.filter((d) => selectedDevices.has(d.id))
+    return devices.filter((d) => selectedDevices.has(getDeviceKey(d)))
   },
 
   getHiddenDevicesList: () => Array.from(get().hiddenDevices.values())

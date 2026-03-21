@@ -479,6 +479,65 @@ ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
     })
 
     tcpServer.on('message', async (message: NetworkMessage, from: DeviceInfo) => {
+      if (message?.msg_type === 'EXECUTE_TRIGGER') {
+        const triggerKey = typeof message.payload?.triggerKey === 'string' ? message.payload.triggerKey.trim() : ''
+
+        if (!triggerKey) {
+          await tcpServer?.sendMessage(from.ip, {
+            msg_type: 'EXECUTE_TRIGGER_RESULT',
+            sender: currentSenderDevice(),
+            payload: {
+              triggerKey,
+              ok: false,
+              message: 'triggerKey 不能为空'
+            },
+            timestamp: Date.now(),
+            request_id: uuidv4()
+          } as NetworkMessage, from.port)
+          return
+        }
+
+        const sceneId = resolveSceneIdByTrigger(triggerKey)
+        if (!sceneId) {
+          await tcpServer?.sendMessage(from.ip, {
+            msg_type: 'EXECUTE_TRIGGER_RESULT',
+            sender: currentSenderDevice(),
+            payload: {
+              triggerKey,
+              ok: false,
+              message: `未找到触发器绑定: ${triggerKey}`
+            },
+            timestamp: Date.now(),
+            request_id: uuidv4()
+          } as NetworkMessage, from.port)
+          return
+        }
+
+        const executor = getExecutor()
+        const result = await executor.executeCommand({
+          msg_type: 'COMMAND',
+          sender: { id: from.id || '', name: from.name || 'Remote', ip: from.ip },
+          payload: { type: 'scene', presetId: sceneId },
+          timestamp: Date.now(),
+          request_id: uuidv4()
+        })
+
+        await tcpServer?.sendMessage(from.ip, {
+          msg_type: 'EXECUTE_TRIGGER_RESULT',
+          sender: currentSenderDevice(),
+          payload: {
+            triggerKey,
+            sceneId,
+            ok: result.success,
+            message: result.success ? '执行成功' : (result.error || '执行失败'),
+            duration: result.duration
+          },
+          timestamp: Date.now(),
+          request_id: uuidv4()
+        } as NetworkMessage, from.port)
+        return
+      }
+
       if (message?.msg_type === 'IMAGE_DOWNLOAD_REQUEST') {
         const shareId = message.payload?.shareId
         const resource = typeof shareId === 'string' ? sharedImageRegistry.get(shareId) : null
@@ -862,6 +921,11 @@ import {
   saveScene,
   updateScene,
   deleteScene,
+  getTriggerBindings,
+  saveTriggerBinding,
+  updateTriggerBinding,
+  deleteTriggerBinding,
+  resolveSceneIdByTrigger,
   exportConfig,
   importConfig,
   checkDependencies
@@ -893,6 +957,8 @@ ipcMain.handle('get-presets', (_event, type: string) => {
       return getInputPresets()
     case 'scene':
       return getScenes()
+    case 'trigger':
+      return getTriggerBindings()
     default:
       return []
   }
@@ -907,6 +973,8 @@ ipcMain.handle('save-preset', (_event, type: string, preset: unknown) => {
         return { success: true, preset: saveInputPreset(preset as any) }
       case 'scene':
         return { success: true, preset: saveScene(preset as any) }
+      case 'trigger':
+        return { success: true, preset: saveTriggerBinding(preset as any) }
       default:
         return { success: false, error: 'Invalid preset type' }
     }
@@ -924,6 +992,8 @@ ipcMain.handle('update-preset', (_event, type: string, id: string, updates: unkn
         return { success: true, preset: updateInputPreset(id, updates as any) }
       case 'scene':
         return { success: true, preset: updateScene(id, updates as any) }
+      case 'trigger':
+        return { success: true, preset: updateTriggerBinding(id, updates as any) }
       default:
         return { success: false, error: 'Invalid preset type' }
     }
@@ -944,6 +1014,9 @@ ipcMain.handle('delete-preset', (_event, type: string, id: string) => {
         break
       case 'scene':
         success = deleteScene(id)
+        break
+      case 'trigger':
+        success = deleteTriggerBinding(id)
         break
     }
     return { success }

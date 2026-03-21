@@ -41,24 +41,35 @@ export interface Scene {
 }
 
 export interface SceneStep {
-  type: 'software' | 'input' | 'delay'
+  type: 'software' | 'input' | 'delay' | 'mouseClick' | 'mouseMove'
   presetId?: string
   delay?: number
   config?: Record<string, unknown>
 }
 
-type PresetType = 'software' | 'input' | 'scene'
+export interface TriggerBinding {
+  id: string
+  triggerKey: string
+  triggerName?: string
+  sceneId: string
+  enabled: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+type PresetType = 'software' | 'input' | 'scene' | 'trigger'
 
 interface ConfigState {
   softwarePresets: SoftwarePreset[]
   inputPresets: InputPreset[]
   scenes: Scene[]
+  triggerBindings: TriggerBinding[]
   loading: boolean
 
   // Actions
   loadPresets: (type: PresetType) => Promise<void>
-  savePreset: (type: PresetType, preset: Partial<SoftwarePreset | InputPreset | Scene>) => Promise<boolean>
-  updatePreset: (type: PresetType, id: string, updates: Partial<SoftwarePreset | InputPreset | Scene>) => Promise<boolean>
+  savePreset: (type: PresetType, preset: Partial<SoftwarePreset | InputPreset | Scene | TriggerBinding>) => Promise<boolean>
+  updatePreset: (type: PresetType, id: string, updates: Partial<SoftwarePreset | InputPreset | Scene | TriggerBinding>) => Promise<boolean>
   deletePreset: (type: PresetType, id: string) => Promise<boolean>
   exportConfig: (modules: string[]) => Promise<{ success: boolean; data?: unknown; error?: string }>
   importConfig: (data: unknown, mode: string) => Promise<{ success: boolean; result?: unknown; error?: string }>
@@ -68,6 +79,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   softwarePresets: [],
   inputPresets: [],
   scenes: [],
+  triggerBindings: [],
   loading: false,
 
   loadPresets: async (type: PresetType) => {
@@ -80,6 +92,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         set({ inputPresets: (presets as InputPreset[]) || [] })
       } else if (type === 'scene') {
         set({ scenes: (presets as Scene[]) || [] })
+      } else if (type === 'trigger') {
+        set({ triggerBindings: (presets as TriggerBinding[]) || [] })
       }
     } catch (error) {
       console.error('Failed to load presets:', error)
@@ -150,6 +164,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         await get().loadPresets('software')
         await get().loadPresets('input')
         await get().loadPresets('scene')
+        await get().loadPresets('trigger')
         return { success: true, result: result.result }
       }
       return { success: false, error: result?.error || 'Import failed' }
@@ -158,3 +173,4 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     }
   }
 }))
+
