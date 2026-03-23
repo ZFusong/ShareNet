@@ -78,6 +78,27 @@ export function MousePickerOverlay() {
   }, [pickerId])
 
   useEffect(() => {
+    const root = document.getElementById('root')
+    const previousHtmlBackground = document.documentElement.style.background
+    const previousBodyBackground = document.body.style.background
+    const previousRootBackground = root?.style.background || ''
+
+    document.documentElement.style.background = 'transparent'
+    document.body.style.background = 'transparent'
+    if (root) {
+      root.style.background = 'transparent'
+    }
+
+    return () => {
+      document.documentElement.style.background = previousHtmlBackground
+      document.body.style.background = previousBodyBackground
+      if (root) {
+        root.style.background = previousRootBackground
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     let cancelled = false
     let pending = false
 
@@ -145,15 +166,40 @@ export function MousePickerOverlay() {
     [handleSample]
   )
 
+  const selectedMarkerPosition = useMemo(() => {
+    if (!selectedPoint) {
+      return null
+    }
+
+    const localX = selectedPoint.screenX - window.screenX
+    const localY = selectedPoint.screenY - window.screenY
+
+    if (localX < 0 || localY < 0 || localX > window.innerWidth || localY > window.innerHeight) {
+      return null
+    }
+
+    return {
+      left: localX,
+      top: localY
+    }
+  }, [selectedPoint])
+
   return (
     <div
-      className="fixed inset-0 cursor-crosshair select-none bg-black/40 text-white"
+      className="fixed inset-0 cursor-crosshair select-none bg-white/40 text-white"
       onMouseDownCapture={handleMouseDownCapture}
       onContextMenu={(event) => event.preventDefault()}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),rgba(0,0,0,0.45)_70%)]" />
+      {selectedMarkerPosition && (
+        <div
+          className="pointer-events-none absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-gray-700 bg-gray-500/60 shadow-[0_0_0_4px_rgba(0,0,0,0.5)]"
+          style={selectedMarkerPosition}
+        >
+          <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+        </div>
+      )}
 
-      <div ref={controlsRef} className="absolute left-6 top-6 max-w-sm rounded-xl border border-white/20 bg-black/65 p-4 shadow-2xl backdrop-blur-sm">
+      <div ref={controlsRef} className="absolute left-6 top-6 max-w-sm rounded-xl bg-black/80 border border-white/20 bg-black/40 p-4 shadow-2xl backdrop-blur-sm">
         <div className="text-base font-semibold">全屏鼠标选点</div>
         <div className="mt-2 space-y-1 text-sm text-white/80">
           <p>左键采样，可重复更新坐标。</p>
@@ -169,7 +215,7 @@ export function MousePickerOverlay() {
           <Button type="button" variant="secondary" onClick={() => void handleConfirm()}>
             确认
           </Button>
-          <Button type="button" variant="outline" onClick={handleCancel}>
+          <Button type="button" variant="secondary" onClick={handleCancel}>
             取消
           </Button>
         </div>
