@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select } from '@/components/ui/select'
+import { FieldRow } from '@/components/ui/field-row'
 
 const getDeviceKey = (device: { ip: string; port: number }) => `${device.ip}:${device.port}`
 
@@ -237,31 +238,41 @@ export function ConsolePanel() {
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">触发器 Key</label>
-              <Input
-                value={triggerKey}
-                onChange={(e) => setTriggerKey(e.target.value)}
-                placeholder="例如: meeting-start"
-                className="h-9 px-3 py-2 text-sm"
-              />
-              {triggerOptions.length > 0 && (
-                <select
-                  value=""
-                  onChange={(e) => {
-                    if (!e.target.value) return
-                    setTriggerKey(e.target.value)
-                  }}
-                  className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-sm"
-                >
-                  <option value="">从本机已配置触发器中选择...</option>
-                  {triggerOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              )}
+            <div className="space-y-2">
+              <FieldRow label="触发器 Key" labelClassName='w-20'>
+                <div className="space-y-2">
+                  <div className='flex gap-4'>
+                    <Input
+                      value={triggerKey}
+                      onChange={(e) => setTriggerKey(e.target.value)}
+                      placeholder="例如: meeting-start"
+                      className="h-9 px-3 py-2 text-sm w-[180px]"
+                    />
+                    {triggerOptions.length > 0 && (
+                      <Select.Root
+                        value=""
+                        onValueChange={(value) => {
+                          if (value) setTriggerKey(value)
+                        }}
+                      >
+                        <Select.Trigger className="h-9 w-[240px]">
+                          <Select.Value placeholder="从选择设备的触发器中选择" />
+                          <Select.Icon />
+                        </Select.Trigger>
+                        <Select.Portal>
+                          <Select.Content>
+                            {triggerOptions.map((option) => (
+                              <Select.Item key={option} value={option}>
+                                {option}
+                              </Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Portal>
+                      </Select.Root>
+                    )}
+                  </div>
+                </div>
+              </FieldRow>
               <div className="text-xs text-muted-foreground">控制台只发送 triggerKey，远端设备会按自己的本地绑定执行场景。</div>
             </div>
 
