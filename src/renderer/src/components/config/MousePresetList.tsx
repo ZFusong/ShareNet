@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { Dialog } from '../ui/dialog'
 import {
   AlertDialog,
@@ -30,7 +31,7 @@ interface Props {
 
 type MouseStepType = MouseStep['type']
 
-const mouseStepTypes: MouseStepType[] = ['mouseMove', 'mouseScroll', 'mouseClick']
+const mouseStepTypes: MouseStepType[] = ['mouseMove', 'mouseScroll', 'mouseClick', 'delay']
 
 const isMouseStep = (step: MouseStep) => mouseStepTypes.includes(step.type)
 
@@ -41,6 +42,15 @@ const toNumber = (value: unknown, fallback = 0): number => {
 
 const normalizeMouseStepData = (step: MouseStep): MouseStep => {
   const data = step.data || {}
+
+  if (step.type === 'delay') {
+    return {
+      type: step.type,
+      data: {
+        delay: Math.max(0, toNumber(data.delay, 1000))
+      }
+    }
+  }
 
   if (step.type === 'mouseMove') {
     return {
@@ -87,6 +97,15 @@ const normalizeMouseStepData = (step: MouseStep): MouseStep => {
 const createDefaultStep = (type: MouseStepType, seed?: MouseStep): MouseStep => {
   const data = seed ? normalizeMouseStepData(seed).data : {}
 
+  if (type === 'delay') {
+    return {
+      type,
+      data: {
+        delay: Math.max(0, toNumber(data.delay, 1000))
+      }
+    }
+  }
+
   if (type === 'mouseScroll') {
     return {
       type,
@@ -120,6 +139,10 @@ const createDefaultStep = (type: MouseStepType, seed?: MouseStep): MouseStep => 
 }
 
 const formatMouseValue = (step: MouseStep) => {
+  if (step.type === 'delay') {
+    return `延迟 ${Math.max(0, toNumber(step.data.delay, 0))}ms`
+  }
+
   if (step.type === 'mouseMove') {
     return `移动 @ ${toNumber(step.data.screenX ?? step.data.clientX)}, ${toNumber(step.data.screenY ?? step.data.clientY)}`
   }
@@ -144,6 +167,7 @@ export function MousePresetList({ onSelect, multiSelect = false, selectedIds = [
   const [deleteTarget, setDeleteTarget] = useState<MousePreset | null>(null)
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
   const [recordingIndex, setRecordingIndex] = useState<number | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({ name: '', steps: [] as MouseStep[] })
 
   useEffect(() => {
@@ -185,17 +209,38 @@ export function MousePresetList({ onSelect, multiSelect = false, selectedIds = [
   }
 
   const handleSave = async () => {
-    if (!formData.name.trim()) return
-
-    const steps = formData.steps.filter(isMouseStep).map(normalizeMouseStepData)
-    const payload = { name: formData.name, steps }
-
-    if (editingPreset) {
-      await updatePreset('mouse', editingPreset.id, payload)
-    } else {
-      await savePreset('mouse', payload)
+    if (!formData.name.trim()) {
+      toast.error('请输入鼠标预设名称')
+      return
     }
 
+    const steps = formData.steps.filter(isMouseStep).map(normalizeMouseStepData)
+    if (steps.length === 0) {
+      toast.error('请至少添加一个鼠标步骤')
+      return
+    }
+
+    const payload = { name: formData.name, steps }
+    setIsSaving(true)
+
+    let success = false
+
+    try {
+      if (editingPreset) {
+        success = await updatePreset('mouse', editingPreset.id, payload)
+      } else {
+        success = await savePreset('mouse', payload)
+      }
+    } finally {
+      setIsSaving(false)
+    }
+
+    if (!success) {
+      toast.error(editingPreset ? '更新鼠标预设失败' : '保存鼠标预设失败')
+      return
+    }
+
+    toast.success(editingPreset ? '鼠标预设已更新' : '鼠标预设已保存')
     setFormData({ name: '', steps: [] })
     setEditingPreset(null)
     setIsDialogOpen(false)
@@ -239,7 +284,7 @@ export function MousePresetList({ onSelect, multiSelect = false, selectedIds = [
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">鼠标预设</h3>
-          <div className="text-sm text-muted-foreground">移动步骤使用屏幕坐标，点击和滚动步骤只保留动作参数。</div>
+          <div className="text-sm text-muted-foreground">移动步骤使用屏幕坐标，点击和滚动步骤只保留动作参数，延迟步骤只设置时长。</div>
         </div>
         <Button
           type="button"
@@ -341,6 +386,9 @@ export function MousePresetList({ onSelect, multiSelect = false, selectedIds = [
                       <Button type="button" onClick={() => addStep('mouseClick')} className="h-8 px-2.5 text-xs">
                         + 点击
                       </Button>
+                      <Button type="button" onClick={() => addStep('delay')} className="h-8 px-2.5 text-xs">
+                        + 延迟
+                      </Button>
                     </div>
                   </div>
 
@@ -362,6 +410,7 @@ export function MousePresetList({ onSelect, multiSelect = false, selectedIds = [
                                     <Select.Item value="mouseMove">移动</Select.Item>
                                     <Select.Item value="mouseScroll">滚动</Select.Item>
                                     <Select.Item value="mouseClick">点击</Select.Item>
+                                    <Select.Item value="delay">延迟</Select.Item>
                                   </Select.Content>
                                 </Select.Portal>
                               </Select.Root>
@@ -533,6 +582,25 @@ export function MousePresetList({ onSelect, multiSelect = false, selectedIds = [
                                 </div>
                               </div>
                             )}
+
+                            {step.type === 'delay' && (
+                              <FieldRow label="延迟时间" labelClassName="w-14">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step={100}
+                                  value={Math.max(0, toNumber(step.data.delay, 1000))}
+                                  onChange={(e) =>
+                                    updateStep(index, {
+                                      data: {
+                                        delay: Math.max(0, toNumber(e.target.value, 0))
+                                      }
+                                    })
+                                  }
+                                  className="h-10 w-full"
+                                />
+                              </FieldRow>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -547,8 +615,8 @@ export function MousePresetList({ onSelect, multiSelect = false, selectedIds = [
                 <Dialog.Close asChild>
                   <Button variant="outline">取消</Button>
                 </Dialog.Close>
-                <Button onClick={handleSave} variant="secondary">
-                  保存
+                <Button type="button" onClick={handleSave} variant="secondary" disabled={isSaving}>
+                  {isSaving ? '保存中...' : '保存'}
                 </Button>
               </div>
             </div>
@@ -599,3 +667,13 @@ export function MousePresetList({ onSelect, multiSelect = false, selectedIds = [
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+

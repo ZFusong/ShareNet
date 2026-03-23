@@ -41,6 +41,39 @@ const emptyForm: SceneFormData = {
   steps: []
 }
 
+const getDelayStepDuration = (step: SceneStep): number => {
+  if (step.type !== 'delay') {
+    return 0
+  }
+
+  const configDuration = Number(step.config?.duration)
+  if (Number.isFinite(configDuration) && configDuration >= 0) {
+    return configDuration
+  }
+
+  const legacyDelay = Number(step.delay)
+  return Number.isFinite(legacyDelay) && legacyDelay >= 0 ? legacyDelay : 1000
+}
+
+const normalizeSceneStep = (step: SceneStep): SceneStep => {
+  if (step.type === 'delay') {
+    return {
+      ...step,
+      delay: 0,
+      config: {
+        ...(step.config || {}),
+        duration: getDelayStepDuration(step)
+      }
+    }
+  }
+
+  return {
+    ...step,
+    delay: Math.max(0, Number(step.delay) || 0)
+  }
+}
+
+const normalizeSceneSteps = (steps: SceneStep[]): SceneStep[] => steps.map(normalizeSceneStep)
 const createDefaultStep = (type: SceneStep['type'], seed?: SceneStep): SceneStep => {
   const delay = seed?.delay ?? 0
   if (type === 'software') {
@@ -53,7 +86,14 @@ const createDefaultStep = (type: SceneStep['type'], seed?: SceneStep): SceneStep
     return { type, presetId: '', delay }
   }
   if (type === 'delay') {
-    return { type, delay: seed?.delay ?? 1000 }
+    return {
+      type,
+      delay: 0,
+      config: {
+        ...(seed?.config || {}),
+        duration: seed ? getDelayStepDuration(seed) : 1000
+      }
+    }
   }
   return {
     type,
@@ -71,7 +111,7 @@ const createDefaultStep = (type: SceneStep['type'], seed?: SceneStep): SceneStep
 
 const normalizeLegacySteps = (scene: Scene): SceneStep[] => {
   if (scene.steps && scene.steps.length > 0) {
-    return scene.steps
+    return normalizeSceneSteps(scene.steps)
   }
 
   return [
@@ -126,10 +166,10 @@ const getStepTitle = (
   } else if (step.type === 'mouse') {
     detail = step.presetId ? resolvePresetName(step.presetId, 'mouse') : '未选择预设'
   } else if (step.type === 'delay') {
-    detail = `${step.delay ?? 0}ms`
+    detail = `${getDelayStepDuration(step)}ms`
   }
 
-  if (typeof step.delay === 'number' && step.delay > 0) {
+  if (step.type !== 'delay' && typeof step.delay === 'number' && step.delay > 0) {
     detail = detail ? `${detail}，前置 ${step.delay}ms` : `前置 ${step.delay}ms`
   }
 
@@ -196,7 +236,7 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
   const handleSave = async () => {
     if (!formData.name.trim()) return
 
-    const steps = formData.steps
+    const steps = normalizeSceneSteps(formData.steps)
     const { softwarePresetIds, inputPresetIds, mousePresetIds } = extractPresetIds(steps)
 
     const testScene: Scene = {
@@ -548,23 +588,32 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
                                       type="number"
                                       min={0}
                                       step={100}
-                                      value={step.delay ?? 0}
-                                      onChange={(e) => updateStep(index, { delay: Number(e.target.value) || 0 })}
+                                      value={getDelayStepDuration(step)}
+                                      onChange={(e) =>
+                                        updateStep(index, {
+                                          config: {
+                                            ...(step.config || {}),
+                                            duration: Math.max(0, Number(e.target.value) || 0)
+                                          }
+                                        })
+                                      }
                                       className="h-10 w-full"
                                     />
                                   </FieldRow>
                                 )}
 
-                                <FieldRow className="flex-1" labelClassName={"w-14"} label="前置延迟（毫秒）">
-                                  <Input
-                                    type="number"
-                                    min={0}
-                                    step={100}
-                                    value={step.delay ?? 0}
-                                    onChange={(e) => updateStep(index, { delay: Number(e.target.value) || 0 })}
-                                    className="h-10 w-full"
-                                  />
-                                </FieldRow>
+                                {step.type !== 'delay' && (
+                                  <FieldRow className="flex-1" labelClassName={"w-14"} label="前置延迟（毫秒）">
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      step={100}
+                                      value={step.delay ?? 0}
+                                      onChange={(e) => updateStep(index, { delay: Math.max(0, Number(e.target.value) || 0) })}
+                                      className="h-10 w-full"
+                                    />
+                                  </FieldRow>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -615,3 +664,6 @@ export function SceneList({ onSelect, multiSelect = false, selectedIds = [] }: P
     </div>
   )
 }
+
+
+

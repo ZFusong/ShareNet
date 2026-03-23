@@ -30,7 +30,7 @@ export interface InputStep {
 }
 
 export interface MouseStep {
-  type: 'mouseMove' | 'mouseScroll' | 'mouseClick'
+  type: 'mouseMove' | 'mouseScroll' | 'mouseClick' | 'delay'
   data: Record<string, unknown>
 }
 
@@ -193,4 +193,5 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     }
   }
 }))
+
 

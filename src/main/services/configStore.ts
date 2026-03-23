@@ -62,7 +62,7 @@ export interface InputStep {
 }
 
 export interface MouseStep {
-  type: 'mouseMove' | 'mouseScroll' | 'mouseClick'
+  type: 'mouseMove' | 'mouseScroll' | 'mouseClick' | 'delay'
   data: Record<string, unknown>
 }
 
@@ -161,8 +161,17 @@ const store = new Store<AppConfig>({
 })
 
 const normalizeMouseStep = (step: MouseStep): MouseStep | null => {
-  if (step.type !== 'mouseMove' && step.type !== 'mouseScroll' && step.type !== 'mouseClick') {
+  if (step.type !== 'mouseMove' && step.type !== 'mouseScroll' && step.type !== 'mouseClick' && step.type !== 'delay') {
     return null
+  }
+
+  if (step.type === 'delay') {
+    return {
+      type: step.type,
+      data: {
+        delay: Math.max(0, Number(step.data.delay ?? 1000) || 0)
+      }
+    }
   }
 
   if (step.type === 'mouseMove') {
@@ -861,6 +870,8 @@ export function checkDependencies(scene: Scene): { valid: boolean; missing: stri
 // ========== Store Instance Export ==========
 
 export { store }
+
+
 
 
 

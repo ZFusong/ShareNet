@@ -5,10 +5,10 @@
 
 import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
-import { app } from 'electron'
 import path from 'path'
 import { getSoftwarePresets, getInputPresets, getMousePresets, getScene } from './configStore'
 import type { InputStep, MouseStep, SceneStep } from './configStore'
+import { executeWindowsInputAction } from './windowsInput'
 
 // Running processes map
 const runningProcesses: Map<string, ChildProcess> = new Map()
@@ -244,26 +244,33 @@ class ExecutionEngine extends EventEmitter {
       await new Promise((resolve) => setTimeout(resolve, step.delay))
     }
 
-    // Delay step
     if (step.type === 'delay') {
-      const delay = (step.data.delay as number) || 1000
+      const delay = Math.max(0, Number(step.data.delay ?? 1000) || 0)
       return new Promise((resolve) => setTimeout(resolve, delay))
     }
 
-    // For other steps, we would integrate with nut.js
-    // For now, log the action
-    console.log('[Executor] Input step:', step.type, step.data)
-
-    // Simulate execution time
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await executeWindowsInputAction({
+      kind: 'keyboard',
+      stepType: step.type,
+      data: step.data
+    })
   }
 
   /**
    * Execute a single mouse step
    */
   private async executeMouseStep(step: MouseStep): Promise<void> {
-    console.log('[Executor] Mouse step:', step.type, step.data)
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    if (step.type === 'delay') {
+      const delay = Math.max(0, Number(step.data.delay ?? 1000) || 0)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      return
+    }
+
+    await executeWindowsInputAction({
+      kind: 'mouse',
+      stepType: step.type,
+      data: step.data
+    })
   }
 
   /**
@@ -298,7 +305,10 @@ class ExecutionEngine extends EventEmitter {
 
   private async executeSceneStep(step: SceneStep): Promise<void> {
     if (step.type === 'delay') {
-      const delay = typeof step.delay === 'number' ? step.delay : 0
+      const configDuration = Number(step.config?.duration)
+      const delay = Number.isFinite(configDuration)
+        ? Math.max(0, configDuration)
+        : Math.max(0, typeof step.delay === 'number' ? step.delay : 0)
       if (delay > 0) {
         await new Promise((resolve) => setTimeout(resolve, delay))
       }
@@ -386,3 +396,9 @@ export function getExecutor(): ExecutionEngine {
 export function createExecutor(): ExecutionEngine {
   return new ExecutionEngine()
 }
+
+
+
+
+
+
