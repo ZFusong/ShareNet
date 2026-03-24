@@ -521,7 +521,7 @@ ipcMain.on('mouse-picker-cancel', (_event, pickerId: string) => {
 let udpService: ReturnType<typeof getUDPService> | null = null
 
 // Start UDP service
-ipcMain.handle('udp-start', async (_event, config?: { port?: number }) => {
+ipcMain.handle('udp-start', async (_event, config?: { port?: number; broadcastInterval?: number }) => {
   try {
     udpService = getUDPService(config)
     udpService.removeAllListeners('error')
@@ -603,7 +603,7 @@ ipcMain.handle('udp-get-config', () => {
 })
 
 // Update UDP config
-ipcMain.handle('udp-update-config', (_event, config: { port?: number }) => {
+ipcMain.handle('udp-update-config', (_event, config: { port?: number; broadcastInterval?: number }) => {
   if (!udpService) return { success: false, error: 'UDP service not running' }
   udpService.updateConfig(config)
   return { success: true }
@@ -1107,6 +1107,22 @@ ipcMain.handle('get-settings', () => getSettings())
 
 ipcMain.handle('set-settings', (_event, settings) => {
   setSettings(settings)
+
+  if (settings.network) {
+    if (udpService) {
+      udpService.updateConfig({
+        port: settings.network.udpPort,
+        broadcastInterval: settings.network.broadcastInterval
+      })
+    }
+  }
+
+  if (settings.security) {
+    const executor = getExecutor()
+    executor.setWhitelist(settings.security.whitelist || [])
+    executor.setAllowControl(settings.security.allowControl ?? true)
+  }
+
   return { success: true }
 })
 
@@ -1460,6 +1476,18 @@ ipcMain.handle('reveal-file', (_event, filePath: string) => {
     }
 
     shell.showItemInFolder(filePath)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+})
+
+ipcMain.handle('open-path', async (_event, path: string) => {
+  try {
+    if (!path) {
+      return { success: false, error: 'Path is required' }
+    }
+    await shell.openPath(path)
     return { success: true }
   } catch (error) {
     return { success: false, error: String(error) }

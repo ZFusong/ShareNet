@@ -137,7 +137,7 @@ export function SettingsPanel() {
       await window.electronAPI?.tcpStop()
 
       const errors: { udp?: string; tcp?: string } = {}
-      const udpResult = await window.electronAPI?.udpStart({ port: settings.udpPort })
+      const udpResult = await window.electronAPI?.udpStart({ port: settings.udpPort, broadcastInterval: settings.broadcastInterval })
       if (!udpResult?.success) {
         const message = udpResult?.error || 'Unknown UDP error'
         errors.udp = message.includes('EADDRINUSE')
@@ -202,9 +202,12 @@ export function SettingsPanel() {
   const handleOpenConfigDir = async () => {
     try {
       const userDataPath = await window.electronAPI?.getUserDataPath()
-      console.log('Config directory:', userDataPath)
+      if (userDataPath) {
+        await window.electronAPI?.openPath(userDataPath)
+      }
     } catch (error) {
       console.error('Failed to open config dir:', error)
+      toast.error('打开配置目录失败')
     }
   }
 
@@ -244,17 +247,29 @@ export function SettingsPanel() {
   return (
     <section id="settings-panel" className="panel h-full">
       <Tabs.Root defaultValue="device" className="h-full flex flex-col">
-        <Tabs.List className="flex border-b px-4">
-          <Tabs.Trigger value="device" className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary">
+        <Tabs.List className="flex border-b px-4 justify-start bg-background">
+          <Tabs.Trigger
+            value="device"
+            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
+          >
             本机信息
           </Tabs.Trigger>
-          <Tabs.Trigger value="network" className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary">
+          <Tabs.Trigger
+            value="network"
+            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
+          >
             网络
           </Tabs.Trigger>
-          <Tabs.Trigger value="security" className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary">
+          <Tabs.Trigger
+            value="security"
+            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
+          >
             安全
           </Tabs.Trigger>
-          <Tabs.Trigger value="logs" className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-primary">
+          <Tabs.Trigger
+            value="logs"
+            className="px-4 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 data-[state=active]:shadow-none data-[state=active]:bg-transparent rounded-none"
+          >
             日志
           </Tabs.Trigger>
         </Tabs.List>
@@ -275,20 +290,20 @@ export function SettingsPanel() {
             <div className="form-group">
               <label className="block text-sm font-medium mb-1">角色</label>
               <Select.Root value={settings.deviceRole} onValueChange={(value) => updateSetting('deviceRole', value as Settings['deviceRole'])}>
-                <Select.Trigger className="w-full flex items-center justify-between px-3 py-2 border rounded bg-background">
+                <Select.Trigger>
                   <Select.Value />
                   <Select.Icon />
                 </Select.Trigger>
                 <Select.Portal>
-                  <Select.Content className="bg-background border rounded shadow-lg z-50">
-                    <Select.Viewport className="p-1">
-                      <Select.Item value="controller" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                  <Select.Content>
+                    <Select.Viewport>
+                      <Select.Item value="controller">
                         <Select.ItemText>主控</Select.ItemText>
                       </Select.Item>
-                      <Select.Item value="controlled" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                      <Select.Item value="controlled">
                         <Select.ItemText>被控</Select.ItemText>
                       </Select.Item>
-                      <Select.Item value="bidirectional" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                      <Select.Item value="bidirectional">
                         <Select.ItemText>双向</Select.ItemText>
                       </Select.Item>
                     </Select.Viewport>
@@ -349,19 +364,19 @@ export function SettingsPanel() {
         <Tabs.Content value="security" className="flex-1 p-6 overflow-auto">
           <div className="settings-group space-y-4">
             <h3 className="text-lg font-semibold">安全设置</h3>
-            <div className="form-group">
+            <div className="">
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox checked={settings.allowControl} onCheckedChange={(checked) => updateSetting('allowControl', checked === true)} />
                 <span className="text-sm">允许被控制</span>
               </label>
             </div>
-            <div className="form-group">
+            <div className="">
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox checked={settings.requireConfirm} onCheckedChange={(checked) => updateSetting('requireConfirm', checked === true)} />
                 <span className="text-sm">操作确认</span>
               </label>
             </div>
-            <div className="form-group">
+            <div className="">
               <label className="block text-sm font-medium mb-1">IP 白名单</label>
               <Textarea
                 className="w-full resize-none"
@@ -380,17 +395,17 @@ export function SettingsPanel() {
               <h3 className="font-medium text-sm">日志查看</h3>
               <div className="flex items-center gap-2">
                 <Select.Root value={settings.logLevel} onValueChange={handleLogLevelChange}>
-                  <Select.Trigger className="flex items-center gap-1 px-2 py-1 border rounded text-xs bg-background">
+                  <Select.Trigger className="h-8">
                     <Select.Value />
-                    <Select.Icon>▼</Select.Icon>
+                    <Select.Icon />
                   </Select.Trigger>
                   <Select.Portal>
-                    <Select.Content className="bg-background border rounded shadow-lg z-50">
-                      <Select.Viewport className="p-1">
-                        <Select.Item value="debug" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded"><Select.ItemText>Debug</Select.ItemText></Select.Item>
-                        <Select.Item value="info" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded"><Select.ItemText>Info</Select.ItemText></Select.Item>
-                        <Select.Item value="warn" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded"><Select.ItemText>Warn</Select.ItemText></Select.Item>
-                        <Select.Item value="error" className="px-3 py-1 text-sm cursor-pointer hover:bg-accent rounded"><Select.ItemText>Error</Select.ItemText></Select.Item>
+                    <Select.Content position="popper" sideOffset={4}>
+                      <Select.Viewport>
+                        <Select.Item value="debug">Debug</Select.Item>
+                        <Select.Item value="info">Info</Select.Item>
+                        <Select.Item value="warn">Warn</Select.Item>
+                        <Select.Item value="error">Error</Select.Item>
                       </Select.Viewport>
                     </Select.Content>
                   </Select.Portal>

@@ -53,7 +53,7 @@ export interface ElectronAPI {
   stopNetworkServices: () => Promise<void>
   sendMessage: (targetId: string, message: unknown) => Promise<void>
 
-  udpStart: (config?: { port?: number }) => Promise<{ success: boolean; error?: string }>
+  udpStart: (config?: { port?: number; broadcastInterval?: number }) => Promise<{ success: boolean; error?: string }>
   udpStop: () => Promise<{ success: boolean; error?: string }>
   udpSubscribe: () => void
   udpGetDevices: () => Promise<DeviceInfo[]>

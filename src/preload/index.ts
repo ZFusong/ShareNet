@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendMessage: (targetId: string, message: unknown) => ipcRenderer.invoke('send-message', targetId, message),
 
   // UDP Service
-  udpStart: (config?: { port?: number }) => ipcRenderer.invoke('udp-start', config),
+  udpStart: (config?: { port?: number; broadcastInterval?: number }) => ipcRenderer.invoke('udp-start', config),
   udpStop: () => ipcRenderer.invoke('udp-stop'),
   udpSubscribe: () => ipcRenderer.send('udp-subscribe'),
   udpGetDevices: () => ipcRenderer.invoke('udp-get-devices'),
@@ -120,6 +120,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveReceived: (data: { type: 'text' | 'image' | 'file'; content: string; fileName?: string }) =>
     ipcRenderer.invoke('save-received', data),
   revealFile: (filePath: string) => ipcRenderer.invoke('reveal-file', filePath),
+  openPath: (path: string) => ipcRenderer.invoke('open-path', path),
 
   // Receive events
   onDeviceUpdate: (callback: (data: unknown) => void) => {
@@ -170,7 +171,7 @@ export interface ElectronAPI {
   sendMessage: (targetId: string, message: unknown) => Promise<void>
 
   // UDP Service
-  udpStart: (config?: { port?: number }) => Promise<{ success: boolean; error?: string }>
+  udpStart: (config?: { port?: number; broadcastInterval?: number }) => Promise<{ success: boolean; error?: string }>
   udpStop: () => Promise<{ success: boolean; error?: string }>
   udpGetDevices: () => Promise<unknown[]>
   udpGetLocalDevice: () => Promise<unknown | null>
