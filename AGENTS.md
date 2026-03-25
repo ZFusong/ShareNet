@@ -55,6 +55,21 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 5. Document Results: Add review section to 'tasks/todo.md'
 6. Capture Lessons: Update 'tasks/lessons.md' after corrections
 
+## Windows File Edit Fallback
+- On Windows, prefer `apply_patch` with a single-file, relative-path patch. Do not bundle multiple files into one patch when a small targeted edit will do.
+- If `apply_patch` reports `windows sandbox: setup refresh failed` or the UI shows a patch as rejected, treat it as a sandbox/tooling failure first, not a content conflict.
+- After one failed multi-file or absolute-path patch on Windows, retry with a smaller single-file patch using a relative path before trying anything else.
+- If the same file still fails with `apply_patch`, stop retrying the same patch and switch to PowerShell for a targeted file edit.
+- After any PowerShell-based file write, immediately read the file back and verify there was no escaping, here-string, or encoding damage before continuing.
+
+## Runtime Debugging Context Control
+- For runtime errors, start with the narrowest unique identifier from the error message. Prefer searching for the exact symbol, function name, or stack location before broader domain terms.
+- Do not begin first-pass debugging with broad repository searches like `keyboard`, `mouse`, `scene`, `trigger`, or product-language terms if the error already names a concrete code symbol.
+- After search, open only the directly relevant files and only the nearby line ranges needed to confirm the call site, import/export, or failing branch.
+- Treat `tasks/todo.md` as a last-step tracking artifact during debugging. Do not read large sections of it during first-pass root-cause analysis unless the task state itself is the bug.
+- Postpone reading product docs, design docs, and archived specs until code inspection shows they are actually needed to answer the question or fix the bug.
+- If a bug is likely local, follow the shortest call chain first: failing symbol -> immediate caller -> definition/export -> fix -> verification. Expand scope only if that path does not explain the failure.
+
 ## Core Principles
 - Simplicity First: Make every change as simple as possible. Impact minimal code.
 - No Laziness: Find root causes. No temporary fixes. Senior developer standards.

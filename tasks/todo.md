@@ -1,435 +1,68 @@
-# Mouse Coordinate Cleanup (2026-03-21)
-- [x] Remove client-coordinate fields from mouse preset click/scroll editing.
-- [x] Record mouse move steps with screen coordinates only.
-- [x] Replace mouse scroll editing with up/down direction plus step size.
-- [x] Verify the mouse preset editor and recorder behave correctly after the coordinate cleanup.
+# Active Tasks
+
+- Scope: keep only current active tasks here so repeated reads stay small.
+- Archived history: `tasks/archive/todo-history-through-2026-03-23.md`.
+- Rule: move completed or stale task blocks out of this file instead of letting it grow indefinitely.
+
+# Space Module (2026-03-25)
+- [x] Audit console trigger sending flow, preset IPC, and device key model for reuse points.
+- [x] Add space preset model and persistence in main/config/preload/renderer store layers.
+- [x] Implement shared trigger execution helper so console and space use one send path.
+- [x] Add a dedicated space panel with space CRUD, device selection, custom buttons, and execution logs.
+- [x] Wire the space panel into the main app tabs and preserve existing console behavior.
+- [x] Verify TypeScript build passes after the space module changes.
 
 ## Review
-- [ ] Confirm click steps no longer expose coordinate inputs.
-- [ ] Confirm scroll steps use up/down direction plus step size and no longer expose coordinate inputs.
-- [ ] Confirm recorder displays and stores screen coordinates instead of client coordinates.
-- [x] Build verified after recorder start-button coordinate fix.
+- [ ] Confirm a saved space can persist name, description, device list, and custom buttons after reload.
+- [ ] Confirm clicking a space button sends its `triggerKey` to all devices configured in that space.
+- [ ] Confirm the existing console panel still sends trigger keys successfully.
 
-# Mouse Preset Scene Refactor (2026-03-21)
-- [x] Add a standalone mouse preset store/list/editor after the keyboard preset tab.
-- [x] Move recorder capture into the mouse preset editor and remove scene-level recorder import.
-- [x] Update scene orchestration to add mouse presets from a dropdown and keep mouse steps grouped as mouse.
-- [x] Verify the app builds successfully after the mouse preset refactor.
+# Trigger Scene Input ReferenceError Fix (2026-03-23)
+- [x] Inspect the trigger-to-scene execution stack for the ``executeWindowsInputAction`` runtime failure.
+- [x] Restore the missing Windows input helper import in the execution engine.
+- [ ] Verify trigger-driven scene execution no longer throws ``ReferenceError: executeWindowsInputAction is not defined``.
 
 ## Review
-- [ ] Confirm mouse presets only allow move, scroll, and click steps.
-- [ ] Confirm move steps can be filled from the recorder and the recorder stops on left click without delay capture.
-- [ ] Confirm scenes can select mouse presets and still save/load existing data.
-# Global Mouse Recorder Coordinates (2026-03-21)
-- [x] Locate why the mouse recorder only updates inside the app client area.
-- [x] Expose global cursor screen coordinates from the main process to the renderer.
-- [x] Update the mouse recorder to poll full-screen cursor coordinates while recording.
-- [ ] Verify the recorder stores full-screen absolute coordinates and update the review notes.
+- [ ] Confirm trigger key execution enters scene orchestration without the missing-function runtime error.
+
+# Mouse Preset Save Feedback (2026-03-23)
+- [x] Locate why saving a newly added mouse preset can appear unresponsive after setting a mouse point.
+- [x] Add explicit validation and save-result feedback to the mouse preset editor.
+- [ ] Verify adding a mouse preset now reports missing required fields and closes normally on successful save.
 
 ## Review
-- [ ] Confirm moving the cursor outside the app window still updates the recorder coordinates.
-- [ ] Confirm the saved mouse move step uses the polled full-screen coordinates.
-- [x] Confirm the recorder copy no longer claims that out-of-window clicks are captured.
-# Fullscreen Mouse Picker Overlay (2026-03-21)
-- [x] Inspect the current recorder flow and renderer entry strategy for adding a fullscreen picker.
-- [x] Add a fullscreen overlay picker window flow that covers every display.
-- [x] Support repeated left-click sampling with Enter confirm and Esc cancel.
-- [x] Wire the mouse preset recorder to launch the fullscreen picker and consume the selected point.
-- [x] Verify the new picker flow builds successfully.
+- [ ] Confirm clicking save without a preset name shows an in-app error instead of silently doing nothing.
+- [ ] Confirm clicking save with a valid mouse preset shows success feedback and closes the dialog.
+
+# Scene Delay Field Split (2026-03-23)
+- [x] Inspect scene editor and executor usage of delay-step duration versus pre-delay.
+- [x] Split delay-step duration from generic step pre-delay while keeping old scene data compatible.
+- [x] Verify scene editor and executor both read the corrected delay semantics.
 
 ## Review
-- [ ] Confirm every display gets a fullscreen overlay while picking.
-- [ ] Confirm left-click updates the selected point without closing the picker.
-- [ ] Confirm Enter submits the last selected point and Esc cancels without changes.
-- [ ] Confirm the mouse preset move step receives the confirmed screen coordinates.
-# Scene Step Card Polish (2026-03-21)
-- [x] Unify spacing and alignment inside scene step cards.
-- [x] Tighten the step header, field rows, and action buttons into one consistent rhythm.
-- [x] Verify the app builds successfully after the scene step card polish.
+- [ ] Confirm delay steps edit only their own duration field.
+- [ ] Confirm non-delay steps keep a separate pre-delay field.
+- [ ] Confirm legacy delay steps still execute with the stored duration.
+
+# Trigger Scene Real Input Execution (2026-03-23)
+- [x] Audit trigger-to-scene execution path for software, keyboard, mouse, and delay steps.
+- [x] Replace keyboard and mouse executor placeholders with real Windows input simulation.
+- [ ] Verify trigger-driven scenes can execute software launch, delays, keyboard input, mouse move/click/scroll.
 
 ## Review
-- [ ] Confirm step cards read as one coherent block instead of separated chunks.
-- [ ] Confirm the step action buttons and fields align consistently across types.
-# Scene Dialog Layout Polish (2026-03-21)
-- [x] Split the scene editor dialog into fixed header/footer and a scrollable middle section.
-- [x] Convert scene editor form fields to a left-label, right-control layout.
-- [x] Verify the app builds successfully after the scene dialog layout update.
+- [ ] Confirm trigger key execution still resolves the bound scene.
+- [ ] Confirm keyboard steps emit real key/text input instead of log-only placeholders.
+- [ ] Confirm mouse steps emit real move/click/scroll actions instead of log-only placeholders.
+
+# Mouse Preset Delay Step (2026-03-23)
+- [x] Expand mouse preset step model to support delay-only steps.
+- [x] Add delay editing UI to the mouse preset dialog with only a duration field.
+- [ ] Verify mouse presets can save and execute delay steps in sequence.
 
 ## Review
-- [ ] Confirm the scene dialog header stays visible while the middle content scrolls.
-- [ ] Confirm the scene dialog footer stays fixed at the bottom of the dialog.
-- [ ] Confirm form rows render with labels on the left and controls on the right.
-# Config Center Component Swap (2026-03-21)
-- [x] Replace config-center native `button`/`select` controls with shared UI components.
-- [x] Replace delete confirmation `confirm()` dialogs with shared in-app alert dialogs.
-- [x] Verify the config center still builds and the dialogs/selects behave normally.
-
-## Review
-- [ ] Confirm all config-center actions use shared UI components instead of raw browser controls.
-- [ ] Confirm delete flows no longer rely on native browser dialogs.
-- [ ] Confirm the config center still opens, edits, saves, and deletes presets correctly.
-
-# Shortcut Type Switch Clear (2026-03-21)
-- [x] Clear shortcut input data when switching between `keyCombo` and `keyPress`.
-- [x] Keep non-shortcut step types unchanged when switching away from shortcut types.
-- [ ] Verify both the preset editor and recorder step editor open with empty shortcut fields after cross-switching.
-
-## Review
-- [ ] Confirm switching `keyCombo` to `keyPress` clears the shortcut box.
-- [ ] Confirm switching `keyPress` to `keyCombo` clears the shortcut box.
-- [ ] Confirm switching to text/delay types still preserves their own fields.
-
-# Keyboard Combo Recording De-duplication (2026-03-21)
-- [x] Normalize keyboard shortcut summaries so a single key never renders twice.
-- [x] Ignore repeated keydown events and track pressed codes while recording keyboard presets.
-- [x] Join shortcut tokens with `+` between keys only, without repeated-token separators.
-- [x] Verify the recorder and preset editor no longer append duplicate keys during long press.
-
-## Review
-- [x] Confirm a single key press renders as one token in both the recorder dialog and preset editor.
-- [x] Confirm holding a key does not keep appending the same token.
-- [x] Confirm multi-key combos render as `A + B + C` style sequences.
-
-## Shortcut Combo Repeat State Fix (2026-03-21)
-- [x] Switch combo capture from time-window dedupe to pressed-key state tracking.
-- [x] Ignore auto-repeat keydown events so a long press only records once.
-- [x] Keep simultaneous presses rendered as `+`-joined combos while allowing the same key to be entered again after release.
-- [x] Verify `npm run build` passes after the shortcut capture fix.
-- [ ] Verify the shortcut capture UI no longer duplicates single presses.
-
-## Review
-- [ ] Confirm a single physical press only adds one key token.
-- [ ] Confirm a held key does not keep appending duplicate tokens.
-- [ ] Confirm pressing another key while the first stays down shows a `+`-joined combo.
-## Shortcut Combo Chip Fix (2026-03-21)
-- [x] Render shortcut combos as a single chip instead of separate token pills.
-- [x] Keep combo recording as a sliding four-key window with duplicate keys allowed.
-- [x] Prevent Escape from closing the dialog while recording and keep it recordable.
-- [ ] Verify the combo chip UI feels correct in the dialog.
-
-## Review
-- [ ] Confirm a one-key combo renders as a single chip, not two identical chips.
-- [ ] Confirm fifth and later keys replace the oldest key in the combo.
-- [ ] Confirm Escape still records without closing the dialog.
-## Shortcut Recording Timing (2026-03-21)
-- [x] Prevent Escape from closing the dialog while a shortcut step is recording.
-- [x] Treat repeated captures of the same key within 200ms as a single input.
-- [x] Let fifth and later keys slide the combo window forward instead of being rejected.
-- [ ] Verify the shortcut dialog behavior after the timing tweak.
-
-## Review
-- [ ] Confirm Escape still records as a key while recording.
-- [ ] Confirm repeated key presses within 200ms do not duplicate the shortcut entry.
-- [ ] Confirm combos keep the newest four keys when more than four are entered.
-## Shortcut Recording Refinement (2026-03-21)
-- [x] Highlight the currently pressed shortcut token while recording.
-- [x] Allow Backspace to remove the last token when not recording.
-- [x] Distinguish keyCombo and keyPress behavior and labels more clearly.
-- [x] Verify the app builds successfully after the shortcut recording refinement.
-
-## Review
-- [ ] Confirm duplicate keys can be recorded in a combo.
-- [ ] Confirm Backspace trims the current shortcut only when not recording.
-- [ ] Confirm keyPress stays single-key while keyCombo can accumulate multiple keys.
-## Keyboard Recording Controls (2026-03-21)
-- [x] Allow keyboard preset recording to accumulate up to four keys in one capture.
-- [x] Record special keys like `Esc`, `Ctrl`, and `Shift` while preventing browser-default key handling.
-- [x] Replace Esc-to-clear behavior with explicit start/cancel recording controls.
-- [x] Verify keyboard step recording feels correct in the dialog.
-
-## Review
-- [ ] Confirm shortcut recording keeps accepting keys until manually canceled.
-- [ ] Confirm newly added shortcut steps enter recording mode automatically.
-## Config Center Detail Polish (2026-03-21)
-- [x] Add a file-picker bridge for software preset paths and wire it into the software preset editor.
-- [x] Replace keyboard preset JSON editing with type-specific fields and a VS Code-like key capture box.
-- [x] Keep software workDir optional/hidden in the editor while preserving runtime fallback behavior.
-- [x] Verify the app builds successfully after the config-center UX changes.
-
-## Review
-- [ ] Confirm software preset paths can be selected with a file dialog.
-- [ ] Confirm keyboard preset steps show the correct editor by type and no raw JSON leaks into the input.
-- [ ] Confirm existing presets still load and save with the new editor.
-## Recorder Config Center Polish (2026-03-21)
-- [x] Draft proposal/spec/design/tasks for the recorder/config-center polish change.
-- [x] Tighten input preset persistence to keyboard-only macros and keep legacy mouse presets migrated.
-- [x] Add recorder step-level editing and context menus.
-- [x] Expand scene mouse fields and summaries.
-- [x] Verify build after the normalization changes.
-
-## Review
-- [ ] Confirm keyboard presets persist as pure macros.
-- [ ] Confirm recorder step actions work on individual steps.
-- [ ] Confirm scene mouse details and summaries render correctly.
-## Recorder Polish (2026-03-21)
-- [x] Fix recorder context menu actions so insert-delay and clear-all act on the intended selection.
-- [x] Clear preview timers when the recorder closes or saves.
-- [x] Show preset names in scene step summaries instead of raw ids where possible.
-- [x] Verify `npm run build` passes after the recorder polish pass.
-
-## Review
-- [ ] Confirm recorder context menu operations target the right step or list.
-- [ ] Confirm scene summaries are easier to read during day-to-day editing.
-## Recording Import Bridge (2026-03-21)
-- [x] Add a scene editor entry point that opens the recorder dialog.
-- [x] Convert recorder output into scene steps and auto-create keyboard presets for contiguous keyboard segments.
-- [x] Preserve mouse clicks and standalone delays as direct scene steps during import.
-- [x] Verify `npm run build` passes after the recorder-to-scene bridge.
-
-## Review
-- [ ] Confirm recorder imports append the expected scene steps without manual copy/paste.
-- [ ] Confirm generated keyboard presets appear in the input preset list after import.
-## Scene Step Delay Semantics (2026-03-21)
-- [x] Add editable pre-delay to all scene step types.
-- [x] Make the executor honor scene step delays before software/input/mouse actions.
-- [x] Keep recorder input-step delays compatible without double waiting on explicit delay steps.
-- [x] Verify `npm run build` passes after the delay semantics update.
-
-## Review
-- [ ] Confirm scene step delays execute before the intended action in the UI and runtime.
-- [ ] Confirm recorder-generated delay steps still replay in order as expected.
-## Scene Step Editor (2026-03-21)
-- [x] Upgrade scene editing from preset checklists to a real step list editor.
-- [x] Add explicit delay, mouse click, and mouse move step controls in the scene dialog.
-- [x] Keep legacy scene entries compatible by deriving steps from preset ids when needed.
-- [x] Verify `npm run build` passes after the scene editor refactor.
-
-## Review
-- [ ] Confirm scene editing now allows adding, reordering, and removing individual steps.
-- [ ] Confirm delay and mouse step fields persist correctly after save and reload.
-## Trigger Binding Simplification (2026-03-20)
-- [x] Confirm the product model: trigger bindings are local-only `triggerKey -> scene` mappings.
-- [x] Remove `deviceKey` from trigger binding data structures and trigger resolution flow.
-- [x] Update trigger binding management UI to stop selecting devices.
-- [x] Simplify console trigger sending UI by removing device-level precheck based on local binding tables.
-- [x] Verify `npm run build` passes after the trigger model refactor.
-
-## Review
-- [ ] Confirm trigger binding creation/editing no longer asks for a device.
-- [ ] Confirm incoming `EXECUTE_TRIGGER` resolves only by local `triggerKey`.
-- [ ] Confirm the console still sends trigger keys to selected devices/groups successfully.
-
-## Shared UI Namespace Refactor (2026-03-19)
-- [x] Convert shared `Select`, `Tabs`, `Dialog`, and `ScrollArea` wrappers to namespace-style exports.
-- [x] Update renderer panels to import the shared namespace wrappers instead of Radix primitives.
-- [x] Verify the app still builds after the namespace refactor.
-
-## Review
-- [ ] Confirm the shared namespace wrappers preserve existing dialog/select/tabs/scroll behaviors in the UI.
-- [x] Build verified with `npm run build`.
-## New UI Component Migration (2026-03-19)
-- [x] Replace core renderer pages with shared `ui` components where possible.
-- [x] Update common controls in App, Settings, Config, Console, DeviceList, and Resource panels.
-- [x] Verify the app still builds after the UI migration.
-
-## Review
-- [ ] Confirm the migrated screens consistently use shared `ui` primitives instead of raw HTML controls.
-- [ ] Confirm no visible interaction regressions were introduced by the component swap.
-- [x] Build verified with `npm run build`.
-## Resource Station Scroll & History Cards (2026-03-19)
-- [x] Replace share history groups with collapsed-by-default cards.
-- [x] Limit collapsed previews and expanded card height within the share history panel.
-- [x] Restore scrolling for share history, image selection list, and file selection list.
-- [x] Refresh global scrollbar styling and verify `npm run build` passes.
-
-## Review
-- [ ] Confirm collapsed cards show compact image/file previews and can expand/collapse reliably.
-- [ ] Confirm expanded history cards never grow beyond the visible share history area.
-- [ ] Confirm share history, image selection list, and file selection list all scroll normally.
-- [x] Replace native details with controlled accordions for reliable animations.
-- [x] Ensure group buttons only show on hovered summary.
-- [ ] Verify expand/collapse animation for online/offline/groups (no test run yet).
-## TCP Port Update Bug (2026-03-18)
-- [x] Identify why new TCP port not applied after settings save.
-- [x] Update singleton getters to apply new config to existing services.
-- [ ] Verify TCP/UDP restarts use updated ports (manual run).
-
-## Review
-- [ ] Confirm reconnect uses updated TCP port after saving settings.
-- [ ] Check toggle behavior and arrow rotation across all sections.
-## Settings Toast (2026-03-18)
-- [x] Replace window alert with in-app toast in Settings panel.
-- [ ] Verify save success/error toast shows correctly.
-## Settings Tags & Device Groups (2026-03-18)
-- [x] Allow comma-separated tag input in Settings without blocking English comma.
-- [x] Use online sub-group names in device picker group filter.
-- [ ] Verify tag input and group filter behavior in UI.
-## Device Group Filter & Tags (2026-03-18)
-- [x] Replace "全部分组" filter with online group names.
-- [x] Show all tags in device info cards.
-- [ ] Verify group filter and tag display in UI.
-## Device Picker Dropdowns (2026-03-18)
-- [x] Force device picker dropdowns to open downward.
-- [x] Include all online sub-group names in group filters.
-- [ ] Verify dropdown direction and group list in UI.
-## Device Filter Dropdown Direction (2026-03-18)
-- [x] Force group/status/tag dropdowns to open downward in device list.
-- [ ] Verify dropdown direction visually.
-## Resource Send Targets (2026-03-18)
-- [x] Disable send button when text content is empty.
-- [x] Add group send target with group dropdown.
-- [ ] Verify group send behavior and empty-group prompt.
-## Resource Toasts (2026-03-18)
-- [x] Replace window alerts in Resource panel with in-app toasts.
-- [ ] Verify toast messages for empty target/group.
-## Resource Send Failure Handling (2026-03-18)
-- [x] Keep text input and selected files when send fails.
-- [ ] Verify failure behavior with offline target.
-## Sonner Toast Migration (2026-03-18)
-- [x] Audit existing Radix toast usage and global Toaster mount.
-- [x] Replace `@radix-ui/react-toast` with `sonner` dependency.
-- [x] Refine shared `sonner.tsx` Toaster configuration.
-- [x] Migrate Config/Settings/Resource panels to `toast.success` and `toast.error`.
-- [ ] Verify build passes and toast feedback still shows for success/error flows.
-
-## Review
-- [ ] Confirm ConfigPanel import/export feedback uses Sonner correctly.
-- [ ] Confirm SettingsPanel save success/error feedback uses Sonner correctly.
-- [ ] Confirm ResourcePanel target/copy/send failure feedback uses Sonner correctly.
-## Image Offer Download Flow (2026-03-18)
-- [x] Replace direct image push with image offer messages carrying metadata and thumbnail.
-- [x] Add sender-side shared image registry in main process using original file paths.
-- [x] Add on-demand image download over TCP chunk transfer and receiver-side progress events.
-- [x] Add configurable download directory in settings and directory picker support.
-- [x] Remove image compression option and update Resource panel UI states.
-- [x] Verify TypeScript build passes for the new image offer/download flow.
-
-## Review
-- [ ] Confirm image send now only creates offers and does not immediately transfer the original file.
-- [ ] Confirm download saves into configured directory and updates UI status.
-- [ ] Confirm file/text sharing still works after TCP protocol changes.
-## Shared Image Registry Persistence (2026-03-18)
-- [x] Persist shared image registry to the user data directory.
-- [x] Load shared image registry during app startup.
-- [x] Prune invalid shared image entries when source files are missing.
-- [ ] Verify shared image offers still download after restarting the sender app.
-
-## Electron Dev Blank Client Investigation (2026-03-18)
-- [x] Inspect Electron dev startup flow and compare browser vs client behavior.
-- [x] Reproduce blank client and capture renderer/main process mismatch.
-- [x] Identify missing preload bridge methods causing Electron-only runtime failure.
-- [x] Implement the minimal fix in preload and renderer safeguards.
-- [ ] Verify 
-pm run dev client window renders normally after the change.
-
-## Review
-- [x] Root cause confirmed: ResourcePanel subscribed to image download bridge methods that were not exposed by preload, so Electron hit TypeError while the browser short-circuited on missing window.electronAPI.
-- [ ] Manually confirm the Electron dev window no longer shows a blank page.
-
-## Resource Image Native Path Fix (2026-03-18)
-- [x] Confirm image send path extraction was using unreliable File.path in renderer.
-- [x] Expose Electron webUtils.getPathForFile(file) through preload bridge.
-- [x] Update resource image picker to prefer the preload path API and keep legacy fallback.
-- [x] Verify 
-pm run build passes after the change.
-
-## Review
-- [x] Root cause confirmed: both drag-and-drop and file input produced File objects without a usable renderer path, so image sending always failed before registration.
-- [ ] Manually confirm drag-and-drop and click-select images can now be added and sent in the Electron client.
-
-## Resource Image Preview CSP Fix (2026-03-18)
-- [x] Confirm image preview failure came from renderer CSP blocking lob: preview URLs.
-- [x] Allow lob: and data: only for img-src in renderer HTML CSP.
-- [x] Verify 
-pm run build passes after the CSP update.
-
-## Review
-- [x] Root cause confirmed: selected image previews and thumbnail generation both depended on image URLs that violated the page CSP, so preview failed before send.
-- [ ] Manually confirm selected images now render in the picker and can be sent in the Electron client.
-
-## Resource Share History UX (2026-03-18)
-- [x] Show locally sent text/image/file messages in share history.
-- [x] Add green local badge for self-sent records.
-- [x] Display image file names in image history items.
-- [x] Add reveal-in-folder action for downloaded images.
-- [x] Verify 
-pm run build passes after the UI and IPC changes.
-
-## Review
-- [ ] Manually confirm self-sent text/image/file entries appear immediately in share history.
-- [ ] Manually confirm downloaded image entries can open Explorer/Finder with the file selected.
-## Resource File Offer Flow (2026-03-19)
-- [x] Compare current image offer flow against direct file push flow and identify shared vs file-only behaviors.
-- [x] Change file sending to use an offer + receiver download flow consistent with images.
-- [x] Limit resource file sending to a single selected file at a time.
-- [x] Remove file thumbnail handling and show file icon, name, and size in history/cards.
-- [x] Verify `npm run build` passes after the file offer flow changes.
-
-## Review
-- [ ] Confirm sending a file only sends metadata first and does not immediately transfer file bytes.
-- [ ] Confirm file picker and drag-drop keep only one selected file in file mode.
-- [ ] Confirm received file entries show icon + file name + size and can download/open location correctly.
-## Resource Batch Share Fix (2026-03-19)
-- [x] Patch legacy preload bridge so registerSharedFile and download events exist at runtime.
-- [x] Change file sending from direct push to file offers with receiver-side download requests.
-- [x] Keep file multi-select enabled and batch related sends into one visible share record.
-- [x] Keep image multi-send enabled and batch related sends into one visible share record.
-- [x] Add file batch actions for single download and download-all in share history.
-- [x] Verify `npm run build` passes after the batch share changes.
-
-## Review
-- [ ] Confirm Electron runtime no longer throws `registerSharedFile is not a function` when sending files.
-- [ ] Confirm one send action with multiple files/images renders as one grouped history record.
-- [ ] Confirm file batch record supports both `下载全部` and single-item `下载`.
+- [ ] Confirm mouse presets now allow adding a delay step.
+- [ ] Confirm delay steps only expose delay time and persist after save/reopen.
+- [ ] Confirm executor waits for the configured mouse preset delay.
 
 
 
-
-
-
-## Components Type Errors (2026-03-19)
-- [ ] Restore missing `Select` namespace members used by renderer panels.
-- [ ] Sync renderer `AppSettings` with the persisted `downloads.directory` setting.
-- [ ] Fix `icon-wrapper` ref typing so TypeScript checks pass.
-- [ ] Verify `npx tsc --noEmit` and `npm run build` pass after the component fixes.
-## Collapse Component Migration (2026-03-20)
-- [x] Add a shared Radix-based `Collapse` namespace wrapper.
-- [x] Replace the resource share history card toggles with the shared `Collapse` component.
-- [x] Verify build passes and the share list still expands/collapses correctly.
-
-## Review
-- [ ] Confirm the share history cards use the shared `Collapse` wrapper without losing preview/download actions.
-- [ ] Confirm the open/close transition remains smooth and the history list still scrolls normally.
-
-
-## Device List Collapse Animation (2026-03-20)
-- [x] Replace the device list accordion wrappers with shared `Collapse` animation.
-- [x] Verify search filtering still works and the online/offline/group sections animate smoothly.
-
-## Review
-- [x] Confirm expanding/collapsing device groups now uses the shared animation path.
-- [x] Confirm search filtering and scroll behavior were not regressed.
-
-
-## Collapse Animation Refinement (2026-03-20)
-- [x] Switch shared `Collapse` animation from height transition to Radix-style keyframes.
-- [x] Verify build passes after the animation update.
-
-## Review
-- [x] Confirm the resource share list collapse now shows a visible open/close animation.
-- [x] Confirm reduced-motion environments still behave acceptably.
-- [x] Build verified with `npm run build`.
-
-
-## Resource Share Subject Parameter (2026-03-20)
-- [x] Add a subject input above the resource content editor with a type-aware default value.
-- [x] Include the subject in outgoing text/image/file payloads and local share history entries.
-- [x] Show the subject as the primary share record label with the device name as secondary text.
-- [x] Verify the resource panel builds and the history header renders the new subject layout correctly.
-
-## Review
-- [ ] Confirm default subjects follow `设备名 + 的（文字、图片、文件）分享` for each content type.
-- [ ] Confirm manual subject edits are preserved when switching between content types.
-- [ ] Confirm old history entries still fall back to the sender name when no subject exists.
-
-## Global Resource Message Receive (2026-03-20)
-- [x] Confirm root cause: resource message listeners were mounted only in `ResourcePanel`, so switching tabs stopped subscriptions.
-- [x] Add a global share message store to persist receive history and update download states.
-- [x] Add a global share receiver hook mounted in `App` to subscribe to TCP/share download events.
-- [x] Refactor `ResourcePanel` to consume global share state instead of owning transport listeners.
-- [x] Verify `npm run build` passes and no TypeScript errors are introduced.
-
-## Review
-- [ ] Confirm switching away from the resource tab still receives text/image/file offers from other devices.
-- [ ] Confirm returning to the resource tab shows messages received during other tabs.
-- [ ] Confirm image/file download progress and completion status still update correctly.

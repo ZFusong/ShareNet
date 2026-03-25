@@ -469,25 +469,24 @@ export function DeviceList() {
       <div className="filter-bar p-4 border-b">
         <div className="flex items-center gap-2">
           <Select.Root value={groupFilter} onValueChange={(value) => setGroupFilter(value)}>
-            <Select.Trigger className="flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28">
-              <Select.Value />
-              <Select.Icon>▼</Select.Icon>
+            <Select.Trigger className="h-9 w-28">
+              <Select.Value placeholder="全部分组" />
+              <Select.Icon />
             </Select.Trigger>
             <Select.Portal>
               <Select.Content
-                className="bg-background border rounded shadow-lg z-50"
                 position="popper"
                 side="bottom"
                 align="start"
                 sideOffset={4}
                 avoidCollisions={false}
               >
-                <Select.Viewport className="p-1">
-                  <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                <Select.Viewport>
+                  <Select.Item value="all" className="py-2 text-sm">
                     <Select.ItemText>全部分组</Select.ItemText>
                   </Select.Item>
                   {groupsForFilter.map(({ group }) => (
-                    <Select.Item key={group.id} value={group.id} className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.Item key={group.id} value={group.id} className="py-2 text-sm">
                       <Select.ItemText>{group.name}</Select.ItemText>
                     </Select.Item>
                   ))}
@@ -497,30 +496,29 @@ export function DeviceList() {
           </Select.Root>
 
           <Select.Root value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
-            <Select.Trigger className="flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28">
-              <Select.Value />
-              <Select.Icon>▼</Select.Icon>
+            <Select.Trigger className="h-9 w-28">
+              <Select.Value placeholder="全部状态" />
+              <Select.Icon />
             </Select.Trigger>
             <Select.Portal>
               <Select.Content
-                className="bg-background border rounded shadow-lg z-50"
                 position="popper"
                 side="bottom"
                 align="start"
                 sideOffset={4}
                 avoidCollisions={false}
               >
-                <Select.Viewport className="p-1">
-                  <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                <Select.Viewport>
+                  <Select.Item value="all" className="py-2 text-sm">
                     <Select.ItemText>全部状态</Select.ItemText>
                   </Select.Item>
-                  <Select.Item value="online" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                  <Select.Item value="online" className="py-2 text-sm">
                     <Select.ItemText>在线</Select.ItemText>
                   </Select.Item>
-                  <Select.Item value="busy" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                  <Select.Item value="busy" className="py-2 text-sm">
                     <Select.ItemText>忙碌</Select.ItemText>
                   </Select.Item>
-                  <Select.Item value="offline" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                  <Select.Item value="offline" className="py-2 text-sm">
                     <Select.ItemText>离线</Select.ItemText>
                   </Select.Item>
                 </Select.Viewport>
@@ -529,25 +527,24 @@ export function DeviceList() {
           </Select.Root>
 
           <Select.Root value={tagFilter} onValueChange={(value) => setTagFilter(value)}>
-            <Select.Trigger className="flex items-center justify-between gap-2 px-2 py-1 border rounded text-sm bg-background w-28">
-              <Select.Value />
-              <Select.Icon>▼</Select.Icon>
+            <Select.Trigger className="h-9 w-28">
+              <Select.Value placeholder="全部标签" />
+              <Select.Icon />
             </Select.Trigger>
             <Select.Portal>
               <Select.Content
-                className="bg-background border rounded shadow-lg z-50"
                 position="popper"
                 side="bottom"
                 align="start"
                 sideOffset={4}
                 avoidCollisions={false}
               >
-                <Select.Viewport className="p-1">
-                  <Select.Item value="all" className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                <Select.Viewport>
+                  <Select.Item value="all" className="py-2 text-sm">
                     <Select.ItemText>全部标签</Select.ItemText>
                   </Select.Item>
                   {allTags.map((tag) => (
-                    <Select.Item key={tag} value={tag} className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded">
+                    <Select.Item key={tag} value={tag} className="py-2 text-sm">
                       <Select.ItemText>{tag}</Select.ItemText>
                     </Select.Item>
                   ))}

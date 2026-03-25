@@ -7,12 +7,14 @@ import { ResourcePanel } from './components/resource/ResourcePanel'
 import { ConfigPanel } from './components/config/ConfigPanel'
 import { SettingsPanel } from './components/settings/SettingsPanel'
 import { DeviceList } from './components/console/DeviceList'
+import { SpacePanel } from './components/space/SpacePanel'
 import { useDeviceStore } from './stores/deviceStore'
 import { useNetwork } from './hooks/useNetwork'
 import { useShareReceiver } from './hooks/useShareReceiver'
+import { useTriggerLogSync } from './hooks/useTriggerLogSync'
 import icoPng from '@/assets/ico.png'
 
-type Tab = 'console' | 'resource' | 'config' | 'settings'
+type Tab = 'console' | 'resource' | 'space' | 'config' | 'settings'
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('resource')
@@ -27,6 +29,7 @@ function App() {
 
   useNetwork()
   useShareReceiver()
+  useTriggerLogSync()
 
   useEffect(() => {
     window.electronAPI?.getAppInfo().then((info) => {
@@ -54,6 +57,7 @@ function App() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'resource', label: '资源站' },
     { id: 'console', label: '操作台' },
+    { id: 'space', label: '空间' },
     { id: 'config', label: '配置中心' },
     { id: 'settings', label: '系统设置' }
   ]
@@ -98,6 +102,7 @@ function App() {
       <main className="main-content">
         {activeTab === 'console' && <ConsolePanel />}
         {activeTab === 'resource' && <ResourcePanel />}
+        {activeTab === 'space' && <SpacePanel />}
         {activeTab === 'config' && <ConfigPanel />}
         {activeTab === 'settings' && <SettingsPanel />}
       </main>

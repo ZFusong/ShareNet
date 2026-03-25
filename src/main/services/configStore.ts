@@ -104,6 +104,22 @@ export interface TriggerBinding {
   updatedAt: number
 }
 
+export interface SpaceButton {
+  id: string
+  name: string
+  triggerKey: string
+}
+
+export interface Space {
+  id: string
+  name: string
+  description?: string
+  deviceKeys: string[]
+  buttons: SpaceButton[]
+  createdAt: number
+  updatedAt: number
+}
+
 export interface AppConfig {
   settings: Settings
   'software-presets': SoftwarePreset[]
@@ -111,6 +127,7 @@ export interface AppConfig {
   'mouse-presets': MousePreset[]
   scenes: Scene[]
   'trigger-bindings': TriggerBinding[]
+  spaces: Space[]
   offlineDevices: Record<string, { lastSeen: number; device: unknown }>
 }
 
@@ -156,6 +173,7 @@ const store = new Store<AppConfig>({
     'mouse-presets': [],
     scenes: [],
     'trigger-bindings': [],
+    spaces: [],
     offlineDevices: {}
   }
 })
@@ -218,6 +236,46 @@ const normalizeMouseStep = (step: MouseStep): MouseStep | null => {
 
 const normalizeMousePresetSteps = (steps: MouseStep[]): MouseStep[] =>
   steps.map(normalizeMouseStep).filter((step): step is MouseStep => step !== null)
+
+const normalizeSpaceButton = (button: Partial<SpaceButton>, fallbackIndex = 0): SpaceButton | null => {
+  const triggerKey = String(button.triggerKey ?? '').trim()
+  if (!triggerKey) {
+    return null
+  }
+
+  const name = String(button.name ?? '').trim() || triggerKey
+
+  return {
+    id: String(button.id ?? `sb-${Date.now()}-${fallbackIndex}`),
+    name,
+    triggerKey
+  }
+}
+
+const normalizeSpace = (space: Partial<Space>): Space => {
+  const now = Date.now()
+  const normalizedButtons = (space.buttons || [])
+    .map((button, index) => normalizeSpaceButton(button, index))
+    .filter((button): button is SpaceButton => button !== null)
+
+  const normalizedDeviceKeys = Array.from(
+    new Set(
+      (space.deviceKeys || [])
+        .map((deviceKey) => String(deviceKey).trim())
+        .filter(Boolean)
+    )
+  )
+
+  return {
+    id: String(space.id ?? `sp-${now}-${Math.random().toString(36).slice(2, 6)}`),
+    name: String(space.name ?? '').trim(),
+    description: String(space.description ?? '').trim(),
+    deviceKeys: normalizedDeviceKeys,
+    buttons: normalizedButtons,
+    createdAt: Number(space.createdAt) || now,
+    updatedAt: Number(space.updatedAt) || now
+  }
+}
 
 function migrateTriggerBindingsToLocalOnly(): void {
   const triggerBindings = store.get('trigger-bindings', []) as Array<TriggerBinding & { deviceKey?: string }>
@@ -584,6 +642,58 @@ export function resolveSceneIdByTrigger(triggerKey: string): string | null {
   return binding?.sceneId || null
 }
 
+// ========== Spaces ==========
+
+export function getSpaces(): Space[] {
+  return store.get('spaces', []).map((space) => normalizeSpace(space))
+}
+
+export function saveSpace(space: Omit<Space, 'id' | 'createdAt' | 'updatedAt'>): Space {
+  const spaces = getSpaces()
+  const now = Date.now()
+  const normalized = normalizeSpace({
+    ...space,
+    id: `sp-${now}-${Math.random().toString(36).slice(2, 6)}`,
+    createdAt: now,
+    updatedAt: now
+  })
+
+  spaces.push(normalized)
+  store.set('spaces', spaces)
+  return normalized
+}
+
+export function updateSpace(
+  id: string,
+  updates: Partial<Omit<Space, 'id' | 'createdAt'>>
+): Space | null {
+  const spaces = getSpaces()
+  const index = spaces.findIndex((space) => space.id === id)
+
+  if (index === -1) return null
+
+  spaces[index] = normalizeSpace({
+    ...spaces[index],
+    ...updates,
+    id,
+    createdAt: spaces[index].createdAt,
+    updatedAt: Date.now()
+  })
+
+  store.set('spaces', spaces)
+  return spaces[index]
+}
+
+export function deleteSpace(id: string): boolean {
+  const spaces = getSpaces()
+  const filtered = spaces.filter((space) => space.id !== id)
+
+  if (filtered.length === spaces.length) return false
+
+  store.set('spaces', filtered)
+  return true
+}
+
 // ========== Offline Devices ==========
 
 export function getOfflineDevices(): Record<string, { lastSeen: number; device: unknown }> {
@@ -657,6 +767,14 @@ export function exportConfig(modules: string[]): Record<string, unknown> {
     ;(data.exportMeta as Record<string, unknown>).itemCount = {
       ...(data.exportMeta as Record<string, unknown>).itemCount,
       'trigger-bindings': getTriggerBindings().length
+    }
+  }
+
+  if (modules.includes('spaces')) {
+    (data.data as Record<string, unknown>)['spaces'] = getSpaces()
+    ;(data.exportMeta as Record<string, unknown>).itemCount = {
+      ...(data.exportMeta as Record<string, unknown>).itemCount,
+      spaces: getSpaces().length
     }
   }
 
@@ -756,6 +874,20 @@ export function importConfig(config: { data: Record<string, unknown> }, mode: 'a
     store.set('trigger-bindings', imported.items)
   }
 
+  if (config.data['spaces'] && Array.isArray(config.data['spaces'])) {
+    const normalizedSpaces = (config.data['spaces'] as Space[]).map((space) => normalizeSpace(space))
+    const imported = importPresets(
+      normalizedSpaces,
+      getSpaces(),
+      mode,
+      'spaces'
+    )
+    result.imported['spaces'] = imported.count
+    result.errors.push(...imported.errors)
+    result.conflicts.push(...imported.conflicts)
+    store.set('spaces', imported.items)
+  }
+
   result.success = result.errors.length === 0
   return result
 }
@@ -818,7 +950,7 @@ function importPresets<T extends { id: string; name?: string; triggerKey?: strin
 
 // ========== ID Generator ==========
 
-export function generateId(type: 'software' | 'input' | 'mouse' | 'scene' | 'trigger'): string {
+export function generateId(type: 'software' | 'input' | 'mouse' | 'scene' | 'trigger' | 'space'): string {
   const timestamp = Date.now()
   const random = Math.random().toString(36).substr(2, 4)
   switch (type) {
@@ -832,6 +964,8 @@ export function generateId(type: 'software' | 'input' | 'mouse' | 'scene' | 'tri
       return `sc-${timestamp}-${random}`
     case 'trigger':
       return `tb-${timestamp}-${random}`
+    case 'space':
+      return `sp-${timestamp}-${random}`
   }
 }
 

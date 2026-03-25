@@ -1096,6 +1096,10 @@ import {
   saveTriggerBinding,
   updateTriggerBinding,
   deleteTriggerBinding,
+  getSpaces,
+  saveSpace,
+  updateSpace,
+  deleteSpace,
   resolveSceneIdByTrigger,
   exportConfig,
   importConfig,
@@ -1148,6 +1152,8 @@ ipcMain.handle('get-presets', (_event, type: string) => {
         return getScenes()
     case 'trigger':
       return getTriggerBindings()
+    case 'space':
+      return getSpaces()
     default:
       return []
   }
@@ -1166,6 +1172,8 @@ ipcMain.handle('save-preset', (_event, type: string, preset: unknown) => {
         return { success: true, preset: saveScene(preset as any) }
       case 'trigger':
         return { success: true, preset: saveTriggerBinding(preset as any) }
+      case 'space':
+        return { success: true, preset: saveSpace(preset as any) }
       default:
         return { success: false, error: 'Invalid preset type' }
     }
@@ -1187,6 +1195,8 @@ ipcMain.handle('update-preset', (_event, type: string, id: string, updates: unkn
         return { success: true, preset: updateScene(id, updates as any) }
       case 'trigger':
         return { success: true, preset: updateTriggerBinding(id, updates as any) }
+      case 'space':
+        return { success: true, preset: updateSpace(id, updates as any) }
       default:
         return { success: false, error: 'Invalid preset type' }
     }
@@ -1213,6 +1223,9 @@ ipcMain.handle('delete-preset', (_event, type: string, id: string) => {
         break
       case 'trigger':
         success = deleteTriggerBinding(id)
+        break
+      case 'space':
+        success = deleteSpace(id)
         break
     }
     return { success }

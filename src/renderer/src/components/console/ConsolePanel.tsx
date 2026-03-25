@@ -7,51 +7,35 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useConfigStore } from '../../stores/configStore'
 import { useConsoleStore } from '../../stores/consoleStore'
 import { useDeviceStore } from '../../stores/deviceStore'
+import { useTriggerLogStore } from '../../stores/triggerLogStore'
+import { getDeviceKey, sendTriggerToDevices } from '../../lib/triggerDispatch'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select } from '@/components/ui/select'
 import { FieldRow } from '@/components/ui/field-row'
 
-const getDeviceKey = (device: { ip: string; port: number }) => `${device.ip}:${device.port}`
-
 export function ConsolePanel() {
   const logContainerRef = useRef<HTMLDivElement>(null)
 
   const { triggerBindings, loadPresets } = useConfigStore()
   const { devices, selectedDevices, deviceGroups, localDevice, deviceAliases } = useDeviceStore()
+  const logs = useTriggerLogStore((state) => state.logs)
+  const addLog = useTriggerLogStore((state) => state.addLog)
+  const clearLogs = useTriggerLogStore((state) => state.clearAllLogs)
   const {
     targetMode,
     selectedGroupId,
     triggerKey,
-    logs,
     setTargetMode,
     setSelectedGroupId,
     setResolvedDeviceKeys,
-    setTriggerKey,
-    addLog,
-    clearLogs
+    setTriggerKey
   } = useConsoleStore()
 
   useEffect(() => {
     loadPresets('trigger')
   }, [loadPresets])
-
-  useEffect(() => {
-    window.electronAPI?.onTcpMessage((rawMessage: unknown) => {
-      const message = (rawMessage || {}) as { msg_type?: string; payload?: Record<string, unknown> }
-      if (message.msg_type !== 'EXECUTE_TRIGGER_RESULT') return
-      const payload = message.payload || {}
-      const key = String(payload.triggerKey || '')
-      const sceneId = payload.sceneId ? String(payload.sceneId) : ''
-      const text = String(payload.message || '')
-      const ok = payload.ok === true
-      addLog(`触发器回执${sceneId ? ` [${sceneId}]` : ''} ${key ? `(${key})` : ''}: ${text}`, ok ? 'success' : 'error')
-    })
-    return () => {
-      window.electronAPI?.removeAllListeners('tcp-message')
-    }
-  }, [addLog])
 
   const selectedDeviceList = devices.filter((device) => selectedDevices.has(getDeviceKey(device)))
   const selectedGroup = deviceGroups.find((group) => group.id === selectedGroupId) || null
@@ -103,63 +87,17 @@ export function ConsolePanel() {
   }
 
   const handleSend = () => {
-    const trimmedTriggerKey = triggerKey.trim()
-    if (!trimmedTriggerKey) {
-      addLog('请输入触发器 key', 'error')
-      return
-    }
     if (resolvedDevices.length === 0) {
-      addLog(targetMode === 'selected-devices' ? '请先在设备列表勾选设备' : '请选择一个包含设备的分组', 'error')
+      addLog(targetMode === 'selected-devices' ? '请先在设备列表勾选设备' : '请选择一个包含设备的分组', 'error', { source: 'console' })
       return
     }
-
-    const offlineCount = resolvedDevices.filter((device) => device.status !== 'online').length
-    if (offlineCount > 0) {
-      addLog(`目标中有 ${offlineCount} 台设备离线，可能执行失败`, 'info')
-    }
-
-    const sender =
-      localDevice || {
-        id: 'local',
-        name: 'Local',
-        ip: '127.0.0.1',
-        port: 0,
-        role: 'bidirectional' as const,
-        tags: [],
-        status: 'online' as const,
-        lastSeen: Date.now()
-      }
-
-    const send = async () => {
-      let failed = 0
-      for (const device of resolvedDevices) {
-        const connected = await window.electronAPI?.tcpConnect(device.ip, device.port, sender)
-        if (!connected?.success) {
-          failed += 1
-          addLog(`连接失败: ${getDisplayName(device)} (${device.ip}:${device.port})`, 'error')
-          continue
-        }
-
-        const sent = await window.electronAPI?.tcpSend(device.ip, device.port, {
-          msg_type: 'EXECUTE_TRIGGER',
-          payload: { triggerKey: trimmedTriggerKey }
-        })
-        if (!sent?.success) {
-          failed += 1
-          addLog(`发送失败: ${getDisplayName(device)} (${device.ip}:${device.port})`, 'error')
-        } else {
-          addLog(`已发送触发器 ${trimmedTriggerKey} 到 ${getDisplayName(device)}`, 'success')
-        }
-      }
-
-      if (failed > 0) {
-        addLog(`触发器发送完成，失败 ${failed} 台`, 'error')
-      } else {
-        addLog(`触发器发送完成，共 ${resolvedDevices.length} 台`, 'success')
-      }
-    }
-
-    void send()
+    void sendTriggerToDevices({
+      devices: resolvedDevices,
+      triggerKey,
+      localDevice,
+      context: { source: 'console' },
+      getDisplayName
+    })
   }
 
   return (

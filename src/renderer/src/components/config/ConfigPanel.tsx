@@ -28,7 +28,8 @@ export function ConfigPanel() {
     'input-presets': true,
     'mouse-presets': true,
     scenes: true,
-    'trigger-bindings': true
+    'trigger-bindings': true,
+    spaces: true
   })
   const [importMode, setImportMode] = useState<'append' | 'overwrite' | 'merge'>('append')
   const [importData, setImportData] = useState('')
@@ -193,6 +194,13 @@ export function ConfigPanel() {
                   onCheckedChange={(checked) => setExportModules({ ...exportModules, 'trigger-bindings': checked === true })}
                 />
                 <span>触发器绑定</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <Checkbox
+                  checked={exportModules.spaces}
+                  onCheckedChange={(checked) => setExportModules({ ...exportModules, spaces: checked === true })}
+                />
+                <span>空间</span>
               </label>
             </div>
             <div className="flex justify-end gap-2 mt-6">
