@@ -20,7 +20,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('resource')
   const [appInfo, setAppInfo] = useState({ name: 'ShareNet', version: '1.0.0' })
   const [hostname, setHostname] = useState('')
-  const { networkStatus, networkError, devices, selectedDevices, deviceStatusCheckCount } = useDeviceStore()
+  const { networkStatus, networkError, devices, selectedDevices, deviceStatusCheckCount, deviceSelectorOpen, deviceSelectorCallback, deviceSelectorInitialKeys, closeDeviceSelector } = useDeviceStore()
   const getDeviceKey = (device: { ip: string; port: number }) => `${device.ip}:${device.port}`
   const hasNetworkError = !!(networkError?.udp || networkError?.tcp)
   const statusClass = hasNetworkError ? 'offline' : 'online'
@@ -109,7 +109,7 @@ function App() {
 
       <footer className="footer">
         <div className="status-info">
-          <Dialog.Root>
+          <Dialog.Root open={deviceSelectorOpen} onOpenChange={(open) => !open && closeDeviceSelector()}>
             <Dialog.Trigger asChild>
               <Button variant="link" size="sm" className="h-auto px-0 text-xs text-primary">
                 已选设备: {selectedCount}（在线 {selectedOnlineCount}）
@@ -118,7 +118,7 @@ function App() {
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
               <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border rounded shadow-lg w-[760px] max-w-[95vw] max-h-[90vh] overflow-hidden z-50">
-                <DeviceList />
+                <DeviceList onConfirm={deviceSelectorCallback} initialSelectedKeys={deviceSelectorInitialKeys} />
               </Dialog.Content>
             </Dialog.Portal>
           </Dialog.Root>

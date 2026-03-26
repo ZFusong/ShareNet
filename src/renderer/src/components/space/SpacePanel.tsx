@@ -60,7 +60,7 @@ const toFormData = (space: Space): SpaceFormData => ({
 
 export function SpacePanel() {
   const { spaces, triggerBindings, loadPresets, savePreset, updatePreset, deletePreset } = useConfigStore()
-  const { devices, persistentDevices, hiddenDevices, offlineDevices, localDevice, deviceAliases } = useDeviceStore()
+  const { devices, persistentDevices, hiddenDevices, offlineDevices, localDevice, deviceAliases, openDeviceSelector } = useDeviceStore()
   const logs = useTriggerLogStore((state) => state.logs)
   const clearSpaceLogs = useTriggerLogStore((state) => state.clearSpaceLogs)
 
@@ -387,7 +387,7 @@ export function SpacePanel() {
         </aside>
 
         <div className="min-w-0 flex h-full min-h-0 flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <div className="h-full p-4">
             {mode === 'view' && currentSpace ? (
               <div className="space-y-4 pr-1">
                 <div className="flex items-start justify-between gap-3">
@@ -487,11 +487,10 @@ export function SpacePanel() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-4 pr-1">
+              <div className="flex flex-col h-full space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-semibold">{mode === 'create' ? '新建空间' : '编辑空间'}</h3>
-                    <div className="text-sm text-muted-foreground">编辑态展示完整配置，不显示执行日志，避免操作干扰。</div>
                   </div>
                   <div className="flex gap-2">
                     {mode === 'edit' && currentSpace && (
@@ -508,8 +507,8 @@ export function SpacePanel() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <div className="space-y-4 rounded-lg border p-4">
+                <div className="grid gap-4 lg:grid-cols-2 h-[15rem]">
+                  <div className="space-y-4 rounded-lg border p-4 overflow-y-auto">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">空间名称 *</label>
                       <Input
@@ -525,15 +524,26 @@ export function SpacePanel() {
                         value={formData.description}
                         onChange={(event) => setFormData((current) => ({ ...current, description: event.target.value }))}
                         placeholder="说明这个空间的用途、适用场景"
-                        className="min-h-24"
+                        className="max-h-20"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-3 rounded-lg border p-4">
-                    <div>
+                  <div className="space-y-3 rounded-lg border p-4 overflow-y-auto">
+                    <div className="flex items-center justify-between">
                       <div className="text-sm font-medium">已选设备</div>
-                      <div className="text-xs text-muted-foreground">保存后，查看态会直接对这些设备执行。</div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="text-sm"
+                        onClick={() => {
+                          openDeviceSelector((selectedKeys) => {
+                            setFormData((current) => ({ ...current, deviceKeys: selectedKeys }))
+                          }, formData.deviceKeys)
+                        }}
+                      >
+                        选择设备
+                      </Button>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {formDevices.length > 0 ? (
@@ -555,43 +565,7 @@ export function SpacePanel() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border p-4 space-y-3">
-                  <div>
-                    <div className="text-sm font-medium">设备列表</div>
-                    <div className="text-xs text-muted-foreground">勾选纳入空间的目标设备。</div>
-                  </div>
-
-                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                    {selectableDevices.length > 0 ? (
-                      selectableDevices.map(({ key, device }) => (
-                        <label
-                          key={key}
-                          className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 transition-colors ${
-                            formData.deviceKeys.includes(key) ? 'border-primary bg-primary/5' : 'hover:bg-accent'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.deviceKeys.includes(key)}
-                            onChange={() => toggleDevice(key)}
-                            className="mt-1 h-4 w-4"
-                          />
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium break-all">{getDisplayName(device)}</div>
-                            <div className="text-xs text-muted-foreground">{device.ip}:{device.port}</div>
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              {device.status === 'online' ? '在线' : device.status === 'busy' ? '忙碌' : '离线'}
-                            </div>
-                          </div>
-                        </label>
-                      ))
-                    ) : (
-                      <div className="text-sm text-muted-foreground">当前没有可选设备。</div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-lg border p-4 space-y-4">
+                <div className="rounded-lg border p-4 space-y-4 flex-1 overflow-y-auto">
                   <div>
                     <div className="text-sm font-medium">自定义按钮</div>
                     <div className="text-xs text-muted-foreground">编辑态管理按钮名称和 triggerKey，不直接执行。</div>

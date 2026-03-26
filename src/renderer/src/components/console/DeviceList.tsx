@@ -4,7 +4,7 @@
  */
 
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { type Device, type DeviceGroup } from '../../stores/deviceStore'
+import { type Device, type DeviceGroup, useDeviceStore } from '../../stores/deviceStore'
 import { useDevices } from '../../hooks/useDevices'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -56,7 +56,13 @@ function RoleBadge({ role }: { role: Device['role'] }) {
   )
 }
 
-export function DeviceList() {
+interface DeviceListProps {
+  onConfirm?: ((selectedKeys: string[]) => void) | null
+  initialSelectedKeys?: string[]
+}
+
+export function DeviceList({ onConfirm, initialSelectedKeys = [] }: DeviceListProps) {
+  const { closeDeviceSelector } = useDeviceStore()
   const {
     devices,
     selectedDevices,
@@ -264,6 +270,14 @@ export function DeviceList() {
     })
   }, [deviceGroups])
 
+  useEffect(() => {
+    if (initialSelectedKeys.length > 0) {
+      const currentSelected = new Set(selectedDevices)
+      const newKeys = initialSelectedKeys.filter(key => !currentSelected.has(key))
+      newKeys.forEach(key => selectDevice(key))
+    }
+  }, [initialSelectedKeys, selectDevice, selectedDevices])
+
   const handleDeleteSelected = async () => {
     if (selectedDevices.size === 0) return
     const targets = devices.filter((device) => selectedDevices.has(getDeviceKey(device)))
@@ -410,6 +424,17 @@ export function DeviceList() {
       <div className="device-list-header flex items-center justify-between p-4 border-b">
         <h3 className="text-lg font-semibold">选择设备</h3>
         <div className="flex gap-2">
+          {onConfirm && (
+            <Button
+              onClick={() => {
+                onConfirm(Array.from(selectedDevices))
+                closeDeviceSelector()
+              }}
+              className="text-sm px-3 py-1.5"
+            >
+              确认选择
+            </Button>
+          )}
           <Button
             onClick={refreshDevices}
             className="btn-icon"

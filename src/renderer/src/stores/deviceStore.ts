@@ -50,6 +50,9 @@ interface DeviceState {
   networkStatus: string
   networkError: { udp?: string; tcp?: string } | null
   deviceStatusCheckCount: number
+  deviceSelectorOpen: boolean
+  deviceSelectorCallback: ((selectedKeys: string[]) => void) | null
+  deviceSelectorInitialKeys: string[]
 
   // Actions
   setDevices: (devices: Device[]) => void
@@ -83,6 +86,8 @@ interface DeviceState {
   setNetworkError: (error: { udp?: string; tcp?: string } | null) => void
   beginDeviceStatusCheck: () => void
   endDeviceStatusCheck: () => void
+  openDeviceSelector: (callback: (selectedKeys: string[]) => void, initialKeys?: string[]) => void
+  closeDeviceSelector: () => void
 
   // Getters
   getFilteredDevices: () => Device[]
@@ -103,6 +108,9 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   networkStatus: '就绪',
   networkError: null,
   deviceStatusCheckCount: 0,
+  deviceSelectorOpen: false,
+  deviceSelectorCallback: null,
+  deviceSelectorInitialKeys: [],
 
   setDevices: (devices) =>
     set((state) => {
@@ -384,6 +392,18 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
     set((state) => ({ deviceStatusCheckCount: state.deviceStatusCheckCount + 1 })),
   endDeviceStatusCheck: () =>
     set((state) => ({ deviceStatusCheckCount: Math.max(0, state.deviceStatusCheckCount - 1) })),
+  openDeviceSelector: (callback: (selectedKeys: string[]) => void, initialKeys: string[] = []) =>
+    set({
+      deviceSelectorOpen: true,
+      deviceSelectorCallback: callback,
+      deviceSelectorInitialKeys: initialKeys
+    }),
+  closeDeviceSelector: () =>
+    set({
+      deviceSelectorOpen: false,
+      deviceSelectorCallback: null,
+      deviceSelectorInitialKeys: []
+    }),
 
   getFilteredDevices: () => {
     const { devices, filter } = get()
