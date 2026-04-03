@@ -73,6 +73,7 @@ export function DeviceList({ onConfirm, initialSelectedKeys = [] }: DeviceListPr
     deviceAliases,
     toggleSelectDevice,
     selectDevice,
+    deselectDevice,
     deselectAll,
     addDeviceManually,
     hideDevice,
@@ -272,11 +273,13 @@ export function DeviceList({ onConfirm, initialSelectedKeys = [] }: DeviceListPr
 
   useEffect(() => {
     if (initialSelectedKeys.length > 0) {
-      const currentSelected = new Set(selectedDevices)
-      const newKeys = initialSelectedKeys.filter(key => !currentSelected.has(key))
-      newKeys.forEach(key => selectDevice(key))
+      const initialSet = new Set(initialSelectedKeys)
+      const toAdd = Array.from(initialSet).filter(key => !selectedDevices.has(key))
+      const toRemove = Array.from(selectedDevices).filter(key => !initialSet.has(key))
+      toAdd.forEach(key => selectDevice(key))
+      toRemove.forEach(key => deselectDevice(key))
     }
-  }, [initialSelectedKeys, selectDevice, selectedDevices])
+  }, [initialSelectedKeys, selectDevice, deselectDevice, selectedDevices])
 
   const handleDeleteSelected = async () => {
     if (selectedDevices.size === 0) return

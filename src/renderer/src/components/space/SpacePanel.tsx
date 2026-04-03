@@ -60,7 +60,7 @@ const toFormData = (space: Space): SpaceFormData => ({
 
 export function SpacePanel() {
   const { spaces, triggerBindings, loadPresets, savePreset, updatePreset, deletePreset } = useConfigStore()
-  const { devices, persistentDevices, hiddenDevices, offlineDevices, localDevice, deviceAliases, openDeviceSelector } = useDeviceStore()
+  const { devices, persistentDevices, hiddenDevices, offlineDevices, localDevice, deviceAliases, openDeviceSelector, selectedDevices } = useDeviceStore()
   const logs = useTriggerLogStore((state) => state.logs)
   const clearSpaceLogs = useTriggerLogStore((state) => state.clearSpaceLogs)
 
@@ -142,6 +142,11 @@ export function SpacePanel() {
   const formDevices = useMemo(
     () => formData.deviceKeys.map((deviceKey) => allKnownDevices.get(deviceKey) || getPlaceholderDevice(deviceKey)),
     [allKnownDevices, formData.deviceKeys]
+  )
+
+  const selectedDevicesList = useMemo(
+    () => Array.from(selectedDevices).map((deviceKey) => allKnownDevices.get(deviceKey) || getPlaceholderDevice(deviceKey)),
+    [allKnownDevices, selectedDevices]
   )
 
   const viewDevices = useMemo(
@@ -539,15 +544,15 @@ export function SpacePanel() {
                         onClick={() => {
                           openDeviceSelector((selectedKeys) => {
                             setFormData((current) => ({ ...current, deviceKeys: selectedKeys }))
-                          }, formData.deviceKeys)
+                          })
                         }}
                       >
                         选择设备
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {formDevices.length > 0 ? (
-                        formDevices.map((device) => (
+                      {selectedDevicesList.length > 0 ? (
+                        selectedDevicesList.map((device) => (
                           <span
                             key={getDeviceKey(device)}
                             className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs ${
