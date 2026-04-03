@@ -4,6 +4,17 @@
 - Archived history: `tasks/archive/todo-history-through-2026-03-23.md`.
 - Rule: move completed or stale task blocks out of this file instead of letting it grow indefinitely.
 
+# Header Brand Animation Refresh (2026-04-03)
+- [x] Inspect the current renderer header structure and identify the smallest safe surface for a visual refresh.
+- [x] Rebuild the top-left brand block with layered decorative elements that can support richer motion.
+- [x] Restyle the header with a more distinctive animated identity while preserving existing navigation and status layout.
+- [x] Verify the renderer build still passes after the header refresh.
+
+## Review
+- [x] Confirm the new top-left header brand renders correctly with animated effects.
+- [x] Confirm the navigation tabs and right-side device status remain aligned and usable.
+- [x] Confirm the renderer bundle still builds without TypeScript or CSS errors.
+
 # Space Module (2026-03-25)
 - [x] Audit console trigger sending flow, preset IPC, and device key model for reuse points.
 - [x] Add space preset model and persistence in main/config/preload/renderer store layers.
@@ -63,6 +74,8 @@
 - [ ] Confirm mouse presets now allow adding a delay step.
 - [ ] Confirm delay steps only expose delay time and persist after save/reopen.
 - [ ] Confirm executor waits for the configured mouse preset delay.
+
+
 
 
 

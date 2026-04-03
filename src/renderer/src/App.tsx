@@ -66,8 +66,17 @@ function App() {
     <div className="app-container">
       <header className="header">
         <div className="logo">
-          <img src={icoPng} alt="Logo" className="logo-icon" />
-          <span className="logo-text">ShareNet</span>
+          <div className="logo-mark" aria-hidden="true">
+            <span className="logo-orbit logo-orbit-one"></span>
+            <span className="logo-orbit logo-orbit-two"></span>
+            <img src={icoPng} alt="Logo" className="logo-icon" />
+          </div>
+          <span className="logo-shine"></span>
+          <div className="logo-copy">
+            {/* <span className="logo-kicker">Connect instantly</span> */}
+            <span className="logo-kicker">局域网分享</span>
+            <span className="logo-text">ShareNet</span>
+          </div>
         </div>
         <nav className="tabs">
           {tabs.map((tab) => (
