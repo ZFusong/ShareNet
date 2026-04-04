@@ -6,9 +6,11 @@ import { ConsolePanel } from './components/console/ConsolePanel'
 import { ResourcePanel } from './components/resource/ResourcePanel'
 import { ConfigPanel } from './components/config/ConfigPanel'
 import { SettingsPanel } from './components/settings/SettingsPanel'
+import { AboutDialog } from './components/settings/AboutDialog'
 import { DeviceList } from './components/console/DeviceList'
 import { SpacePanel } from './components/space/SpacePanel'
 import { useDeviceStore } from './stores/deviceStore'
+import { useAppInfoStore } from './stores/appInfoStore'
 import { useNetwork } from './hooks/useNetwork'
 import { useShareReceiver } from './hooks/useShareReceiver'
 import { useTriggerLogSync } from './hooks/useTriggerLogSync'
@@ -18,8 +20,8 @@ type Tab = 'console' | 'resource' | 'space' | 'config' | 'settings'
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('resource')
-  const [appInfo, setAppInfo] = useState({ name: 'ShareNet', version: '1.0.0' })
   const [hostname, setHostname] = useState('')
+  const { appInfo } = useAppInfoStore()
   const { networkStatus, networkError, devices, selectedDevices, deviceStatusCheckCount, deviceSelectorOpen, deviceSelectorCallback, deviceSelectorInitialKeys, closeDeviceSelector } = useDeviceStore()
   const getDeviceKey = (device: { ip: string; port: number }) => `${device.ip}:${device.port}`
   const hasNetworkError = !!(networkError?.udp || networkError?.tcp)
@@ -32,11 +34,8 @@ function App() {
   useTriggerLogSync()
 
   useEffect(() => {
-    window.electronAPI?.getAppInfo().then((info) => {
-      setAppInfo({ name: info.name, version: info.version })
-    })
+    useAppInfoStore.getState().init()
 
-    // 优先获取系统设置中的设备名称，如果没有则使用主机名
     Promise.all([
       window.electronAPI?.getSettings(),
       window.electronAPI?.getHostname()
@@ -146,10 +145,11 @@ function App() {
           )}
         </div>
         <div className="footer-info">
-          <span id="app-version">v{appInfo.version}</span>
+          <span id="app-version">v{appInfo?.version ?? ''}</span>
         </div>
       </footer>
       <Toaster />
+      <AboutDialog />
     </div>
   )
 }

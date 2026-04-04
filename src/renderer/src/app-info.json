@@ -1,0 +1,12 @@
+{
+  "name": "ShareNet",
+  "description": "局域网通讯与控制工具",
+  "author": "Fusong",
+  "license": "MIT License",
+  "homepage": "",
+  "techStack": [
+    { "name": "Electron", "color": "#47848F" },
+    { "name": "React", "version": "18.3", "color": "#61DAFB" },
+    { "name": "Node.js", "color": "#339933" }
+  ]
+}

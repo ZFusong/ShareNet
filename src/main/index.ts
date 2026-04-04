@@ -390,12 +390,12 @@ function createWindow(): void {
           label: '关于',
           click: () => mainWindow?.webContents.send('show-about')
         },
-        {
-          label: '文档',
-          click: async () => {
-            await shell.openExternal('https://github.com/sharenet')
-          }
-        }
+        // {
+        //   label: '文档',
+        //   click: async () => {
+        //     await shell.openExternal('https://github.com/ZFusong/ShareNet')
+        //   }
+        // }
       ]
     }
   ]
