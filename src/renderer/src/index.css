@@ -805,6 +805,91 @@
   to { opacity: 1; transform: translate(-50%, -50%) scale(1) translateY(0); }
 }
 
+@keyframes resource-composer-overlay-in {
+  from {
+    background: rgba(255, 255, 255, 0);
+    backdrop-filter: blur(0px);
+  }
+  to {
+    background: rgba(255, 255, 255, 0.368);
+    backdrop-filter: blur(4px);
+  }
+}
+
+@keyframes resource-composer-overlay-out {
+  from {
+    background: rgba(255, 255, 255, 0.248);
+    backdrop-filter: blur(3px);
+  }
+  to {
+    background: rgba(255, 255, 255, 0);
+    backdrop-filter: blur(0px);
+  }
+}
+
+@keyframes resource-composer-burst-in {
+  from {
+    opacity: 0;
+    transform: translate3d(24px, -24px, 0) scale(0.18);
+    clip-path: circle(0% at 100% 0%);
+    filter: saturate(1.08) brightness(1.04);
+  }
+  62% {
+    opacity: 1;
+    transform: translate3d(-4px, 4px, 0) scale(1.03);
+    clip-path: circle(146% at 100% 0%);
+    filter: saturate(1) brightness(1);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    clip-path: circle(150% at 100% 0%);
+    filter: saturate(1) brightness(1);
+  }
+}
+
+@keyframes resource-composer-burst-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    clip-path: circle(150% at 100% 0%);
+    filter: saturate(1) brightness(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(20px, -20px, 0) scale(0.14);
+    clip-path: circle(0% at 100% 0%);
+    filter: saturate(1.08) brightness(1.04);
+  }
+}
+
+.resource-composer-overlay {
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(10px);
+  will-change: background, backdrop-filter;
+}
+
+.resource-composer-overlay[data-state='open'] {
+  animation: resource-composer-overlay-in 0.42s ease-out both;
+}
+
+.resource-composer-overlay[data-state='closed'] {
+  animation: resource-composer-overlay-out 0.42s ease-in both;
+}
+
+.resource-composer-content {
+  transform-origin: top right;
+  will-change: transform, opacity, clip-path;
+}
+
+.resource-composer-content[data-state='open'] {
+  animation: resource-composer-burst-in 0.28s cubic-bezier(0.2, 1, 0.24, 1) both;
+}
+
+.resource-composer-content[data-state='closed'] {
+  animation: resource-composer-burst-out 0.28s cubic-bezier(0.68, 0, 0.8, 0.2) both;
+}
+
 .about-mesh-bg {
   position: absolute;
   inset: 0;
