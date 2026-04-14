@@ -658,6 +658,13 @@
   min-height: 0;
 }
 
+.console-card__header__title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  height: 1.8rem;
+}
 .console-card__header {
   display: flex;
   align-items: flex-start;
@@ -753,7 +760,7 @@
 }
 
 .console-send-summary {
-  padding: 0.4rem;
+  padding: 0.15rem 0.5rem;
   border: 1px solid hsl(var(--primary) / 0.2);
   border-radius: 0.5rem;
   background: hsl(var(--background) / 0.82);

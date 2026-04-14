@@ -159,7 +159,7 @@ export function ConsolePanel() {
         <div className="console-layout">
           <div className="console-target-section ">
             <section className="console-card-target console-card--target flex-1">
-                <div className="console-card__header">
+                <div className="console-card__header__title">
                   <h3 className="console-card__title">目标设备</h3>
                 </div>
 
@@ -215,7 +215,7 @@ export function ConsolePanel() {
             <span className="console-card-split"></span>
 
             <section className="console-card-target console-card--selection">
-              <div className="console-card__header">
+              <div className="console-card__header__title">
                 <h3 className="console-card__title">已选设备</h3>
                 <div className="console-send-summary">{actionSummary}</div>
               </div>
