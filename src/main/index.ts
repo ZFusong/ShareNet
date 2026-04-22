@@ -201,6 +201,59 @@ const currentSenderDevice = (): DeviceInfo => (
   }
 )
 
+const ensureTransferConnection = async (target: DeviceInfo): Promise<boolean> => {
+  if (!tcpServer || !target.ip || !target.port) {
+    return false
+  }
+
+  const connectionId = await tcpServer.ensureConnection(target.ip, target.port, currentSenderDevice())
+  return !!connectionId
+}
+
+const sendJsonWithReconnect = async (target: DeviceInfo, message: NetworkMessage): Promise<boolean> => {
+  if (!tcpServer || !target.ip || !target.port) {
+    return false
+  }
+
+  if (!(await ensureTransferConnection(target))) {
+    return false
+  }
+
+  let sent = await tcpServer.sendMessage(target.ip, message, target.port)
+  if (sent) {
+    return true
+  }
+
+  if (!(await ensureTransferConnection(target))) {
+    return false
+  }
+
+  sent = await tcpServer.sendMessage(target.ip, message, target.port)
+  return sent
+}
+
+const sendBinaryWithReconnect = async (target: DeviceInfo, header: { msg_type: string; payload?: Record<string, unknown> }, chunk: Uint8Array): Promise<boolean> => {
+  if (!tcpServer || !target.ip || !target.port) {
+    return false
+  }
+
+  if (!(await ensureTransferConnection(target))) {
+    return false
+  }
+
+  let sent = await tcpServer.sendBinaryMessage(target.ip, header, chunk, target.port)
+  if (sent) {
+    return true
+  }
+
+  if (!(await ensureTransferConnection(target))) {
+    return false
+  }
+
+  sent = await tcpServer.sendBinaryMessage(target.ip, header, chunk, target.port)
+  return sent
+}
+
 let mousePickerSession: MousePickerSession | null = null
 
 const normalizeScreenPoint = (point: Partial<ScreenPoint> | null | undefined): ScreenPoint | null => {
@@ -708,24 +761,25 @@ ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
       if (message?.msg_type === 'IMAGE_DOWNLOAD_REQUEST') {
         const shareId = message.payload?.shareId
         const resource = typeof shareId === 'string' ? sharedImageRegistry.get(shareId) : null
+        const requestDevice = from.ip && from.port ? from : null
 
         if (!resource || !existsSync(resource.filePath)) {
           if (typeof shareId === 'string') {
             deleteSharedImage(shareId)
           }
-          if (from.ip && from.port) {
-            await tcpServer?.sendMessage(from.ip, {
+          if (requestDevice) {
+            await sendJsonWithReconnect(requestDevice, {
               msg_type: 'IMAGE_DOWNLOAD_ERROR',
               sender: currentSenderDevice(),
               payload: { shareId, message: '共享图片不存在或已不可用' },
               timestamp: Date.now(),
               request_id: uuidv4()
-            } as NetworkMessage, from.port)
+            } as NetworkMessage)
           }
           return
         }
 
-        if (!from.ip || !from.port) {
+        if (!requestDevice) {
           return
         }
 
@@ -737,22 +791,17 @@ ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
           const start = index * IMAGE_CHUNK_SIZE
           const end = Math.min(start + IMAGE_CHUNK_SIZE, fileBuffer.length)
           const chunk = fileBuffer.subarray(start, end)
-          const ok = await tcpServer?.sendBinaryMessage(
-            from.ip,
-            {
-              msg_type: 'IMAGE_CHUNK',
-              payload: {
-                shareId: resource.shareId,
-                fileName: resource.fileName,
-                fileSize: resource.fileSize,
-                mimeType: resource.mimeType,
-                chunkIndex: index,
-                totalChunks
-              }
-            },
-            chunk,
-            from.port
-          )
+          const ok = await sendBinaryWithReconnect(requestDevice, {
+            msg_type: 'IMAGE_CHUNK',
+            payload: {
+              shareId: resource.shareId,
+              fileName: resource.fileName,
+              fileSize: resource.fileSize,
+              mimeType: resource.mimeType,
+              chunkIndex: index,
+              totalChunks
+            }
+          }, chunk)
 
           if (!ok) {
             sendFailed = true
@@ -761,13 +810,13 @@ ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
         }
 
         if (sendFailed) {
-          await tcpServer?.sendMessage(from.ip, {
+          await sendJsonWithReconnect(requestDevice, {
             msg_type: 'IMAGE_DOWNLOAD_ERROR',
             sender: currentSenderDevice(),
             payload: { shareId, message: '图片传输失败' },
             timestamp: Date.now(),
             request_id: uuidv4()
-          } as NetworkMessage, from.port)
+          } as NetworkMessage)
         }
         return
       }
@@ -775,24 +824,25 @@ ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
       if (message?.msg_type === 'FILE_DOWNLOAD_REQUEST') {
         const shareId = message.payload?.shareId
         const resource = typeof shareId === 'string' ? sharedFileRegistry.get(shareId) : null
+        const requestDevice = from.ip && from.port ? from : null
 
         if (!resource || !existsSync(resource.filePath)) {
           if (typeof shareId === 'string') {
             deleteSharedFile(shareId)
           }
-          if (from.ip && from.port) {
-            await tcpServer?.sendMessage(from.ip, {
+          if (requestDevice) {
+            await sendJsonWithReconnect(requestDevice, {
               msg_type: 'FILE_DOWNLOAD_ERROR',
               sender: currentSenderDevice(),
               payload: { shareId, message: '共享文件不存在或已不可用' },
               timestamp: Date.now(),
               request_id: uuidv4()
-            } as NetworkMessage, from.port)
+            } as NetworkMessage)
           }
           return
         }
 
-        if (!from.ip || !from.port) {
+        if (!requestDevice) {
           return
         }
 
@@ -804,22 +854,17 @@ ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
           const start = index * FILE_CHUNK_SIZE
           const end = Math.min(start + FILE_CHUNK_SIZE, fileBuffer.length)
           const chunk = fileBuffer.subarray(start, end)
-          const ok = await tcpServer?.sendBinaryMessage(
-            from.ip,
-            {
-              msg_type: 'FILE_CHUNK',
-              payload: {
-                shareId: resource.shareId,
-                fileName: resource.fileName,
-                fileSize: resource.fileSize,
-                mimeType: resource.mimeType,
-                chunkIndex: index,
-                totalChunks
-              }
-            },
-            chunk,
-            from.port
-          )
+          const ok = await sendBinaryWithReconnect(requestDevice, {
+            msg_type: 'FILE_CHUNK',
+            payload: {
+              shareId: resource.shareId,
+              fileName: resource.fileName,
+              fileSize: resource.fileSize,
+              mimeType: resource.mimeType,
+              chunkIndex: index,
+              totalChunks
+            }
+          }, chunk)
 
           if (!ok) {
             sendFailed = true
@@ -828,13 +873,13 @@ ipcMain.handle('tcp-start', async (_event, config?: { port?: number }) => {
         }
 
         if (sendFailed) {
-          await tcpServer?.sendMessage(from.ip, {
+          await sendJsonWithReconnect(requestDevice, {
             msg_type: 'FILE_DOWNLOAD_ERROR',
             sender: currentSenderDevice(),
             payload: { shareId, message: '文件传输失败' },
             timestamp: Date.now(),
             request_id: uuidv4()
-          } as NetworkMessage, from.port)
+          } as NetworkMessage)
         }
         return
       }
@@ -1046,7 +1091,7 @@ ipcMain.handle('tcp-connect', async (_event, host: string, port: number, deviceI
     await tcpServer.start()
   }
 
-  const clientId = await tcpServer.connectTo(host, port, deviceInfo)
+  const clientId = await tcpServer.ensureConnection(host, port, deviceInfo)
   return { success: !!clientId, clientId }
 })
 
