@@ -246,6 +246,26 @@ export class TCPServer extends EventEmitter {
     }
   }
 
+  private isClientUsable(client: ClientConnection): boolean {
+    return !client.socket.destroyed && client.socket.writable
+  }
+
+  private findClient(targetIP: string, targetPort?: number): ClientConnection | undefined {
+    const matches = Array.from(this.clients.values()).filter(
+      (client) =>
+        client.device.ip === targetIP &&
+        (targetPort ? client.device.port === targetPort : true) &&
+        this.isClientUsable(client)
+    )
+
+    if (matches.length === 0) {
+      return undefined
+    }
+
+    matches.sort((a, b) => b.lastActive - a.lastActive)
+    return matches[0]
+  }
+
   private encodeJsonPacket(message: NetworkMessage): Buffer {
     const payload = Buffer.from(JSON.stringify(message), 'utf-8')
     const packet = Buffer.alloc(5 + payload.length)
@@ -272,9 +292,7 @@ export class TCPServer extends EventEmitter {
 
   sendMessage(targetIP: string, message: NetworkMessage, targetPort?: number): Promise<boolean> {
     return new Promise((resolve) => {
-      const client = Array.from(this.clients.values()).find(
-        (c) => c.device.ip === targetIP && (targetPort ? c.device.port === targetPort : true)
-      )
+      const client = this.findClient(targetIP, targetPort)
 
       if (!client) {
         console.log(`[TCP] Client not found: ${targetIP}${targetPort ? `:${targetPort}` : ''}`)
@@ -295,9 +313,7 @@ export class TCPServer extends EventEmitter {
 
   sendBinaryMessage(targetIP: string, header: BinaryPacketHeader, chunk: Uint8Array, targetPort?: number): Promise<boolean> {
     return new Promise((resolve) => {
-      const client = Array.from(this.clients.values()).find(
-        (c) => c.device.ip === targetIP && (targetPort ? c.device.port === targetPort : true)
-      )
+      const client = this.findClient(targetIP, targetPort)
 
       if (!client) {
         console.log(`[TCP] Client not found for binary send: ${targetIP}${targetPort ? `:${targetPort}` : ''}`)
@@ -335,10 +351,25 @@ export class TCPServer extends EventEmitter {
   }
 
   async connectTo(host: string, port: number, deviceInfo: DeviceInfo): Promise<string | null> {
+    const existingClient = this.findClient(host, port)
+    if (existingClient) {
+      existingClient.lastActive = Date.now()
+      return existingClient.id
+    }
+
     return new Promise((resolve) => {
       const socket = new net.Socket()
       const clientId = uuidv4()
       let client: ClientConnection | null = null
+      let settled = false
+
+      const finish = (value: string | null): void => {
+        if (settled) {
+          return
+        }
+        settled = true
+        resolve(value)
+      }
 
       socket.connect(port, host, () => {
         console.log(`[TCP] Connected to ${host}:${port}`)
@@ -363,12 +394,12 @@ export class TCPServer extends EventEmitter {
         socket.write(this.encodeJsonPacket(discoveryMsg))
 
         this.emit('connected', client)
-        resolve(clientId)
+        finish(clientId)
       })
 
       socket.on('error', (err) => {
         console.error(`[TCP] Connection error to ${host}:${port}:`, err)
-        resolve(null)
+        finish(null)
       })
 
       socket.on('close', () => {
@@ -386,6 +417,16 @@ export class TCPServer extends EventEmitter {
         }
       })
     })
+  }
+
+  async ensureConnection(host: string, port: number, deviceInfo: DeviceInfo): Promise<string | null> {
+    const existingClient = this.findClient(host, port)
+    if (existingClient) {
+      existingClient.lastActive = Date.now()
+      return existingClient.id
+    }
+
+    return this.connectTo(host, port, deviceInfo)
   }
 
   getClients(): ClientConnection[] {
